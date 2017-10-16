@@ -6,38 +6,23 @@ import (
 	"time"
 )
 
-// AppUsageEventList contains the app usage event records
-type AppUsageEventList struct {
-	Resources []AppUsageEvent `json:"resources"`
+// MetaData contains the record metadata like id and creation date
+type MetaData struct {
+	GUID      string    `json:"guid"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
-// AppUsageEvent represent an app usage event record from the API
-type AppUsageEvent struct {
-	MetaData struct {
-		GUID      string    `json:"guid"`
-		CreatedAt time.Time `json:"created_at"`
-	}
+// UsageEventList contains usage event records
+type UsageEventList struct {
+	Resources []UsageEvent `json:"resources"`
+}
+
+// UsageEvent represent a usage event record from the API
+type UsageEvent struct {
+	MetaData  MetaData
 	EntityRaw json.RawMessage `json:"entity"`
 }
 
-func (a AppUsageEvent) String() string {
-	return fmt.Sprintf("%s %s\n%s\n", a.MetaData.CreatedAt, a.MetaData.GUID, string(a.EntityRaw))
-}
-
-// ServiceUsageEventList contains the service usage event records
-type ServiceUsageEventList struct {
-	Resources []ServiceUsageEvent `json:"resources"`
-}
-
-// ServiceUsageEvent represent a service usage event record from the API
-type ServiceUsageEvent struct {
-	MetaData struct {
-		GUID      string    `json:"guid"`
-		CreatedAt time.Time `json:"created_at"`
-	}
-	EntityRaw json.RawMessage `json:"entity"`
-}
-
-func (a ServiceUsageEvent) String() string {
-	return fmt.Sprintf("%s %s\n%s\n", a.MetaData.CreatedAt, a.MetaData.GUID, string(a.EntityRaw))
+func (u UsageEvent) String() string {
+	return fmt.Sprintf("%s %s\n%s\n", u.MetaData.CreatedAt, u.MetaData.GUID, string(u.EntityRaw))
 }
