@@ -11,3 +11,7 @@ run-dev: ## Runs the application with local credentials
 .PHONY: test
 test: ## Runs all the tests
 	go test $$(go list ./... | grep -v /vendor/)
+
+.PHONY: generate-test-mocks
+generate-test-mocks: ## Generates all test mocks
+	mockgen -source=cloudfoundry/client.go -destination=cloudfoundry/mocks/client.go -package mocks
