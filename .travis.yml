@@ -1,0 +1,23 @@
+dist: trusty
+sudo: false
+
+language: go
+
+go:
+  - 1.8
+
+services:
+  - postgresql
+
+addons:
+  postgresql: "9.5"
+
+before_install:
+  - go get github.com/onsi/ginkgo/ginkgo
+
+install:
+  # Prevent default install task that does a `go get -t ./...`
+  - true
+
+script:
+  - ginkgo -r
