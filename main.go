@@ -14,7 +14,7 @@ import (
 )
 
 func createLogger() lager.Logger {
-	logger := lager.NewLogger("collector")
+	logger := lager.NewLogger("usage-events-collector")
 	logLevel := lager.INFO
 	if strings.ToLower(os.Getenv("LOG_LEVEL")) == "debug" {
 		logLevel = lager.DEBUG
