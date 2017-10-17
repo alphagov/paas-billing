@@ -20,6 +20,7 @@ const serviceType = "service"
 // UsageEventsAPI is a common interface for the app and service usage event APIs
 type UsageEventsAPI interface {
 	Get(afterGUID string, count int, minAge time.Duration) (*UsageEventList, error)
+	Type() string
 }
 
 // UsageEventsAPI is a CloudFoundry API client for getting usage events
@@ -100,4 +101,9 @@ func (u *usageEventsAPI) Get(afterGUID string, count int, minAge time.Duration) 
 	}
 
 	return res, nil
+}
+
+// Type returns with the client type
+func (u *usageEventsAPI) Type() string {
+	return u.eventType
 }

@@ -96,7 +96,9 @@ var _ = Describe("The Usage Events Handler", func() {
 					Body:       ioutil.NopCloser(strings.NewReader(emptyUsageList)),
 				}
 				mockClient.EXPECT().Get("/v2/app_usage_events?results-per-page=3").Return(resp, nil)
-				NewAppUsageEventsAPI(mockClient, logger).Get(GUIDNil, 3, 0)
+				client := NewAppUsageEventsAPI(mockClient, logger)
+				Expect(client.Type()).To(BeEquivalentTo("app"))
+				client.Get(GUIDNil, 3, 0)
 			})
 		})
 
@@ -107,7 +109,9 @@ var _ = Describe("The Usage Events Handler", func() {
 					Body:       ioutil.NopCloser(strings.NewReader(emptyUsageList)),
 				}
 				mockClient.EXPECT().Get("/v2/service_usage_events?results-per-page=3").Return(resp, nil)
-				NewServiceUsageEventsAPI(mockClient, logger).Get(GUIDNil, 3, 0)
+				client := NewServiceUsageEventsAPI(mockClient, logger)
+				Expect(client.Type()).To(BeEquivalentTo("service"))
+				client.Get(GUIDNil, 3, 0)
 			})
 		})
 
