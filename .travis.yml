@@ -1,0 +1,20 @@
+dist: trusty
+sudo: false
+
+language: go
+
+go:
+  - 1.8
+
+services:
+  - postgresql
+
+addons:
+  postgresql: "9.5"
+
+install:
+  # Prevent default install task that does a `go get -t ./...`
+  - true
+
+script:
+  - make test
