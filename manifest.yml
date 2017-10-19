@@ -1,0 +1,12 @@
+---
+applications:
+ - name: paas-usage-events-collector
+   memory: 128M
+   disk_quota: 100M
+   instances: 1
+   buildpack: go_buildpack
+   no-route: true
+   health-check-type: process
+   env:
+     GOPACKAGENAME: github.com/alphagov/paas-usage-events-collector
+   command: ./bin/paas-usage-events-collector
