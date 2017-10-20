@@ -1,0 +1,16 @@
+---
+platform: linux
+image_resource:
+  type: docker-image
+  source:
+    repository: alpine
+    tag: "3.4"
+inputs:
+  - name: repo
+run:
+  path: sh
+  args:
+    - -e
+    - -c
+    - |
+      echo "skipping, the tests are running on Travis: https://travis-ci.org/alphagov/paas-usage-events-collector"
