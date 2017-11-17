@@ -5,8 +5,8 @@ A Golang application for polling the CloudFoundry API for app and service usage 
 Cloud Foundry docs on usage events: https://docs.cloudfoundry.org/running/managing-cf/usage-events.html
 
 The application periodically fetches the latest app and service usage events from the following endpoints:
- * /v2/app_usage_events - (API docs)[http://apidocs.cloudfoundry.org/272/app_usage_events/list_all_app_usage_events.html]
- * /v2/service_usage_events - (API docs)[https://apidocs.cloudfoundry.org/272/service_usage_events/list_service_usage_events.html]
+ * /v2/app_usage_events - [API docs](http://apidocs.cloudfoundry.org/272/app_usage_events/list_all_app_usage_events.html)
+ * /v2/service_usage_events - [API docs](https://apidocs.cloudfoundry.org/272/service_usage_events/list_service_usage_events.html)
 
 The API endpoints are paginated and we are using the *after_guid* parameter to get the next batch of events. We are not processing the latest events (COLLECTOR_RECORD_MIN_AGE) as these can be incomplete because events are only present if the related transactions are finished. (The events are ordered as they are started.)
 
