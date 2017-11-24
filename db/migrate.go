@@ -2,40 +2,45 @@ package db
 
 import (
 	"fmt"
+	"sort"
+
+	"github.com/lib/pq"
 )
 
-// InitSchema initialises the database tables
-func (pc PostgresClient) InitSchema() error {
-	db, openErr := pc.Open()
-	if openErr != nil {
-		return openErr
-	}
-	defer db.Close()
+// InitSchema initialises the database tables and functions
+//go:generate go-bindata -pkg db -o bindata.go sql/...
+func (pc *PostgresClient) InitSchema() (err error) {
+	names := AssetNames()
+	sort.Strings(names)
 
-	createAppUsageEventTable := fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS %s (
-			id SERIAL,
-			guid CHAR(36) UNIQUE,
-			created_at TIMESTAMP,
-			raw_message JSONB
-		)`,
-		AppUsageTableName,
-	)
-	if _, err := db.Exec(createAppUsageEventTable); err != nil {
-		return err
+	tx, txErr := pc.Conn.Begin()
+	if txErr != nil {
+		return txErr
 	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
 
-	createServiceUsageEventTable := fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS %s (
-			id SERIAL,
-			guid CHAR(36) UNIQUE,
-			created_at TIMESTAMP,
-			raw_message JSONB
-		)`,
-		ServiceUsageTableName,
-	)
-	if _, err := db.Exec(createServiceUsageEventTable); err != nil {
-		return err
+	for _, name := range names {
+		sql := string(MustAsset(name))
+		_, err := tx.Exec(sql)
+		if err != nil {
+			msg := err.Error()
+			if err, ok := err.(*pq.Error); ok {
+				msg = err.Message
+				if err.Hint != "" {
+					msg += ": " + err.Hint
+				}
+				if err.Where != "" {
+					msg += ": " + err.Where
+				}
+			}
+			return fmt.Errorf("Error applying %s: %s", name, msg)
+		}
 	}
 
 	return nil
