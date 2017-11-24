@@ -2,10 +2,13 @@ package db_test
 
 import (
 	"encoding/json"
+	"math"
 	"time"
 
 	cf "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
 	. "github.com/alphagov/paas-usage-events-collector/db"
+	"github.com/alphagov/paas-usage-events-collector/db/dbhelper"
+	uuid "github.com/satori/go.uuid"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,20 +16,40 @@ import (
 
 const (
 	postgresTimeFormat = "2006-01-02T15:04:05.000000Z"
-	dbName             = "usage_events"
 )
 
 var _ = Describe("Db", func() {
 
-	var sqlClient PostgresClient
+	var (
+		sqlClient *PostgresClient
+		connstr   string
+	)
 
 	BeforeEach(func() {
-		sqlClient = NewPostgresClient("postgres://postgres:@localhost:5432/?sslmode=disable")
-		createDB(sqlClient)
+		var err error
+		connstr, err = dbhelper.CreateDB()
+		Expect(err).ToNot(HaveOccurred())
+		sqlClient, err = NewPostgresClient(connstr)
+		Expect(err).ToNot(HaveOccurred())
+		err = sqlClient.InitSchema()
+		Expect(err).ToNot(HaveOccurred())
+
+		// time.Sleep(1 * time.Hour)
+		// sig := make(chan os.Signal, 1)
+		// signal.Notify(sig, os.Interrupt)
+		// <-sig
+		// fmt.Fprintln(GinkgoWriter, "shutdown")
 	})
 
 	AfterEach(func() {
-		dropDB(sqlClient)
+		err := sqlClient.Close()
+		Expect(err).ToNot(HaveOccurred())
+		err = dbhelper.DropDB(connstr)
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	Specify("schema application is idempotent", func() {
+		Expect(sqlClient.InitSchema()).To(Succeed())
 	})
 
 	TestUsageEvents := func(tableName string) {
@@ -38,8 +61,6 @@ var _ = Describe("Db", func() {
 		)
 
 		BeforeEach(func() {
-			sqlClient.InitSchema()
-
 			event1GUID = "2C5D3E72-2082-43C1-9262-814EAE7E65AA"
 			event2GUID = "968437F2-CCEE-4B8E-B29B-34EA701BA196"
 			sampleData = json.RawMessage(`{"field":"value"}`)
@@ -55,10 +76,6 @@ var _ = Describe("Db", func() {
 					},
 				},
 			}
-		})
-
-		AfterEach(func() {
-			dropUsageEventsTable(sqlClient, tableName)
 		})
 
 		Context("given an empty table", func() {
@@ -131,19 +148,117 @@ var _ = Describe("Db", func() {
 	Describe("Service usage events", func() {
 		TestUsageEvents(ServiceUsageTableName)
 	})
+
+	Describe("Pricing Formulae", func() {
+
+		var insert = func(formula string, out interface{}) error {
+			return sqlClient.Conn.QueryRow(`
+				insert into pricing_plans(name, valid_from, plan_guid, formula) values (
+					'FormulaTestPlan',
+					'-infinity',
+					$1,
+					$2
+				) returning eval_formula(64, tstzrange(now(), now() + '60 seconds'), formula) as result
+			`, uuid.NewV4().String(), formula).Scan(out)
+		}
+
+		It("Should allow basic integer formulae", func() {
+			var out int
+			err := insert("((2 * 2::integer) + 1 - 1) / 1", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(((2 * 2) + 1 - 1) / 1))
+		})
+
+		It("Should allow basic bigint formulae", func() {
+			var out int64
+			err := insert("12147483647 * (2)::bigint", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(int64(12147483647 * 2)))
+		})
+
+		It("Should allow basic numeric formulae", func() {
+			var out float64
+			err := insert("1.5 * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(float64(1.5 * 2)))
+		})
+
+		It("Should allow $time_in_seconds variable", func() {
+			var out int
+			err := insert("$time_in_seconds * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(60 * 2))
+		})
+
+		It("Should allow $memory_in_mb variable", func() {
+			var out int
+			err := insert("$memory_in_mb * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(64 * 2))
+		})
+
+		It("Should allow power of operator", func() {
+			var out float64
+			err := insert("2^2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(math.Pow(2, 2)))
+		})
+
+		It("Should not allow `;`", func() {
+			var out interface{}
+			err := insert("1+1;", &out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp(`illegal token in formula: ;`))
+		})
+
+		It("Should not allow `select`", func() {
+			var out interface{}
+			err := insert("select", &out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp(`illegal token in formula: select`))
+		})
+
+		It("Should not allow `$unknown variable`", func() {
+			var out interface{}
+			err := insert("$unknown", &out)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(MatchRegexp(`illegal token in formula: \$unknown`))
+		})
+	})
+
+	Context("pricing_plans", func() {
+
+		It("should ensure unique valid_from + plan_guid", func() {
+			t := time.Now()
+			guid := uuid.NewV4().String()
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plans (name, valid_from, plan_guid, formula) values (
+					$1,
+					$2,
+					$3,
+					'1+1'
+				)
+			`, "PlanA", t.Format(time.RFC3339), guid)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = sqlClient.Conn.Exec(`
+				insert into pricing_plans (name, valid_from, plan_guid, formula) values (
+					$1,
+					$2,
+					$3,
+					'1+1'
+				)
+			`, "PlanB", t.Format(time.RFC3339), guid)
+			Expect(err).To(HaveOccurred())
+		})
+
+	})
 })
 
 // SelectUsageEvents returns with all the usage events stored in the database
-func selectUsageEvents(pc PostgresClient, tableName string) (*cf.UsageEventList, error) {
+func selectUsageEvents(pc *PostgresClient, tableName string) (*cf.UsageEventList, error) {
 	usageEvents := &cf.UsageEventList{}
 
-	db, openErr := pc.Open()
-	if openErr != nil {
-		return nil, openErr
-	}
-	defer db.Close()
-
-	rows, queryErr := db.Query("SELECT guid, created_at, raw_message FROM " + tableName)
+	rows, queryErr := pc.Conn.Query("SELECT guid, created_at, raw_message FROM " + tableName)
 	if queryErr != nil {
 		return nil, queryErr
 	}
@@ -169,31 +284,4 @@ func selectUsageEvents(pc PostgresClient, tableName string) (*cf.UsageEventList,
 func decodePostgresTimestamp(timestamp string) time.Time {
 	t, _ := time.Parse(postgresTimeFormat, timestamp)
 	return t
-}
-
-func createDB(sqlClient PostgresClient) {
-	db, openErr := sqlClient.Open()
-	defer db.Close()
-	Expect(openErr).ToNot(HaveOccurred())
-
-	_, execErr := db.Exec("CREATE DATABASE " + dbName)
-	Expect(execErr).ToNot(HaveOccurred())
-}
-
-func dropUsageEventsTable(sqlClient PostgresClient, tableName string) {
-	db, openErr := sqlClient.Open()
-	defer db.Close()
-	Expect(openErr).ToNot(HaveOccurred())
-
-	_, execErr := db.Exec("DROP TABLE " + tableName + " CASCADE")
-	Expect(execErr).ToNot(HaveOccurred())
-}
-
-func dropDB(sqlClient PostgresClient) {
-	db, openErr := sqlClient.Open()
-	defer db.Close()
-	Expect(openErr).ToNot(HaveOccurred())
-
-	_, execErr := db.Exec("DROP DATABASE " + dbName)
-	Expect(execErr).ToNot(HaveOccurred())
 }
