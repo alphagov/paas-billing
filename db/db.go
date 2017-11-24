@@ -96,8 +96,18 @@ func (pc *PostgresClient) UpdateViews() error {
 
 // QueryJSON executes SQL query q with args and writes the result as JSON to w
 func (pc *PostgresClient) QueryJSON(w io.Writer, q string, args ...interface{}) error {
+	return pc.doQueryJSON(true, w, q, args...)
+}
+
+// QueryRowJSON is the same as QueryJSON but for a single row
+func (pc *PostgresClient) QueryRowJSON(w io.Writer, q string, args ...interface{}) error {
+	return pc.doQueryJSON(false, w, q, args...)
+}
+
+func (pc *PostgresClient) doQueryJSON(many bool, w io.Writer, q string, args ...interface{}) error {
 	rows, err := pc.Conn.Query(fmt.Sprintf(`
-		with q as (
+		with
+		q as (
 			%s
 		)
 		select row_to_json(q.*) from q;
@@ -107,8 +117,10 @@ func (pc *PostgresClient) QueryJSON(w io.Writer, q string, args ...interface{}) 
 	}
 	defer rows.Close()
 
-	fmt.Fprint(w, "[\n")
-	defer fmt.Fprint(w, "\n]")
+	if many {
+		fmt.Fprint(w, "[\n")
+		defer fmt.Fprint(w, "\n]")
+	}
 	for i := 0; rows.Next(); i++ {
 		var result string
 		if err := rows.Scan(&result); err != nil {
@@ -120,23 +132,4 @@ func (pc *PostgresClient) QueryJSON(w io.Writer, q string, args ...interface{}) 
 		fmt.Fprint(w, result)
 	}
 	return rows.Err()
-}
-
-// QueryRowJSON is the same as QueryJSON but for a single row
-func (pc *PostgresClient) QueryRowJSON(w io.Writer, q string, args ...interface{}) error {
-	var result string
-	err := pc.Conn.QueryRow(fmt.Sprintf(`
-		with q as (
-			%s
-		)
-		select row_to_json(q.*) from q;
-	`, q), args...).Scan(&result)
-	if err == sql.ErrNoRows {
-		fmt.Fprint(w, "null")
-		return nil
-	} else if err != nil {
-		return err
-	}
-	fmt.Fprint(w, result)
-	return nil
 }
