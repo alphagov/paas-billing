@@ -122,9 +122,9 @@ func Main() error {
 		defer logger.Info("stopped api server")
 		logger.Info("starting api server")
 		s := server.New(sqlClient, apiAuthenticator)
-		port := os.Getenv("BILLING_API_PORT")
+		port := os.Getenv("PORT")
 		if port == "" {
-			port = "80"
+			port = "8881"
 		}
 		server.ListenAndServe(ctx, s, fmt.Sprintf(":%s", port))
 	}()
