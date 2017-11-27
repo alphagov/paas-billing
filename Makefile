@@ -7,8 +7,9 @@ help:
 
 run-dev: db/bindata.go ## Runs the application with local credentials
 	$(eval export CF_API_ADDRESS=https://api.${DEPLOY_ENV}.dev.cloudpipeline.digital)
-	$(eval export CF_USERNAME=admin)
-	$(eval export CF_PASSWORD=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_admin_password/ { print $$2 }'))
+	$(eval export CF_CLIENT_ID=paas-usage-events-collector)
+	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_clients_paas_usage_events_collector_secret/ { print $$2 }'))
+	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
 	$(eval export BILLING_API_PORT=${BILLING_API_PORT})

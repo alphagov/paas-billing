@@ -2,50 +2,48 @@ package api
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/alphagov/paas-usage-events-collector/auth"
 	"github.com/alphagov/paas-usage-events-collector/db"
 	"github.com/labstack/echo"
 )
 
 type UsageParams struct {
-	From string
-	To   string
+	From time.Time
+	To   time.Time
 }
 
 func ParseUsageParams(r *http.Request) (*UsageParams, error) {
 	q := r.URL.Query()
 	params := &UsageParams{
-		From: q.Get("from"),
-		To:   q.Get("to"),
+		To: time.Now().UTC().Add(24 * time.Hour),
 	}
-	if params.From == "" {
-		epoch := &time.Time{}
-		params.From = epoch.UTC().Format(time.RFC3339)
-	} else {
-		if _, err := time.Parse(time.RFC3339, params.From); err != nil {
+	from := q.Get("from")
+	if from != "" {
+		t, err := time.Parse(time.RFC3339, from)
+		if err != nil {
 			return nil, err
 		}
+		params.From = t
 	}
-	if params.To == "" {
-		params.To = time.Now().UTC().Add(24 * time.Hour).Format(time.RFC3339)
-	} else {
-		if _, err := time.Parse(time.RFC3339, params.To); err != nil {
+	to := q.Get("to")
+	if to != "" {
+		t, err := time.Parse(time.RFC3339, to)
+		if err != nil {
 			return nil, err
 		}
+		params.To = t
 	}
 	return params, nil
 }
 
 func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				guid,
 				org_guid,
@@ -58,21 +56,17 @@ func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
 				iso8601(upper(duration)) as stop,
 				price::bigint as price
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			order by
 				guid, id
-		`, params.From, params.To)
+		`)
 	}
 }
 
 func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
-		return respond(Single, c, db, `
-		with
+		return withAuthorizedResources(Single, c, db, `
+			with
 			resources as (
 				select
 					guid,
@@ -81,11 +75,13 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 					pricing_plan_id,
 					pricing_plan_name,
 					sum(to_seconds(duration)) as duration,
-					sum(price)::bigint as price
+					sum(price * 100)::bigint as price
 				from
-					billable_range(tstzrange($1, $2))
+					authorized_resources
 				group by
 					guid, space_guid, org_guid, pricing_plan_id, pricing_plan_name
+				order by
+					guid, space_guid, org_guid, pricing_plan_id
 			),
 			space_resources as (
 				select
@@ -97,6 +93,8 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 					resources r
 				group by
 					org_guid, space_guid
+				order by
+					org_guid, space_guid
 			),
 			org_resources as (
 				select
@@ -107,6 +105,8 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 					space_resources s
 				group by
 					org_guid
+				order by
+					org_guid
 			)
 			select
 				(select sum(t.price) from resources t) as price,
@@ -114,250 +114,207 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 			from
 				org_resources
 			limit 1
-		`, params.From, params.To)
+		`)
 	}
 }
 
 func ListOrgUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				org_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			group by
 				org_guid
 			order by
 				org_guid
-		`, params.From, params.To)
+		`)
 	}
 }
 
 func GetOrgUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		orgGUID := c.Param("org_guid")
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return respond(Single, c, db, `
+		return withAuthorizedResources(Single, c, db, `
 			select
 				org_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				org_guid = $3
+				org_guid = $1
 			group by
 				org_guid
 			limit 1
-		`, params.From, params.To, orgGUID)
+		`, orgGUID)
 	}
 }
 
 func ListSpacesUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		orgGUID := c.Param("org_guid")
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				org_guid,
 				space_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				org_guid = $3
+				org_guid = $1
 			group by
 				org_guid, space_guid
 			order by
 				space_guid
-		`, params.From, params.To, orgGUID)
+		`, orgGUID)
 	}
 }
 
 func ListSpacesUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				org_guid,
 				space_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			group by
 				org_guid, space_guid
 			order by
 				space_guid
-		`, params.From, params.To)
+		`)
 	}
 }
 
 func GetSpaceUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		spaceGUID := c.Param("space_guid")
 		if spaceGUID == "" {
 			return errors.New("missing space_guid")
 		}
-		return respond(Single, c, db, `
+		return withAuthorizedResources(Single, c, db, `
 			select
 				org_guid,
 				space_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				space_guid = $3
+				space_guid = $1
 			group by
 				org_guid, space_guid
 			limit 1
-		`, params.From, params.To, spaceGUID)
+		`, spaceGUID)
 	}
 }
 
 func ListResourceUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		orgGUID := c.Param("org_guid")
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				org_guid = $3
+				org_guid = $1
 			group by
 				org_guid, space_guid, guid
 			order by
 				guid
-		`, params.From, params.To, orgGUID)
+		`, orgGUID)
 	}
 }
 
 func ListResourceUsageForSpace(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		spaceGUID := c.Param("space_guid")
 		if spaceGUID == "" {
 			return errors.New("missing space_guid")
 		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				space_guid = $3
+				space_guid = $1
 			group by
 				org_guid, space_guid, guid
 			order by
 				guid
-		`, params.From, params.To, spaceGUID)
+		`, spaceGUID)
 	}
 }
 
 func ListResourceUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			group by
 				space_guid, org_guid, guid
 			order by
 				guid
-		`, params.From, params.To)
+		`)
 	}
 }
 
 func GetResourceUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		resourceGUID := c.Param("resource_guid")
 		if resourceGUID == "" {
 			return errors.New("missing resource_guid")
 		}
-		return respond(Single, c, db, `
+		return withAuthorizedResources(Single, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				guid = $3
+				guid = $1
 			group by
 				org_guid, space_guid, guid
 			order by
 				guid
-		`, params.From, params.To, resourceGUID)
+		`, resourceGUID)
 	}
 }
 
 func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
 		resourceGUID := c.Param("resource_guid")
 		if resourceGUID == "" {
 			return errors.New("missing resource_guid")
 		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				guid,
 				org_guid,
@@ -368,22 +325,18 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 				iso8601(upper(duration)) as to,
 				(price * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			where
-				guid = $3
+				guid = $1
 			order by
 				id, pricing_plan_id, guid
-		`, params.From, params.To, resourceGUID)
+		`, resourceGUID)
 	}
 }
 
 func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		params, err := ParseUsageParams(c.Request())
-		if err != nil {
-			return err
-		}
-		return respond(Many, c, db, `
+		return withAuthorizedResources(Many, c, db, `
 			select
 				guid,
 				org_guid,
@@ -394,10 +347,10 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				iso8601(upper(duration)) as to,
 				(price * 100)::bigint as price_in_pence
 			from
-				billable_range(tstzrange($1, $2))
+				authorized_resources
 			order by
 				id, pricing_plan_id, guid
-		`, params.From, params.To)
+		`)
 	}
 }
 
@@ -409,7 +362,50 @@ const (
 	Many
 )
 
-func respond(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) error {
+func authorizedSpaceFilter(c echo.Context, args []interface{}) (string, []interface{}, error) {
+	authorized, ok := c.Get("authorizer").(auth.Authorizer)
+	if !ok {
+		return "", args, errors.New("unauthorized: no authorizer in context")
+	}
+	spaces, err := authorized.Spaces()
+	if err != nil {
+		return "", args, err
+	}
+	if len(spaces) < 1 {
+		return "", args, errors.New("unauthorized: you are not authorized to view any space usage data")
+	}
+	conditions := make([]string, len(spaces))
+	for i, guid := range spaces {
+		args = append(args, guid)
+		conditions[i] = fmt.Sprintf("space_guid = $%d", len(args))
+	}
+	return strings.Join(conditions, " or "), args, nil
+}
+
+func withAuthorizedResources(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) error {
+	params, err := ParseUsageParams(c.Request())
+	if err != nil {
+		return err
+	}
+	spaceFilter, args, err := authorizedSpaceFilter(c, args)
+	if err != nil {
+		return err
+	}
+	sql = fmt.Sprintf(`
+		with authorized_resources as (
+			select *
+			from billable_range(tstzrange('%s', '%s'))
+			where %s
+		),
+		q as (
+			%s
+		)
+		select * from q
+	`, params.From.Format(time.RFC3339), params.To.Format(time.RFC3339), spaceFilter, sql)
+	return render(rt, c, db, sql, args...)
+}
+
+func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) error {
 	acceptHeader := c.Request().Header.Get(echo.HeaderAccept)
 	accepts := strings.Split(acceptHeader, ",")
 	for _, accept := range accepts {
@@ -423,7 +419,6 @@ func respond(rt resourceType, c echo.Context, db db.SQLClient, sql string, args 
 			}
 		} else if accept == echo.MIMETextHTML || accept == echo.MIMETextHTMLCharsetUTF8 {
 			return c.HTML(http.StatusOK, "TODO: respond to html type")
-
 		}
 	}
 	return c.HTML(http.StatusNotAcceptable, "unacceptable")

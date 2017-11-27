@@ -71,8 +71,9 @@ var _ = Describe("API", func() {
 		req, err := http.NewRequest("GET", u.String(), nil)
 		Expect(err).ToNot(HaveOccurred())
 		req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSONCharsetUTF8)
+		req.Header.Set(echo.HeaderAuthorization, FakeBearerToken)
 
-		e := server.New(sqlClient)
+		e := server.New(sqlClient, SpaceGUIDWhitelist)
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
 
@@ -104,8 +105,9 @@ var _ = Describe("API", func() {
 		Expect(err).ToNot(HaveOccurred())
 		req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSONCharsetUTF8)
 		req.Header.Set(echo.HeaderContentType, ct)
+		req.Header.Set(echo.HeaderAuthorization, FakeBearerToken)
 
-		e := server.New(sqlClient)
+		e := server.New(sqlClient, SpaceGUIDWhitelist)
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
 

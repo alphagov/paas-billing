@@ -801,10 +801,11 @@ var _ = Describe("API", func() {
 				req, err := http.NewRequest("GET", u.String(), nil)
 				Expect(err).ToNot(HaveOccurred())
 				req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSONCharsetUTF8)
+				req.Header.Set(echo.HeaderAuthorization, FakeBearerToken)
 
 				rec := httptest.NewRecorder()
 
-				e := server.New(sqlClient)
+				e := server.New(sqlClient, SpaceGUIDWhitelist)
 				e.GET("/usage", api.NewUsageHandler(sqlClient))
 				e.ServeHTTP(rec, req)
 
@@ -926,10 +927,11 @@ var _ = Describe("API", func() {
 			req, err := http.NewRequest("GET", u.String(), nil)
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSONCharsetUTF8)
+			req.Header.Set(echo.HeaderAuthorization, FakeBearerToken)
 
 			rec := httptest.NewRecorder()
 
-			e := echo.New()
+			e := server.New(sqlClient, SpaceGUIDWhitelist)
 			e.GET("/report", api.NewReportHandler(sqlClient))
 			e.ServeHTTP(rec, req)
 
@@ -961,23 +963,23 @@ var _ = Describe("API", func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
 
 			expectedOutput := FullReport{
-				Price: 19200,
+				Price: 1920000,
 				Orgs: []OrgReport{
 					{
 						OrgGuid: "o1",
-						Price:   18000,
+						Price:   1800000,
 						Spaces: []SpaceReport{
 							{
 								SpaceGuid: "o1s1",
-								Price:     18000,
+								Price:     1800000,
 								Resources: []ResourceReport{
 									{
 										Guid:  "o1s1-app1",
-										Price: 14400,
+										Price: 1440000,
 									},
 									{
 										Guid:  "o1s1-db1",
-										Price: 3600,
+										Price: 360000,
 									},
 								},
 							},
@@ -985,15 +987,15 @@ var _ = Describe("API", func() {
 					},
 					{
 						OrgGuid: "o2",
-						Price:   1200,
+						Price:   120000,
 						Spaces: []SpaceReport{
 							{
 								SpaceGuid: "o2s1",
-								Price:     1200,
+								Price:     120000,
 								Resources: []ResourceReport{
 									{
 										Guid:  "o2s1-db1",
-										Price: 1200,
+										Price: 120000,
 									},
 								},
 							},

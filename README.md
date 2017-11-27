@@ -20,6 +20,7 @@ The application handles the following environment variables:
  * **CF_API_ADDRESS**: Cloud Foundry API endpoint
  * **CF_CLIENT_ID**: Cloud Foundry client id
  * **CF_CLIENT_SECRET**: Cloud Foundry client secret
+ * **CF_CLIENT_REDIRECT_URL**: OAuth authorization callback url (must match what is specified in uaa client configuration)
  * CF_USERNAME: Cloud Foundry username
  * CF_PASSWORD: Cloud Foundry password
  * CF_SKIP_SSL_VALIDATION: whether the API client should skip the SSL certificate validation (use only for development!)

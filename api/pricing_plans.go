@@ -9,7 +9,7 @@ import (
 
 func ListPricingPlans(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return respond(Many, c, db, `
+		return render(Many, c, db, `
 			select
 				id,
 				iso8601(valid_from) as valid_from,
@@ -30,7 +30,7 @@ func GetPricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if id == "" {
 			return errors.New("missing pricing_plan_id")
 		}
-		return respond(Single, c, db, `
+		return render(Single, c, db, `
 			select
 				id,
 				iso8601(valid_from) as valid_from,
@@ -72,7 +72,7 @@ func CreatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if pp.Formula == "" {
 			return errors.New("formula is required")
 		}
-		return respond(Single, c, db, `
+		return render(Single, c, db, `
 			insert into pricing_plans (
 				name,
 				valid_from,
@@ -121,7 +121,7 @@ func UpdatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if pp.Formula == "" {
 			return errors.New("formula is required")
 		}
-		return respond(Single, c, db, `
+		return render(Single, c, db, `
 			update pricing_plans set
 				name = $1,
 				valid_from = $2,
@@ -145,7 +145,7 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if id == "" {
 			return errors.New("missing pricing_plan_id")
 		}
-		return respond(Single, c, db, `
+		return render(Single, c, db, `
 			delete from
 				pricing_plans
 			where

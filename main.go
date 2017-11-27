@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-usage-events-collector/auth"
 	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
 	"github.com/alphagov/paas-usage-events-collector/collector"
 	"github.com/alphagov/paas-usage-events-collector/db"
@@ -71,6 +72,12 @@ func Main() error {
 		return errors.Wrap(collectorErr, "failed to initialise collector")
 	}
 
+	uaaConfig, err := auth.CreateConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	apiAuthenticator := &auth.UAA{uaaConfig}
+
 	ctx, shutdown := context.WithCancel(context.Background())
 	go func() {
 		signalChan := make(chan os.Signal, 1)
@@ -114,7 +121,7 @@ func Main() error {
 		defer wg.Done()
 		defer logger.Info("stopped api server")
 		logger.Info("starting api server")
-		s := server.New(sqlClient)
+		s := server.New(sqlClient, apiAuthenticator)
 		port := os.Getenv("BILLING_API_PORT")
 		if port == "" {
 			port = "80"

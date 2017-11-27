@@ -2,37 +2,22 @@ package server
 
 import (
 	"context"
-	"crypto/subtle"
-	"os"
 	"time"
 
 	"github.com/alphagov/paas-usage-events-collector/api"
+	"github.com/alphagov/paas-usage-events-collector/auth"
 	"github.com/alphagov/paas-usage-events-collector/db"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
 )
 
-var (
-	BASIC_PASSWORD = os.Getenv("BASIC_PASSWORD")
-)
-
-func New(db db.SQLClient) *echo.Echo {
+func New(db db.SQLClient, authority auth.Authenticator) *echo.Echo {
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
 
 	e.Use(middleware.Recover())
-
-	if BASIC_PASSWORD != "" {
-		e.Use(middleware.BasicAuth(func(username, password string, c echo.Context) (bool, error) {
-			usernameCorrectness := subtle.ConstantTimeCompare([]byte(username), []byte("admin")) == 1
-			passwordCorrectness := subtle.ConstantTimeCompare([]byte(password), []byte(BASIC_PASSWORD)) == 1
-			if usernameCorrectness && passwordCorrectness {
-				return true, nil
-			}
-			return false, nil
-		}))
-	}
+	e.Use(auth.UAATokenAuthentication(authority))
 
 	e.GET("/usage", api.NewUsageHandler(db))   // FIXME: this is redundent
 	e.GET("/report", api.NewReportHandler(db)) // FIXME: this should be an endpoint for fetching complete bills
@@ -53,9 +38,9 @@ func New(db db.SQLClient) *echo.Echo {
 	// Pricing data API
 	e.GET("/pricing_plans", api.ListPricingPlans(db))
 	e.GET("/pricing_plans/:pricing_plan_id", api.GetPricingPlan(db))
-	e.POST("/pricing_plans", api.CreatePricingPlan(db))
-	e.PUT("/pricing_plans/:pricing_plan_id", api.UpdatePricingPlan(db))
-	e.DELETE("/pricing_plans/:pricing_plan_id", api.DestroyPricingPlan(db))
+	e.POST("/pricing_plans", auth.AdminOnly(api.CreatePricingPlan(db)))
+	e.PUT("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.UpdatePricingPlan(db)))
+	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
 
 	return e
 }
@@ -65,9 +50,7 @@ func ListenAndServe(ctx context.Context, e *echo.Echo, addr string) {
 	// Start server
 	go func() {
 		if err := e.Start(addr); err != nil {
-			e.Logger.Info("shutting down the server", err)
-		} else {
-			e.Logger.Info("shutting down the server")
+			e.Logger.Info(err)
 		}
 	}()
 
