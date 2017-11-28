@@ -26,8 +26,9 @@ type SQLClient interface {
 	InitSchema() error
 	InsertUsageEventList(data *cf.UsageEventList, tableName string) error
 	FetchLastGUID(tableName string) (string, error)
-	QueryJSON(w io.Writer, q string, args ...interface{}) error
-	QueryRowJSON(w io.Writer, q string, args ...interface{}) error
+	QueryJSON(q string, args ...interface{}) io.Reader
+	QueryRowJSON(q string, args ...interface{}) io.Reader
+	UpdateViews() error
 	Close() error
 }
 
@@ -95,41 +96,55 @@ func (pc *PostgresClient) UpdateViews() error {
 }
 
 // QueryJSON executes SQL query q with args and writes the result as JSON to w
-func (pc *PostgresClient) QueryJSON(w io.Writer, q string, args ...interface{}) error {
-	return pc.doQueryJSON(true, w, q, args...)
+func (pc *PostgresClient) QueryJSON(q string, args ...interface{}) io.Reader {
+	return pc.doQueryJSON(true, q, args...)
 }
 
 // QueryRowJSON is the same as QueryJSON but for a single row
-func (pc *PostgresClient) QueryRowJSON(w io.Writer, q string, args ...interface{}) error {
-	return pc.doQueryJSON(false, w, q, args...)
+func (pc *PostgresClient) QueryRowJSON(q string, args ...interface{}) io.Reader {
+	return pc.doQueryJSON(false, q, args...)
 }
 
-func (pc *PostgresClient) doQueryJSON(many bool, w io.Writer, q string, args ...interface{}) error {
-	rows, err := pc.Conn.Query(fmt.Sprintf(`
-		with
-		q as (
-			%s
-		)
-		select row_to_json(q.*) from q;
-	`, q), args...)
-	if err != nil {
-		return err
-	}
-	defer rows.Close()
-
-	if many {
-		fmt.Fprint(w, "[\n")
-		defer fmt.Fprint(w, "\n]")
-	}
-	for i := 0; rows.Next(); i++ {
-		var result string
-		if err := rows.Scan(&result); err != nil {
-			return err
+func (pc *PostgresClient) doQueryJSON(many bool, q string, args ...interface{}) io.Reader {
+	r, w := io.Pipe()
+	go func() {
+		var closeErr error
+		defer func() {
+			w.CloseWithError(closeErr)
+		}()
+		rows, err := pc.Conn.Query(fmt.Sprintf(`
+			with
+			q as (
+				%s
+			)
+			select row_to_json(q.*) from q;
+		`, q), args...)
+		if err != nil {
+			closeErr = err
+			return
 		}
-		if i > 0 {
-			fmt.Fprint(w, ",\n")
+		defer rows.Close()
+		if many {
+			fmt.Fprint(w, "[\n")
 		}
-		fmt.Fprint(w, result)
-	}
-	return rows.Err()
+		for i := 0; rows.Next(); i++ {
+			var result string
+			if err := rows.Scan(&result); err != nil {
+				closeErr = err
+				return
+			}
+			if i > 0 {
+				fmt.Fprint(w, ",\n")
+			}
+			fmt.Fprint(w, result)
+		}
+		if err := rows.Err(); err != nil {
+			closeErr = err
+			return
+		}
+		if many {
+			fmt.Fprint(w, "\n]")
+		}
+	}()
+	return r
 }

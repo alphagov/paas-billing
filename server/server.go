@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/alphagov/paas-usage-events-collector/api"
@@ -16,13 +17,28 @@ func New(db db.SQLClient, authority auth.Authenticator) *echo.Echo {
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
 
+	// Allow HTML forms to override POST method using _method param
+	e.Pre(middleware.MethodOverrideWithConfig(middleware.MethodOverrideConfig{
+		Getter: middleware.MethodFromForm("_method"),
+	}))
+
+	// Never crash on panic
 	e.Use(middleware.Recover())
+
+	// Require a token for all requests
 	e.Use(auth.UAATokenAuthentication(authority))
 
-	e.GET("/usage", api.NewUsageHandler(db))   // FIXME: this is redundent
-	e.GET("/report", api.NewReportHandler(db)) // FIXME: this should be an endpoint for fetching complete bills
+	// Validate and parse range query param
+	e.Use(api.ValidateRangeParams)
 
-	// Usage data API
+	// Deprecated endpoint, favor /resources and /events
+	e.GET("/usage", api.NewUsageHandler(db))
+
+	// An example billing renderer... throw this away
+	e.GET("/report", api.NewReportHandler(db))
+	e.GET("/", redirectToReport)
+
+	// Usage and Billing API
 	e.GET("/organisations", api.ListOrgUsage(db))
 	e.GET("/organisations/:org_guid", api.GetOrgUsage(db))
 	e.GET("/organisations/:org_guid/spaces", api.ListSpacesUsageForOrg(db))
@@ -43,6 +59,11 @@ func New(db db.SQLClient, authority auth.Authenticator) *echo.Echo {
 	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
 
 	return e
+}
+
+func redirectToReport(c echo.Context) error {
+	lastMonth := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
+	return c.Redirect(http.StatusFound, "/report?from="+lastMonth)
 }
 
 func ListenAndServe(ctx context.Context, e *echo.Echo, addr string) {

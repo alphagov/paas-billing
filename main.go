@@ -55,10 +55,6 @@ func Main() error {
 		return errors.Wrap(clientErr, "failed to connect to Cloud Foundry")
 	}
 
-	if err := sqlClient.RepairEvents(cfClient); err != nil {
-		return errors.Wrap(err, "failed to repair things")
-	}
-
 	collectorConfig := collector.CreateConfigFromEnv()
 
 	collector, collectorErr := collector.New(

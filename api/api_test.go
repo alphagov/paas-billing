@@ -953,50 +953,43 @@ var _ = Describe("API", func() {
 				Price   int64         `json:"price"`
 				Spaces  []SpaceReport `json:"spaces"`
 			}
-			type FullReport struct {
-				Price int64       `json:"price"`
-				Orgs  []OrgReport `json:"orgs"`
-			}
 
-			var actualOutput FullReport
+			var actualOutput []OrgReport
 			err = json.Unmarshal(body, &actualOutput)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
 
-			expectedOutput := FullReport{
-				Price: 1920000,
-				Orgs: []OrgReport{
-					{
-						OrgGuid: "o1",
-						Price:   1800000,
-						Spaces: []SpaceReport{
-							{
-								SpaceGuid: "o1s1",
-								Price:     1800000,
-								Resources: []ResourceReport{
-									{
-										Guid:  "o1s1-app1",
-										Price: 1440000,
-									},
-									{
-										Guid:  "o1s1-db1",
-										Price: 360000,
-									},
+			expectedOutput := []OrgReport{
+				{
+					OrgGuid: "o1",
+					Price:   1800000,
+					Spaces: []SpaceReport{
+						{
+							SpaceGuid: "o1s1",
+							Price:     1800000,
+							Resources: []ResourceReport{
+								{
+									Guid:  "o1s1-app1",
+									Price: 1440000,
+								},
+								{
+									Guid:  "o1s1-db1",
+									Price: 360000,
 								},
 							},
 						},
 					},
-					{
-						OrgGuid: "o2",
-						Price:   120000,
-						Spaces: []SpaceReport{
-							{
-								SpaceGuid: "o2s1",
-								Price:     120000,
-								Resources: []ResourceReport{
-									{
-										Guid:  "o2s1-db1",
-										Price: 120000,
-									},
+				},
+				{
+					OrgGuid: "o2",
+					Price:   120000,
+					Spaces: []SpaceReport{
+						{
+							SpaceGuid: "o2s1",
+							Price:     120000,
+							Resources: []ResourceReport{
+								{
+									Guid:  "o2s1-db1",
+									Price: 120000,
 								},
 							},
 						},
