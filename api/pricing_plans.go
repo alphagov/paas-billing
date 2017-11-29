@@ -174,3 +174,36 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 		return nil
 	}
 }
+
+// CreateMissingPricingPlans inserts "free" pricing plans for any plan_guids that don't have them yet
+func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		err := render(Single, c, db, `
+			insert into pricing_plans (
+				name,
+				valid_from,
+				plan_guid,
+				formula
+			) (
+				select distinct
+					raw_message->>'service_plan_name' as name,
+					'2001-01-01'::timestamptz as valid_from,
+					raw_message->>'service_plan_guid' as plan_guid,
+					'$time_in_seconds / 60 / 60 * 3'::text as formula
+				from
+					service_usage_events
+				where
+					raw_message->>'service_plan_guid' is not null
+					and not raw_message->>'service_plan_name' ~* 'CATS-|fake'
+					and raw_message->>'service_plan_guid' not in (
+						select plan_guid from pricing_plans
+					)
+			) returning name
+		`)
+		if err != nil {
+			return err
+		}
+		go db.UpdateViews()
+		return nil
+	}
+}

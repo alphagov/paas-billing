@@ -57,6 +57,7 @@ func New(db db.SQLClient, authority auth.Authenticator) *echo.Echo {
 	e.POST("/pricing_plans", auth.AdminOnly(api.CreatePricingPlan(db)))
 	e.PUT("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.UpdatePricingPlan(db)))
 	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
+	e.POST("/seed_pricing_plans", auth.AdminOnly(api.CreateMissingPricingPlans(db)))
 
 	return e
 }

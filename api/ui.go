@@ -24,6 +24,7 @@ var baseTemplate = `
 		<style>
 			.table {
 				display: table !important;
+				width: 100%;
 			}
 			.tr {
 				display: table-row !important;
@@ -102,7 +103,9 @@ var templates = map[string]string{
 			Pricing Plans
 		</p>
 		{{ template "pricingtable" .Rows }}
-		<h2>Create A new Plan</h2>
+		<p class="lede" class="margin:10px">
+			Create A new Plan
+		</p>
 		<div class="table">
 			<form method="POST" action="/pricing_plans" class="tr">
 				<div class="form-group">
@@ -132,6 +135,9 @@ var templates = map[string]string{
 					<input class="form-control" name="formula" placeholder="$time_in_seconds * 1.3" type="text" value="">
 				</div>
 				<button class="button" type="submit">Create pricing plan</button></div>
+			</form>
+			<form method="POST" action="/seed_pricing_plans" class="tr">
+				<div class="td"><button class="button" type="submit">Seed missing pricing plans</button></div>
 			</form>
 		</div>
 	`,
