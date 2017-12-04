@@ -56,7 +56,7 @@ func GetRepairedEvents(dbClient db.SQLClient, cfClient cloudfoundry.Client) echo
 					where
 						raw_message->>'state' = 'STARTED'
 						or raw_message->>'state' = 'STOPPED'
-				) union (
+				) union all (
 					select
 						id,
 						created_at::timestamptz as created_at,
