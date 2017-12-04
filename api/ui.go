@@ -71,9 +71,24 @@ var baseTemplate = `
 {{define "pricingtable" }}
 	<div class="table">
 		{{ range $row := . }}
+			{{ if eq (0) (index $row "idx") }}
+				<div class="tr">
+					{{ range $key, $value := $row }}
+						{{ if ne $key "idx" }}
+							<div class="td">
+								<label style="font-size:10px; display:block">{{ $key }}</label>
+							</div>
+						{{ end }}
+					{{ end }}
+				</div>
+			{{ end }}
 			<form method="POST" action="/pricing_plans/{{ index $row "id" }}" class="tr">
 				{{ range $key, $value := $row }}
-					<div class="td"><input name="{{ $key }}" placeholder="{{ $key }}" value="{{ $value }}"></div>
+					{{ if ne $key "idx" }}
+						<div class="td">
+							<input name="{{ $key }}" placeholder="{{ $key }}" value="{{ $value }}">
+						</div>
+					{{ end }}
 				{{ end }}
 				<div class="td"><button class="button" type="submit" name="_method" value="PUT">Update</button></div>
 				<div class="td"><button class="button" type="submit" name="_method" value="DELETE">Delete</button></div>
@@ -90,9 +105,21 @@ var templates = map[string]string{
 		</p>
 		<table>
 			{{ range $row := .Rows }}
+				{{ if eq (0) (index $row "idx") }}
+					<tr>
+						{{ range $key, $value := $row }}
+							{{ if ne $key "idx" }}
+								<th>{{ $key }}</th>
+							{{ end }}
+						{{ end }}
+					</tr>
+				{{ end }}
 				<tr>
+						
 					{{ range $key, $value := $row }}
-						<td>{{ $value }}</td>
+						{{ if ne $key "idx" }}
+							<td>{{ $value }}</td>
+						{{ end }}
 					{{ end }}
 				</tr>
 			{{ end }}
@@ -338,13 +365,16 @@ func decode(r io.Reader, rows chan RowData, many bool) {
 			fmt.Fprintln(os.Stderr, err)
 		}
 	}
+	i := 0
 	for dec.More() {
 		var row RowData
 		if err := dec.Decode(&row); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
+		row["idx"] = i
 		rows <- row
+		i++
 	}
 	if many {
 		if _, err := dec.Token(); err != nil {
