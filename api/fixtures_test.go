@@ -187,8 +187,15 @@ var orgsFixtures = Orgs{
 					AppGuid:               "00000002-0003-0002-0000-000000000000",
 					State:                 "STARTED",
 					InstanceCount:         1,
-					MemoryInMBPerInstance: 64,
-					Time: ago(4 * time.Hour),
+					MemoryInMBPerInstance: 2,
+					Time: ago(5 * time.Hour),
+				},
+				{
+					AppGuid:               "00000002-0003-0002-0000-000000000000",
+					State:                 "STARTED",
+					InstanceCount:         2,
+					MemoryInMBPerInstance: 1,
+					Time: ago(2 * time.Hour),
 				},
 				{
 					AppGuid: "00000002-0003-0002-0000-000000000000",
