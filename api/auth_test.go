@@ -11,6 +11,7 @@ import (
 var FakeBearerToken = "Bearer FAKE_TOKEN"
 
 type SimpleAuthorizer struct {
+	admin                bool
 	authorizedSpaceGUIDs []string
 }
 
@@ -19,10 +20,11 @@ func (sa *SimpleAuthorizer) Spaces() ([]string, error) {
 }
 
 func (sa *SimpleAuthorizer) Admin() bool {
-	return true
+	return sa.admin
 }
 
 type SimpleAuthenticator struct {
+	admin                bool
 	authorizedSpaceGUIDs []string
 }
 
@@ -39,10 +41,14 @@ func (sa *SimpleAuthenticator) NewAuthorizer(token string) (auth.Authorizer, err
 	if token != exp {
 		return nil, fmt.Errorf("SimpleAuthenticator failed: expected '%s' got '%s'", exp, token)
 	}
-	return &SimpleAuthorizer{sa.authorizedSpaceGUIDs}, nil
+	return &SimpleAuthorizer{
+		authorizedSpaceGUIDs: sa.authorizedSpaceGUIDs,
+		admin:                sa.admin,
+	}, nil
 }
 
-var SpaceGUIDWhitelist = &SimpleAuthenticator{
+var AuthenticatedNonAdmin = &SimpleAuthenticator{
+	admin: false,
 	authorizedSpaceGUIDs: []string{
 		"space_guid",
 		"space_guid1",
@@ -52,8 +58,12 @@ var SpaceGUIDWhitelist = &SimpleAuthenticator{
 		"00000001-0003-0000-0000-000000000000",
 		"00000002-0001-0000-0000-000000000000",
 		"00000002-0002-0000-0000-000000000000",
-		"00000002-0003-0000-0000-000000000000",
 		"o1s1",
 		"o2s1",
 	},
+}
+
+var AuthenticatedAdmin = &SimpleAuthenticator{
+	admin:                true,
+	authorizedSpaceGUIDs: []string{},
 }

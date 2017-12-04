@@ -16,7 +16,6 @@ type Plan struct {
 }
 
 func (plans Plans) Insert(sqlClient *db.PostgresClient) error {
-	i := 0
 	for planName, plan := range plans {
 		_, err := sqlClient.Conn.Exec(`
             INSERT INTO pricing_plans(id, name, valid_from, plan_guid, formula) VALUES (
@@ -30,7 +29,6 @@ func (plans Plans) Insert(sqlClient *db.PostgresClient) error {
 		if err != nil {
 			return err
 		}
-		i++
 	}
 	return nil
 }

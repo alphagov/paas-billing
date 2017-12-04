@@ -162,7 +162,6 @@ var orgsFixtures = Orgs{
 				},
 			},
 		},
-		// This space should be ignored due to not being in authorized spaces
 		"00000002-0003-0000-0000-000000000000": Space{
 			ServiceEvents: []ServiceEvent{
 				{
@@ -175,6 +174,20 @@ var orgsFixtures = Orgs{
 					ServiceInstanceGuid: "00000002-0003-0001-0000-000000000000",
 					State:               "DELETED",
 					Time:                ago(1 * time.Hour),
+				},
+			},
+			AppEvents: []AppEvent{
+				{
+					AppGuid:               "00000002-0003-0002-0000-000000000000",
+					State:                 "STARTED",
+					InstanceCount:         1,
+					MemoryInMBPerInstance: 64,
+					Time: ago(4 * time.Hour),
+				},
+				{
+					AppGuid: "00000002-0003-0002-0000-000000000000",
+					State:   "STOPPED",
+					Time:    ago(1 * time.Hour),
 				},
 			},
 		},
