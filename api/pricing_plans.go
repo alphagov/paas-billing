@@ -189,7 +189,7 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 					raw_message->>'service_plan_name' as name,
 					'2001-01-01'::timestamptz as valid_from,
 					raw_message->>'service_plan_guid' as plan_guid,
-					'$time_in_seconds / 60 / 60 * 3'::text as formula
+					'0'::text as formula
 				from
 					service_usage_events
 				where
