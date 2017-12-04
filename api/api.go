@@ -325,25 +325,23 @@ const (
 	Many
 )
 
-func authorizedSpaceFilter(c echo.Context, sql string, args []interface{}) (string, []interface{}, error) {
-	rng := c.Get("range").(RangeParams)
-	authorized, ok := c.Get("authorizer").(auth.Authorizer)
-	if !ok {
-		return sql, args, errors.New("unauthorized: no authorizer in context")
+func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql string, args []interface{}) (string, []interface{}, error) {
+	cond := ""
+	if !authorizer.Admin() {
+		spaces, err := authorizer.Spaces()
+		if err != nil {
+			return sql, args, err
+		}
+		if len(spaces) < 1 {
+			return sql, args, errors.New("unauthorized: you are not authorized to view any space usage data")
+		}
+		conditions := make([]string, len(spaces))
+		for i, guid := range spaces {
+			args = append(args, guid)
+			conditions[i] = fmt.Sprintf("space_guid = $%d", len(args))
+		}
+		cond = "where " + strings.Join(conditions, " or ")
 	}
-	spaces, err := authorized.Spaces()
-	if err != nil {
-		return sql, args, err
-	}
-	if len(spaces) < 1 {
-		return sql, args, errors.New("unauthorized: you are not authorized to view any space usage data")
-	}
-	conditions := make([]string, len(spaces))
-	for i, guid := range spaces {
-		args = append(args, guid)
-		conditions[i] = fmt.Sprintf("space_guid = $%d", len(args))
-	}
-	cond := "where " + strings.Join(conditions, " or ")
 	sql = fmt.Sprintf(`
 		with authorized_resources as (
 			select *
@@ -358,8 +356,16 @@ func authorizedSpaceFilter(c echo.Context, sql string, args []interface{}) (stri
 	return sql, args, nil
 }
 
-func withAuthorizedResources(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) error {
-	sql, args, err := authorizedSpaceFilter(c, sql, args)
+func withAuthorizedResources(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) (err error) {
+	rng, ok := c.Get("range").(RangeParams)
+	if !ok {
+		return errors.New("bad request: no range params in context")
+	}
+	authorizer, ok := c.Get("authorizer").(auth.Authorizer)
+	if !ok {
+		return errors.New("unauthorized: no authorizer in context")
+	}
+	sql, args, err = authorizedSpaceFilter(authorizer, rng, sql, args)
 	if err != nil {
 		return err
 	}
