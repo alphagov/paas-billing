@@ -168,7 +168,13 @@ var orgsFixtures = Orgs{
 					ServiceInstanceGuid: "00000002-0003-0001-0000-000000000000",
 					State:               "CREATED",
 					ServicePlanGuid:     "00000000-0000-0000-0000-100000000000",
-					Time:                ago(4 * time.Hour),
+					Time:                ago(5 * time.Hour),
+				},
+				{
+					ServiceInstanceGuid: "00000002-0003-0001-0000-000000000000",
+					State:               "UPDATED",
+					ServicePlanGuid:     "00000000-0000-0000-0000-200000000000",
+					Time:                ago(2 * time.Hour),
 				},
 				{
 					ServiceInstanceGuid: "00000002-0003-0001-0000-000000000000",
