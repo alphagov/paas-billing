@@ -805,7 +805,7 @@ var _ = Describe("API", func() {
 
 				rec := httptest.NewRecorder()
 
-				e := server.New(sqlClient, AuthenticatedNonAdmin)
+				e := server.New(sqlClient, AuthenticatedNonAdmin, nil)
 				e.GET("/usage", api.NewUsageHandler(sqlClient))
 				e.ServeHTTP(rec, req)
 
@@ -931,7 +931,7 @@ var _ = Describe("API", func() {
 
 			rec := httptest.NewRecorder()
 
-			e := server.New(sqlClient, AuthenticatedNonAdmin)
+			e := server.New(sqlClient, AuthenticatedNonAdmin, nil)
 			e.GET("/report", api.NewReportHandler(sqlClient))
 			e.ServeHTTP(rec, req)
 

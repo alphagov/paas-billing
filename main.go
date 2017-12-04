@@ -117,7 +117,7 @@ func Main() error {
 		defer wg.Done()
 		defer logger.Info("stopped api server")
 		logger.Info("starting api server")
-		s := server.New(sqlClient, apiAuthenticator)
+		s := server.New(sqlClient, apiAuthenticator, cfClient)
 		port := os.Getenv("PORT")
 		if port == "" {
 			port = "8881"

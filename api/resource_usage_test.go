@@ -75,7 +75,7 @@ var _ = Describe("API", func() {
 		req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSONCharsetUTF8)
 		req.Header.Set(echo.HeaderAuthorization, FakeBearerToken)
 
-		e := server.New(sqlClient, authenticator)
+		e := server.New(sqlClient, authenticator, nil)
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
 
@@ -109,7 +109,7 @@ var _ = Describe("API", func() {
 		req.Header.Set(echo.HeaderContentType, ct)
 		req.Header.Set(echo.HeaderAuthorization, FakeBearerToken)
 
-		e := server.New(sqlClient, authenticator)
+		e := server.New(sqlClient, authenticator, nil)
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
 

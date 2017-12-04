@@ -7,13 +7,14 @@ import (
 
 	"github.com/alphagov/paas-usage-events-collector/api"
 	"github.com/alphagov/paas-usage-events-collector/auth"
+	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
 	"github.com/alphagov/paas-usage-events-collector/db"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
 )
 
-func New(db db.SQLClient, authority auth.Authenticator) *echo.Echo {
+func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) *echo.Echo {
 	e := echo.New()
 	e.Logger.SetLevel(log.INFO)
 
@@ -58,6 +59,12 @@ func New(db db.SQLClient, authority auth.Authenticator) *echo.Echo {
 	e.PUT("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.UpdatePricingPlan(db)))
 	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
 	e.POST("/seed_pricing_plans", auth.AdminOnly(api.CreateMissingPricingPlans(db)))
+
+	// Repair events
+	if cf != nil {
+		e.GET("/repair_events", auth.AdminOnly(api.GetRepairedEvents(db, cf)))
+		e.POST("/repair_events", auth.AdminOnly(api.RepairEvents(db, cf)))
+	}
 
 	return e
 }

@@ -30,7 +30,6 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 	}()
 
 	// remove any events with id=0
-	// FIXME: maybe move to migration if done at all?
 	_, err = tx.Exec(`delete from app_usage_events where id = 0`)
 	if err != nil {
 		return err
@@ -43,18 +42,11 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 	// fetch the most recent event timestamp
 	var firstEventTimestamp *time.Time
 	err = tx.QueryRow(`
-		with
-		event_dates as (
-			select created_at from app_usage_events
-			union
-			select created_at from service_usage_events
-		)
-		select
-			min(created_at::timestamptz)
-		from
-			event_dates
-		where
-			created_at is not null
+		select least((
+			select min(created_at::timestamptz) from app_usage_events where created_at is not null
+		),(
+			select min(created_at::timestamptz) from service_usage_events where created_at is not null
+		));
 	`).Scan(&firstEventTimestamp)
 	if err != nil {
 		return err
