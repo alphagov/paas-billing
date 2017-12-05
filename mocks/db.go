@@ -7,6 +7,7 @@ package mocks
 import (
 	cloudfoundry "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
 	gomock "github.com/golang/mock/gomock"
+	io "io"
 	reflect "reflect"
 )
 
@@ -31,6 +32,18 @@ func NewMockSQLClient(ctrl *gomock.Controller) *MockSQLClient {
 // EXPECT returns an object that allows the caller to indicate expected use
 func (m *MockSQLClient) EXPECT() *MockSQLClientMockRecorder {
 	return m.recorder
+}
+
+// Close mocks base method
+func (m *MockSQLClient) Close() error {
+	ret := m.ctrl.Call(m, "Close")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Close indicates an expected call of Close
+func (mr *MockSQLClientMockRecorder) Close() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Close", reflect.TypeOf((*MockSQLClient)(nil).Close))
 }
 
 // FetchLastGUID mocks base method
@@ -68,4 +81,50 @@ func (m *MockSQLClient) InsertUsageEventList(arg0 *cloudfoundry.UsageEventList, 
 // InsertUsageEventList indicates an expected call of InsertUsageEventList
 func (mr *MockSQLClientMockRecorder) InsertUsageEventList(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InsertUsageEventList", reflect.TypeOf((*MockSQLClient)(nil).InsertUsageEventList), arg0, arg1)
+}
+
+// QueryJSON mocks base method
+func (m *MockSQLClient) QueryJSON(arg0 string, arg1 ...interface{}) io.Reader {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "QueryJSON", varargs...)
+	ret0, _ := ret[0].(io.Reader)
+	return ret0
+}
+
+// QueryJSON indicates an expected call of QueryJSON
+func (mr *MockSQLClientMockRecorder) QueryJSON(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryJSON", reflect.TypeOf((*MockSQLClient)(nil).QueryJSON), varargs...)
+}
+
+// QueryRowJSON mocks base method
+func (m *MockSQLClient) QueryRowJSON(arg0 string, arg1 ...interface{}) io.Reader {
+	varargs := []interface{}{arg0}
+	for _, a := range arg1 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "QueryRowJSON", varargs...)
+	ret0, _ := ret[0].(io.Reader)
+	return ret0
+}
+
+// QueryRowJSON indicates an expected call of QueryRowJSON
+func (mr *MockSQLClientMockRecorder) QueryRowJSON(arg0 interface{}, arg1 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0}, arg1...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "QueryRowJSON", reflect.TypeOf((*MockSQLClient)(nil).QueryRowJSON), varargs...)
+}
+
+// UpdateViews mocks base method
+func (m *MockSQLClient) UpdateViews() error {
+	ret := m.ctrl.Call(m, "UpdateViews")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateViews indicates an expected call of UpdateViews
+func (mr *MockSQLClientMockRecorder) UpdateViews() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateViews", reflect.TypeOf((*MockSQLClient)(nil).UpdateViews))
 }

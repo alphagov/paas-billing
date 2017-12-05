@@ -5,11 +5,13 @@
 package mocks
 
 import (
-	cloudfoundry "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	gomock "github.com/golang/mock/gomock"
 	http "net/http"
 	reflect "reflect"
 	time "time"
+
+	cloudfoundry "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
+	go_cfclient "github.com/cloudfoundry-community/go-cfclient"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClient is a mock of Client interface
@@ -46,6 +48,84 @@ func (m *MockClient) Get(arg0 string) (*http.Response, error) {
 // Get indicates an expected call of Get
 func (mr *MockClientMockRecorder) Get(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockClient)(nil).Get), arg0)
+}
+
+// GetApps mocks base method
+func (m *MockClient) GetApps() (map[string]go_cfclient.App, error) {
+	ret := m.ctrl.Call(m, "GetApps")
+	ret0, _ := ret[0].(map[string]go_cfclient.App)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetApps indicates an expected call of GetApps
+func (mr *MockClientMockRecorder) GetApps() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetApps", reflect.TypeOf((*MockClient)(nil).GetApps))
+}
+
+// GetOrgs mocks base method
+func (m *MockClient) GetOrgs() (map[string]go_cfclient.Org, error) {
+	ret := m.ctrl.Call(m, "GetOrgs")
+	ret0, _ := ret[0].(map[string]go_cfclient.Org)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetOrgs indicates an expected call of GetOrgs
+func (mr *MockClientMockRecorder) GetOrgs() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetOrgs", reflect.TypeOf((*MockClient)(nil).GetOrgs))
+}
+
+// GetServiceInstances mocks base method
+func (m *MockClient) GetServiceInstances() (map[string]go_cfclient.ServiceInstance, error) {
+	ret := m.ctrl.Call(m, "GetServiceInstances")
+	ret0, _ := ret[0].(map[string]go_cfclient.ServiceInstance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServiceInstances indicates an expected call of GetServiceInstances
+func (mr *MockClientMockRecorder) GetServiceInstances() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServiceInstances", reflect.TypeOf((*MockClient)(nil).GetServiceInstances))
+}
+
+// GetServicePlans mocks base method
+func (m *MockClient) GetServicePlans() (map[string]go_cfclient.ServicePlan, error) {
+	ret := m.ctrl.Call(m, "GetServicePlans")
+	ret0, _ := ret[0].(map[string]go_cfclient.ServicePlan)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServicePlans indicates an expected call of GetServicePlans
+func (mr *MockClientMockRecorder) GetServicePlans() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServicePlans", reflect.TypeOf((*MockClient)(nil).GetServicePlans))
+}
+
+// GetServices mocks base method
+func (m *MockClient) GetServices() (map[string]go_cfclient.Service, error) {
+	ret := m.ctrl.Call(m, "GetServices")
+	ret0, _ := ret[0].(map[string]go_cfclient.Service)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetServices indicates an expected call of GetServices
+func (mr *MockClientMockRecorder) GetServices() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetServices", reflect.TypeOf((*MockClient)(nil).GetServices))
+}
+
+// GetSpaces mocks base method
+func (m *MockClient) GetSpaces() (map[string]go_cfclient.Space, error) {
+	ret := m.ctrl.Call(m, "GetSpaces")
+	ret0, _ := ret[0].(map[string]go_cfclient.Space)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSpaces indicates an expected call of GetSpaces
+func (mr *MockClientMockRecorder) GetSpaces() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSpaces", reflect.TypeOf((*MockClient)(nil).GetSpaces))
 }
 
 // MockUsageEventsAPI is a mock of UsageEventsAPI interface

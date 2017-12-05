@@ -2,16 +2,25 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/signal"
 	"strings"
+	"sync"
 	"syscall"
+	"time"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-usage-events-collector/auth"
 	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
 	"github.com/alphagov/paas-usage-events-collector/collector"
 	"github.com/alphagov/paas-usage-events-collector/db"
+	"github.com/alphagov/paas-usage-events-collector/server"
 	"github.com/pkg/errors"
+)
+
+var (
+	logger = createLogger()
 )
 
 func createLogger() lager.Logger {
@@ -30,50 +39,100 @@ func createCFClient() (cloudfoundry.Client, error) {
 	return cloudfoundry.NewClient(config)
 }
 
-func main() {
-	logger := createLogger()
+func Main() error {
 
-	sqlClient := db.NewPostgresClient(os.Getenv("DATABASE_URL"))
-
-	if err := sqlClient.InitSchema(); err != nil {
-		logger.Error("init", errors.Wrap(err, "failed to initialise database schema"))
-		os.Exit(1)
-		return
+	sqlClient, err := db.NewPostgresClient(os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return err
 	}
 
-	client, clientErr := createCFClient()
+	if err := sqlClient.InitSchema(); err != nil {
+		return errors.Wrap(err, "failed to initialise database schema")
+	}
+
+	cfClient, clientErr := createCFClient()
 	if clientErr != nil {
-		logger.Error("init", errors.Wrap(clientErr, "failed to connect to Cloud Foundry"))
-		os.Exit(1)
-		return
+		return errors.Wrap(clientErr, "failed to connect to Cloud Foundry")
 	}
 
 	collectorConfig := collector.CreateConfigFromEnv()
 
 	collector, collectorErr := collector.New(
-		cloudfoundry.NewAppUsageEventsAPI(client, logger),
-		cloudfoundry.NewServiceUsageEventsAPI(client, logger),
+		cloudfoundry.NewAppUsageEventsAPI(cfClient, logger),
+		cloudfoundry.NewServiceUsageEventsAPI(cfClient, logger),
 		sqlClient,
 		collectorConfig,
 		logger,
 	)
-
 	if collectorErr != nil {
-		logger.Error("init", errors.Wrap(collectorErr, "failed to initialise collector"))
-		os.Exit(1)
-		return
+		return errors.Wrap(collectorErr, "failed to initialise collector")
 	}
 
-	signalChan := make(chan os.Signal)
-	signal.Notify(signalChan, syscall.SIGINT)
-	defer signal.Reset(syscall.SIGINT)
+	uaaConfig, err := auth.CreateConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	apiAuthenticator := &auth.UAA{uaaConfig}
 
-	ctx, cancelFunc := context.WithCancel(context.Background())
-
+	ctx, shutdown := context.WithCancel(context.Background())
 	go func() {
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
 		<-signalChan
-		cancelFunc()
+		shutdown()
 	}()
 
-	collector.Run(ctx)
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer logger.Info("stopped event collector")
+		logger.Info("starting event collector")
+		collector.Run(ctx)
+		shutdown()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer logger.Info("stopped view updater")
+		logger.Info("starting view updater")
+		for {
+			logger.Info("updating views")
+			if err := sqlClient.UpdateViews(); err != nil {
+				logger.Error("update-views", err)
+			}
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(1 * time.Hour):
+			}
+		}
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer logger.Info("stopped api server")
+		logger.Info("starting api server")
+		s := server.New(sqlClient, apiAuthenticator, cfClient)
+		port := os.Getenv("PORT")
+		if port == "" {
+			port = "8881"
+		}
+		server.ListenAndServe(ctx, s, fmt.Sprintf(":%s", port))
+	}()
+
+	wg.Wait()
+	return nil
+}
+
+func main() {
+	if err := Main(); err != nil {
+		logger.Error("main", err)
+		os.Exit(1)
+	}
+	logger.Info("shutdown")
 }
