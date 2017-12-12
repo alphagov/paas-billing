@@ -29,17 +29,19 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		err = tx.Commit()
 	}()
 
-	// remove any events with id=0
-	_, err = tx.Exec(`delete from app_usage_events where id = 0`)
+	const fakeID = 0
+
+	// remove any events with fake ID
+	_, err = tx.Exec(`delete from app_usage_events where id = $1`, fakeID)
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`delete from service_usage_events where id = 0`)
+	_, err = tx.Exec(`delete from service_usage_events where id = $1`, fakeID)
 	if err != nil {
 		return err
 	}
 
-	// fetch the most recent event timestamp
+	// fetch the oldest event timestamp
 	var firstEventTimestamp *time.Time
 	err = tx.QueryRow(`
 		select least((
@@ -55,7 +57,7 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		return errors.New("Database appears to be empty and thus cannot be repaired.")
 	}
 
-	// fetch list of app guids we have events for
+	// fetch list of app and service guids we have events for
 	rows, err := tx.Query(`
 		select distinct
 			raw_message->>'app_guid'
@@ -91,40 +93,49 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 	if err != nil {
 		return err
 	}
+	fmt.Println("orgs:", len(orgs))
 	spaces, err := cfClient.GetSpaces()
 	if err != nil {
 		return err
 	}
+	fmt.Println("spaces:", len(spaces))
 	services, err := cfClient.GetServices()
 	if err != nil {
 		return err
 	}
+	fmt.Println("services:", len(services))
 	servicePlans, err := cfClient.GetServicePlans()
 	if err != nil {
 		return err
 	}
+	fmt.Println("servicePlans:", len(servicePlans))
 
 	// fetch all the running apps
+	// FIXME: https://godoc.org/github.com/cloudfoundry-community/go-cfclient#Client.ListAppsByQuery
 	apps, err := cfClient.GetApps()
 	if err != nil {
 		return err
 	}
+	fmt.Println("apps:", len(apps))
+
 	for _, app := range apps {
 		// Skip non running apps (FIXME: ListApps() could probably filter this)
 		if app.State != StateStarted {
 			continue
 		}
-		// Skip anything updated since we started collecting events
-		updated, err := time.Parse(time.RFC3339, app.UpdatedAt)
-		if err != nil {
-			return err
-		}
 		fmt.Println("app", app.Guid)
+
 		// Skip if we already have events for this app
 		if seen := knownGuids[app.Guid]; seen {
 			continue
 		}
 		fmt.Println("detected missing app", app.Guid)
+
+		// Skip anything updated since we started collecting events
+		updated, err := time.Parse(time.RFC3339, app.UpdatedAt)
+		if err != nil {
+			return err
+		}
 		if updated.After(*firstEventTimestamp) {
 			fmt.Println("not seen events for app", app.Guid, "but skipping since it was updated", updated, "which is after we started collecting data")
 			continue
@@ -145,8 +156,8 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 			"space_name":                         space.Name,
 			"process_type":                       "web",
 			"package_state":                      "STAGED",
-			"buildpack_guid":                     nil,
-			"buildpack_name":                     nil,
+			"buildpack_guid":                     app.DetectedBuildpackGuid,
+			"buildpack_name":                     app.DetectedBuildpack,
 			"instance_count":                     app.Instances,
 			"previous_state":                     "STOPPED",
 			"parent_app_guid":                    app.Guid,
@@ -163,17 +174,17 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		}
 		_, err = tx.Exec(`
 			insert into app_usage_events (
-				id
+				id,
 				guid,
 				created_at,
 				raw_message
 			) values (
-				0,
-				$1::text,
-				$2::timestamp,
-				$3::jsonb
+				$1,
+				$2::text,
+				$3::timestamp,
+				$4::jsonb
 			)
-		`, app.Guid, firstEventTimestamp, string(evJSON))
+		`, fakeID, app.Guid, firstEventTimestamp, string(evJSON))
 		if err != nil {
 			return err
 		}
@@ -232,25 +243,139 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		if err != nil {
 			return err
 		}
-		fmt.Println("adding missing app CREATED event", ev)
+		fmt.Println("adding missing service CREATED event", ev)
 		_, err = tx.Exec(`
 			insert into service_usage_events (
-				id
+				id,
 				guid,
 				created_at,
 				raw_message
 			) values (
-				0,
-				$1::text,
-				$2::timestamp,
-				$3::jsonb
+				$1,
+				$2::text,
+				$3::timestamp,
+				$4::jsonb
 			)
-		`, serviceInstance.Guid, firstEventTimestamp, string(evJSON))
+		`, fakeID, serviceInstance.Guid, firstEventTimestamp, string(evJSON))
 		if err != nil {
 			return err
 		}
 		knownGuids[serviceInstance.Guid] = true
 	}
+
+	// create events for apps whose first event was a `STOPPED` event
+	result, err := tx.Exec(`
+		WITH events AS (
+			SELECT
+				first_value(raw_message) OVER first_event AS first_event
+			FROM app_usage_events
+			WHERE
+				raw_message->>'state' = 'STARTED'
+			OR
+				raw_message->>'state' = 'STOPPED'
+			WINDOW
+				first_event AS (partition by raw_message->>'app_guid' order by id rows between unbounded preceding and current row)
+		),
+
+		stop_events AS (
+			SELECT
+				first_event
+			FROM
+				events
+			WHERE
+				first_event->>'state' = 'STOPPED'
+			GROUP BY
+				first_event
+		),
+
+		missing_events AS (
+			SELECT
+				$1::int AS id,
+				uuid_generate_v4() AS guid,
+				$2::timestamptz AS created_at,
+				(first_event || '{"state": "STARTED"}'::jsonb) as raw_message
+			FROM
+				stop_events
+		)
+
+		INSERT INTO app_usage_events (
+			id,
+			guid,
+			created_at,
+			raw_message
+		)(
+			SELECT
+				id,
+				guid,
+				created_at,
+				raw_message
+			FROM
+				missing_events
+		)
+		`, fakeID, firstEventTimestamp)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Inserted %v missing STARTED events for apps\n", rowsAffected)
+
+	// create events for services whose first event was a `STOPPED` event
+	result, err = tx.Exec(`
+		WITH events AS (
+			SELECT
+				first_value(raw_message) OVER first_event AS first_event
+			FROM service_usage_events
+			WINDOW
+				first_event AS (partition by raw_message->>'service_instance_guid' order by id rows between unbounded preceding and current row)
+		),
+
+		stop_events AS (
+			SELECT
+				first_event
+			FROM
+				events
+			WHERE
+				first_event->>'state' = 'DELETED'
+			GROUP BY
+				first_event
+		),
+
+		missing_events AS (
+			SELECT
+				$1::int AS id,
+				uuid_generate_v4() AS guid,
+				$2::timestamptz AS created_at,
+				(first_event || '{"state": "CREATED"}'::jsonb) as raw_message
+			FROM
+				stop_events
+		)
+
+		INSERT INTO service_usage_events (
+			id,
+			guid,
+			created_at,
+			raw_message
+		)(
+			SELECT
+				id,
+				guid,
+				created_at,
+				raw_message
+			FROM
+				missing_events
+		)
+	`, fakeID, firstEventTimestamp)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err = result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Inserted %v missing CREATED events for services\n", rowsAffected)
 
 	return nil
 }
