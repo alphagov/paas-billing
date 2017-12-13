@@ -1,62 +1,20 @@
-package db
+package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	cf "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
+	"github.com/alphagov/paas-usage-events-collector/db"
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 )
 
-// RepairEvents populates START events for applications and services that are
-// missing due to the events being emitted before data collection began (T0).
-//
-// * If an application guid is currently in a running state according to
-//   CloudController, but no events exist, then a START event is created for T0
-// * If a service_instance_guid is currently in a CREATED state according to
-//   CloudController, but no events exist, then a CREATED event is created for T0
-func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
-	tx, txErr := pc.Conn.Begin()
-	if txErr != nil {
-		return txErr
-	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			return
-		}
-		err = tx.Commit()
-	}()
+const fakeID = 0
 
-	const fakeID = 0
-
-	// remove any events with fake ID
-	_, err = tx.Exec(`delete from app_usage_events where id = $1`, fakeID)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(`delete from service_usage_events where id = $1`, fakeID)
-	if err != nil {
-		return err
-	}
-
-	// fetch the oldest event timestamp
-	var firstEventTimestamp *time.Time
-	err = tx.QueryRow(`
-		select least((
-			select min(created_at::timestamptz) from app_usage_events where created_at is not null
-		),(
-			select min(created_at::timestamptz) from service_usage_events where created_at is not null
-		));
-	`).Scan(&firstEventTimestamp)
-	if err != nil {
-		return err
-	}
-	if firstEventTimestamp == nil {
-		return errors.New("Database appears to be empty and thus cannot be repaired.")
-	}
-
+func createEventsForAppsWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *time.Time, spaces map[string]cfclient.Space, cfClient cf.Client) (err error) {
 	// fetch list of app and service guids we have events for
 	rows, err := tx.Query(`
 		select distinct
@@ -65,13 +23,6 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 			app_usage_events
 		where
 			raw_message->>'app_guid' is not null
-	union
-		select distinct
-			raw_message->>'service_instance_guid'
-		from
-			service_usage_events
-		where
-			raw_message->>'service_instance_guid' is not null
 	`)
 	if err != nil {
 		return err
@@ -87,40 +38,14 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 	if err := rows.Err(); err != nil {
 		return err
 	}
-
-	// cache all the things
-	orgs, err := cfClient.GetOrgs()
-	if err != nil {
-		return err
-	}
-	fmt.Println("orgs:", len(orgs))
-	spaces, err := cfClient.GetSpaces()
-	if err != nil {
-		return err
-	}
-	fmt.Println("spaces:", len(spaces))
-	services, err := cfClient.GetServices()
-	if err != nil {
-		return err
-	}
-	fmt.Println("services:", len(services))
-	servicePlans, err := cfClient.GetServicePlans()
-	if err != nil {
-		return err
-	}
-	fmt.Println("servicePlans:", len(servicePlans))
-
-	// fetch all the running apps
-	// FIXME: https://godoc.org/github.com/cloudfoundry-community/go-cfclient#Client.ListAppsByQuery
 	apps, err := cfClient.GetApps()
 	if err != nil {
 		return err
 	}
 	fmt.Println("apps:", len(apps))
-
 	for _, app := range apps {
-		// Skip non running apps (FIXME: ListApps() could probably filter this)
-		if app.State != StateStarted {
+		// Skip non running apps
+		if app.State != db.StateStarted {
 			continue
 		}
 		fmt.Println("app", app.Guid)
@@ -190,6 +115,48 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		}
 		knownGuids[app.Guid] = true
 	}
+	return nil
+
+}
+
+func createEventsForServicesWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *time.Time, spaces map[string]cfclient.Space, cfClient cf.Client) (err error) {
+	rows, err := tx.Query(`
+		select distinct
+			raw_message->>'service_instance_guid'
+		from
+			service_usage_events
+		where
+			raw_message->>'service_instance_guid' is not null
+	`)
+	if err != nil {
+		return err
+	}
+	knownGuids := map[string]bool{}
+	for rows.Next() {
+		var guid string
+		if err := rows.Scan(&guid); err != nil {
+			return err
+		}
+		knownGuids[guid] = true
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	orgs, err := cfClient.GetOrgs()
+	if err != nil {
+		return err
+	}
+	fmt.Println("orgs:", len(orgs))
+	services, err := cfClient.GetServices()
+	if err != nil {
+		return err
+	}
+	fmt.Println("services:", len(services))
+	servicePlans, err := cfClient.GetServicePlans()
+	if err != nil {
+		return err
+	}
+	fmt.Println("servicePlans:", len(servicePlans))
 
 	srvs, err := cfClient.GetServiceInstances()
 	if err != nil {
@@ -262,8 +229,41 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		}
 		knownGuids[serviceInstance.Guid] = true
 	}
+	return nil
+}
 
-	// create events for apps whose first event was a `STOPPED` event
+func resetFakeEvents(tx *sql.Tx, cfClient cf.Client) (err error) {
+	// remove any events with fake ID
+	_, err = tx.Exec(`delete from app_usage_events where id = $1`, fakeID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`delete from service_usage_events where id = $1`, fakeID)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func getCollectionEpoch(tx *sql.Tx) (*time.Time, error) {
+	var firstEventTimestamp *time.Time
+	err := tx.QueryRow(`
+		select least((
+			select min(created_at::timestamptz) from app_usage_events where created_at is not null
+		),(
+			select min(created_at::timestamptz) from service_usage_events where created_at is not null
+		));
+	`).Scan(&firstEventTimestamp)
+	if err != nil {
+		return nil, err
+	}
+	if firstEventTimestamp == nil {
+		return nil, errors.New("Database appears to be empty and thus cannot be repaired.")
+	}
+	return firstEventTimestamp, nil
+}
+
+func createEventsForAppsWhereFirstRecordedEventIsStopped(tx *sql.Tx, firstEventTimestamp *time.Time) (err error) {
 	result, err := tx.Exec(`
 		WITH events AS (
 			SELECT
@@ -321,9 +321,11 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 		return err
 	}
 	fmt.Printf("Inserted %v missing STARTED events for apps\n", rowsAffected)
+	return nil
+}
 
-	// create events for services whose first event was a `STOPPED` event
-	result, err = tx.Exec(`
+func createEventsForServicesWhereFirstRecordedEventIsDeleted(tx *sql.Tx, firstEventTimestamp *time.Time) (err error) {
+	result, err := tx.Exec(`
 		WITH events AS (
 			SELECT
 				first_value(raw_message) OVER first_event AS first_event
@@ -371,11 +373,10 @@ func (pc *PostgresClient) RepairEvents(cfClient cf.Client) (err error) {
 	if err != nil {
 		return err
 	}
-	rowsAffected, err = result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return err
 	}
 	fmt.Printf("Inserted %v missing CREATED events for services\n", rowsAffected)
-
 	return nil
 }

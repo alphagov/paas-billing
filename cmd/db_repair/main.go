@@ -1,11 +1,12 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
 	"os"
 
 	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	"github.com/alphagov/paas-usage-events-collector/db"
 )
 
 /*
@@ -21,17 +22,51 @@ func createCFClient() (cloudfoundry.Client, error) {
 }
 
 func main() {
-	sqlClient, err := db.NewPostgresClient(os.Getenv("DATABASE_URL"))
+	conn, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalln(err)
 	}
+	tx, err := conn.Begin()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+			return
+		}
+		err = tx.Commit()
+	}()
 
 	cfClient, err := createCFClient()
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	err = sqlClient.RepairEvents(cfClient)
+	spaces, err := cfClient.GetSpaces()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	fmt.Println("spaces:", len(spaces))
+
+	epoch, err := getCollectionEpoch(tx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	err = createEventsForAppsWithNoRecordedEvents(tx, epoch, spaces, cfClient)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = createEventsForServicesWithNoRecordedEvents(tx, epoch, spaces, cfClient)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = createEventsForAppsWhereFirstRecordedEventIsStopped(tx, epoch)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	err = createEventsForServicesWhereFirstRecordedEventIsDeleted(tx, epoch)
 	if err != nil {
 		log.Fatalln(err)
 	}
