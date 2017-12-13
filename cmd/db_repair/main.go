@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -21,7 +22,16 @@ func createCFClient() (cloudfoundry.Client, error) {
 	return cloudfoundry.NewClient(config)
 }
 
+var (
+	dryRun          bool
+	purgeFakeEvents bool
+)
+
 func main() {
+	flag.BoolVar(&dryRun, "dry-run", false, "Do not commit database transaction")
+	flag.BoolVar(&purgeFakeEvents, "purge-fake-events", false, "Delete all previously created fake events")
+	flag.Parse()
+
 	conn, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		log.Fatalln(err)
@@ -30,13 +40,6 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer func() {
-		if err != nil {
-			tx.Rollback()
-			return
-		}
-		err = tx.Commit()
-	}()
 
 	cfClient, err := createCFClient()
 	if err != nil {
@@ -54,6 +57,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
+	if purgeFakeEvents {
+		if err := deleteFakeEvents(tx); err != nil {
+			log.Fatalln(err)
+		}
+	}
+
 	err = createEventsForAppsWithNoRecordedEvents(tx, epoch, spaces, cfClient)
 	if err != nil {
 		log.Fatalln(err)
@@ -69,5 +78,14 @@ func main() {
 	err = createEventsForServicesWhereFirstRecordedEventIsDeleted(tx, epoch)
 	if err != nil {
 		log.Fatalln(err)
+	}
+
+	if !dryRun {
+		err = tx.Commit()
+		if err != nil {
+			log.Fatalln(err)
+		}
+	} else {
+		fmt.Println("This is a dry run, not committing")
 	}
 }

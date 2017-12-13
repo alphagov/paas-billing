@@ -43,18 +43,17 @@ func createEventsForAppsWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *ti
 		return err
 	}
 	fmt.Println("apps:", len(apps))
+	var fakeEventsInserted int
 	for _, app := range apps {
 		// Skip non running apps
 		if app.State != db.StateStarted {
 			continue
 		}
-		fmt.Println("app", app.Guid)
 
 		// Skip if we already have events for this app
 		if seen := knownGuids[app.Guid]; seen {
 			continue
 		}
-		fmt.Println("detected missing app", app.Guid)
 
 		// Skip anything updated since we started collecting events
 		updated, err := time.Parse(time.RFC3339, app.UpdatedAt)
@@ -92,7 +91,7 @@ func createEventsForAppsWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *ti
 			"memory_in_mb_per_instance":          app.Memory,
 			"previous_memory_in_mb_per_instance": app.Memory,
 		}
-		fmt.Println("adding missing app STARTED event", ev)
+
 		evJSON, err := json.Marshal(ev)
 		if err != nil {
 			return err
@@ -113,10 +112,12 @@ func createEventsForAppsWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *ti
 		if err != nil {
 			return err
 		}
+		fakeEventsInserted++
 		knownGuids[app.Guid] = true
 	}
-	return nil
 
+	fmt.Println("Fake app STARTED events inserted:", fakeEventsInserted)
+	return nil
 }
 
 func createEventsForServicesWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *time.Time, spaces map[string]cfclient.Space, cfClient cf.Client) (err error) {
@@ -162,6 +163,7 @@ func createEventsForServicesWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp
 	if err != nil {
 		return err
 	}
+	var fakeEventsInserted int
 	for _, serviceInstance := range srvs {
 		// Skip anything updated since we started collecting events
 		updated, err := time.Parse(time.RFC3339, serviceInstance.UpdatedAt)
@@ -210,7 +212,6 @@ func createEventsForServicesWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp
 		if err != nil {
 			return err
 		}
-		fmt.Println("adding missing service CREATED event", ev)
 		_, err = tx.Exec(`
 			insert into service_usage_events (
 				id,
@@ -227,12 +228,14 @@ func createEventsForServicesWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp
 		if err != nil {
 			return err
 		}
+		fakeEventsInserted++
 		knownGuids[serviceInstance.Guid] = true
 	}
+	fmt.Println("Fake service CREATED events inserted:", fakeEventsInserted)
 	return nil
 }
 
-func resetFakeEvents(tx *sql.Tx, cfClient cf.Client) (err error) {
+func deleteFakeEvents(tx *sql.Tx) (err error) {
 	// remove any events with fake ID
 	_, err = tx.Exec(`delete from app_usage_events where id = $1`, fakeID)
 	if err != nil {
