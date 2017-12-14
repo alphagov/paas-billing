@@ -60,12 +60,6 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
 	e.POST("/seed_pricing_plans", auth.AdminOnly(api.CreateMissingPricingPlans(db)))
 
-	// Repair events
-	if cf != nil {
-		e.GET("/repair_events", auth.AdminOnly(api.GetRepairedEvents(db, cf)))
-		e.POST("/repair_events", auth.AdminOnly(api.RepairEvents(db, cf)))
-	}
-
 	return e
 }
 
