@@ -53,8 +53,6 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 					sum(price * 100)::bigint as price
 				from
 					authorized_resources
-				where
-					org_guid = $1
 				group by
 					guid, space_guid, org_guid, pricing_plan_id, pricing_plan_name
 				order by
@@ -68,8 +66,6 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 					json_agg(row_to_json(t.*)) as resources
 				from
 					resources t
-				where
-					t.org_guid = $1
 				group by
 					org_guid, space_guid
 				order by
@@ -82,7 +78,7 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 			from
 				space_resources t
 			where
-				t.org_guid = $1
+				org_guid = $1
 			group by
 				org_guid
 			order by
