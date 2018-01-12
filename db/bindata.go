@@ -308,15 +308,15 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"sql/001_create_to_seconds_function.sql": sql001_create_to_seconds_functionSql,
-	"sql/002_create_iso8601_function.sql": sql002_create_iso8601_functionSql,
-	"sql/010_create_app_usage_events.sql": sql010_create_app_usage_eventsSql,
-	"sql/020_create_service_usage_events.sql": sql020_create_service_usage_eventsSql,
-	"sql/025_create_pricing_plans.sql": sql025_create_pricing_plansSql,
-	"sql/026_create_pricing_functions.sql": sql026_create_pricing_functionsSql,
+	"sql/001_create_to_seconds_function.sql":      sql001_create_to_seconds_functionSql,
+	"sql/002_create_iso8601_function.sql":         sql002_create_iso8601_functionSql,
+	"sql/010_create_app_usage_events.sql":         sql010_create_app_usage_eventsSql,
+	"sql/020_create_service_usage_events.sql":     sql020_create_service_usage_eventsSql,
+	"sql/025_create_pricing_plans.sql":            sql025_create_pricing_plansSql,
+	"sql/026_create_pricing_functions.sql":        sql026_create_pricing_functionsSql,
 	"sql/027_create_validate_formula_trigger.sql": sql027_create_validate_formula_triggerSql,
-	"sql/030_create_billable.sql": sql030_create_billableSql,
-	"sql/040_create_billable_range_function.sql": sql040_create_billable_range_functionSql,
+	"sql/030_create_billable.sql":                 sql030_create_billableSql,
+	"sql/040_create_billable_range_function.sql":  sql040_create_billable_range_functionSql,
 }
 
 // AssetDir returns the file names below a certain
@@ -358,17 +358,18 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"sql": &bintree{nil, map[string]*bintree{
-		"001_create_to_seconds_function.sql": &bintree{sql001_create_to_seconds_functionSql, map[string]*bintree{}},
-		"002_create_iso8601_function.sql": &bintree{sql002_create_iso8601_functionSql, map[string]*bintree{}},
-		"010_create_app_usage_events.sql": &bintree{sql010_create_app_usage_eventsSql, map[string]*bintree{}},
-		"020_create_service_usage_events.sql": &bintree{sql020_create_service_usage_eventsSql, map[string]*bintree{}},
-		"025_create_pricing_plans.sql": &bintree{sql025_create_pricing_plansSql, map[string]*bintree{}},
-		"026_create_pricing_functions.sql": &bintree{sql026_create_pricing_functionsSql, map[string]*bintree{}},
+		"001_create_to_seconds_function.sql":      &bintree{sql001_create_to_seconds_functionSql, map[string]*bintree{}},
+		"002_create_iso8601_function.sql":         &bintree{sql002_create_iso8601_functionSql, map[string]*bintree{}},
+		"010_create_app_usage_events.sql":         &bintree{sql010_create_app_usage_eventsSql, map[string]*bintree{}},
+		"020_create_service_usage_events.sql":     &bintree{sql020_create_service_usage_eventsSql, map[string]*bintree{}},
+		"025_create_pricing_plans.sql":            &bintree{sql025_create_pricing_plansSql, map[string]*bintree{}},
+		"026_create_pricing_functions.sql":        &bintree{sql026_create_pricing_functionsSql, map[string]*bintree{}},
 		"027_create_validate_formula_trigger.sql": &bintree{sql027_create_validate_formula_triggerSql, map[string]*bintree{}},
-		"030_create_billable.sql": &bintree{sql030_create_billableSql, map[string]*bintree{}},
-		"040_create_billable_range_function.sql": &bintree{sql040_create_billable_range_functionSql, map[string]*bintree{}},
+		"030_create_billable.sql":                 &bintree{sql030_create_billableSql, map[string]*bintree{}},
+		"040_create_billable_range_function.sql":  &bintree{sql040_create_billable_range_functionSql, map[string]*bintree{}},
 	}},
 }}
 
@@ -418,4 +419,3 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
