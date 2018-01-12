@@ -824,6 +824,11 @@ var _ = Describe("API", func() {
 
 	Context("Billing report", func() {
 
+		var (
+			org_guid = "o1"
+			path     = "/report/" + org_guid
+		)
+
 		It("should produce a report", func() {
 			appEvents := []cf.UsageEvent{
 				{
@@ -921,7 +926,7 @@ var _ = Describe("API", func() {
 			err = sqlClient.UpdateViews()
 			Expect(err).ToNot(HaveOccurred())
 
-			u, err := url.Parse("/report?from=2001-01-01T00:00:00Z&to=" + now.Add(72*time.Hour).Format(time.RFC3339))
+			u, err := url.Parse(path + "?from=2001-01-01T00:00:00Z&to=" + now.Add(72*time.Hour).Format(time.RFC3339))
 			Expect(err).ToNot(HaveOccurred())
 
 			req, err := http.NewRequest("GET", u.String(), nil)
@@ -979,26 +984,8 @@ var _ = Describe("API", func() {
 						},
 					},
 				},
-				{
-					OrgGuid: "o2",
-					Price:   120000,
-					Spaces: []SpaceReport{
-						{
-							SpaceGuid: "o2s1",
-							Price:     120000,
-							Resources: []ResourceReport{
-								{
-									Guid:  "o2s1-db1",
-									Price: 120000,
-								},
-							},
-						},
-					},
-				},
 			}
 			Expect(actualOutput).To(Equal(expectedOutput))
 		})
-
 	})
-
 })
