@@ -855,6 +855,30 @@ var _ = Describe("API", func() {
 						"memory_in_mb_per_instance": 512,
 						"previous_state": "STARTED"
 					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-49 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STARTED",
+						"app_guid": "o2s1-app1",
+						"app_name": "o2s1-app1",
+						"org_guid": "o2",
+						"space_guid": "o1s2",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STOPPED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-12 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STOPPED",
+						"app_guid": "o2s1-app1",
+						"app_name": "o2s1-app1",
+						"org_guid": "o2",
+						"space_guid": "o1s2",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
 				},
 			}
 			serviceEvents := []cf.UsageEvent{
