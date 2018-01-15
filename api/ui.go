@@ -219,7 +219,7 @@ var templates = map[string]string{
 							</tr>
 							{{ range $resource := index $space "resources" }}
 								<tr class="resource">
-									<td>{{ index $resource "guid" | name }}</td>
+									<td>{{ index $resource "name" }}</td>
 									<td>{{ index $resource "pricing_plan_name" }}</td>
 									<td><a href="/resources/{{ index $resource "guid" }}/events?from={{ $from }}&to={{ $to }}">details</a></td>
 									<td class="price">{{ index $resource "price" | in_pounds}}</td>
@@ -293,14 +293,6 @@ var templateFunctions = template.FuncMap{
 			spaces, _ := cf.GetSpaces()
 			for guid, space := range spaces {
 				nameCacheMap[guid] = space.Name
-			}
-			apps, _ := cf.GetApps()
-			for guid, app := range apps {
-				nameCacheMap[guid] = app.Name
-			}
-			srvs, _ := cf.GetServiceInstances()
-			for guid, srv := range srvs {
-				nameCacheMap[guid] = srv.Name
 			}
 		}
 		name, ok := nameCacheMap[guid]
