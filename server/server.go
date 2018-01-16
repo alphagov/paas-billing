@@ -35,8 +35,7 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	// Deprecated endpoint, favor /resources and /events
 	e.GET("/usage", api.NewUsageHandler(db))
 
-	// An example billing renderer... throw this away
-	e.GET("/report", api.NewReportHandler(db))
+	e.GET("/report/:org_guid", api.NewReportHandler(db))
 	e.GET("/", redirectToReport)
 
 	// Usage and Billing API

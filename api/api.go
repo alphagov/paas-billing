@@ -36,12 +36,15 @@ func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
 
 func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, c, db, `
+		orgGUID := c.Param("org_guid")
+		if orgGUID == "" {
+			return errors.New("missing org_guid")
+		}
+		return withAuthorizedResources(Single, c, db, `
 			with
 			resources as (
 				select
 					guid,
-					org_guid,
 					space_guid,
 					pricing_plan_id,
 					pricing_plan_name,
@@ -49,35 +52,32 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 					sum(price * 100)::bigint as price
 				from
 					authorized_resources
+				where
+					org_guid = $1
 				group by
-					guid, space_guid, org_guid, pricing_plan_id, pricing_plan_name
+					guid, space_guid, pricing_plan_id, pricing_plan_name
 				order by
-					guid, space_guid, org_guid, pricing_plan_id
+					guid, space_guid, pricing_plan_id
 			),
 			space_resources as (
 				select
-					t.org_guid,
 					t.space_guid,
 					sum(t.price) as price,
 					json_agg(row_to_json(t.*)) as resources
 				from
 					resources t
 				group by
-					org_guid, space_guid
+					space_guid
 				order by
-					org_guid, space_guid
+					space_guid
 			)
 			select
-				t.org_guid,
+				$1 org_guid,
 				sum(t.price) as price,
 				json_agg(row_to_json(t.*)) as spaces
 			from
 				space_resources t
-			group by
-				org_guid
-			order by
-				org_guid
-		`)
+		`, orgGUID)
 	}
 }
 

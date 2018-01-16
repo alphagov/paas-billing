@@ -177,7 +177,7 @@ var templates = map[string]string{
 			<a href="/pricing_plans">view all plans</a>
 		</div>
 	`,
-	"/report": `
+	"/report/:org_guid": `
 		{{ $from := .Range.From }}
 		{{ $to := .Range.To }}
 
