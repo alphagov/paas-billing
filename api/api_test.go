@@ -848,7 +848,31 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "STOPPED",
 						"app_guid": "o1s1-app1",
+						"app_name": "o1s1-app1-renamed",
+						"org_guid": "o1",
+						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-58 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STARTED",
+						"app_guid": "o1s1-app2",
 						"app_name": "o1s1-app1",
+						"org_guid": "o1",
+						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-28 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STOPPED",
+						"app_guid": "o1s1-app2",
+						"app_name": "o1s1-app1-renamed",
 						"org_guid": "o1",
 						"space_guid": "o1s1",
 						"instance_count": 2,
@@ -872,7 +896,7 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "STOPPED",
 						"app_guid": "o2s1-app1",
-						"app_name": "o2s1-app1",
+						"app_name": "o2s1-app1-renamed",
 						"org_guid": "o2",
 						"space_guid": "o1s2",
 						"instance_count": 2,
@@ -898,7 +922,7 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "DELETED",
 						"service_instance_guid": "o2s1-db1",
-						"service_instance_name": "o2s1-db1",
+						"service_instance_name": "o2s1-db1-renamed",
 						"org_guid": "o2",
 						"space_guid": "o2s1",
 						"service_plan_guid": "` + X2ServicePlan.PlanGuid + `",
@@ -920,7 +944,7 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "DELETED",
 						"service_instance_guid": "o1s1-db1",
-						"service_instance_name": "o1s1-db1",
+						"service_instance_name": "o1s1-db1-renamed",
 						"org_guid": "o1",
 						"space_guid": "o1s1",
 						"service_plan_guid": "` + X2ServicePlan.PlanGuid + `",
@@ -969,7 +993,7 @@ var _ = Describe("API", func() {
 			Expect(res.StatusCode).To(Equal(http.StatusOK), string(body))
 
 			type ResourceReport struct {
-				Guid  string `json:"guid"`
+				Name  string `json:"name"`
 				Price int64  `json:"price"`
 			}
 			type SpaceReport struct {
@@ -989,18 +1013,18 @@ var _ = Describe("API", func() {
 
 			expectedOutput := OrgReport{
 				OrgGuid: "o1",
-				Price:   1800000,
+				Price:   3240000,
 				Spaces: []SpaceReport{
 					{
 						SpaceGuid: "o1s1",
-						Price:     1800000,
+						Price:     3240000,
 						Resources: []ResourceReport{
 							{
-								Guid:  "o1s1-app1",
-								Price: 1440000,
+								Name:  "o1s1-app1",
+								Price: 2880000,
 							},
 							{
-								Guid:  "o1s1-db1",
+								Name:  "o1s1-db1",
 								Price: 360000,
 							},
 						},
