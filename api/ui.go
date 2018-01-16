@@ -221,12 +221,11 @@ var templates = map[string]string{
 								<tr class="resource">
 									<td>{{ index $resource "name" }}</td>
 									<td>{{ index $resource "pricing_plan_name" }}</td>
-									<td><a href="/resources/{{ index $resource "guid" }}/events?from={{ $from }}&to={{ $to }}">details</a></td>
 									<td class="price">{{ index $resource "price" | in_pounds}}</td>
 								</tr>
 							{{ end }}
 							<tr class="resource">
-								<td colspan="3"><strong>Space total</strong></td>
+								<td colspan="2"><strong>Space total</strong></td>
 								<td class="price">{{ index $space "price" | in_pounds }}</td>
 							</tr>
 						</table>
