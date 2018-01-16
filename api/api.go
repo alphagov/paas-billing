@@ -45,7 +45,6 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 			resources as (
 				select
 					name,
-					guid,
 					org_guid,
 					space_guid,
 					pricing_plan_id,
@@ -55,7 +54,7 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 				from
 					authorized_resources
 				group by
-					name, guid, space_guid, org_guid, pricing_plan_id, pricing_plan_name
+					name, space_guid, org_guid, pricing_plan_id, pricing_plan_name
 				order by
 					name, space_guid, org_guid, pricing_plan_id
 			),
