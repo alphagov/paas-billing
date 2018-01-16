@@ -57,7 +57,7 @@ func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
 				group by
 					name, guid, space_guid, org_guid, pricing_plan_id, pricing_plan_name
 				order by
-					name, guid, space_guid, org_guid, pricing_plan_id
+					name, space_guid, org_guid, pricing_plan_id
 			),
 			space_resources as (
 				select
