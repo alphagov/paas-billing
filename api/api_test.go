@@ -856,6 +856,30 @@ var _ = Describe("API", func() {
 						"previous_state": "STARTED"
 					}`),
 				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-58 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STARTED",
+						"app_guid": "o1s1-app2",
+						"app_name": "o1s1-app1",
+						"org_guid": "o1",
+						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-28 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STOPPED",
+						"app_guid": "o1s1-app2",
+						"app_name": "o1s1-app1-renamed",
+						"org_guid": "o1",
+						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
 					MetaData: cf.MetaData{CreatedAt: now.Add(-49 * time.Minute)},
 					EntityRaw: json.RawMessage(`{
 						"state": "STARTED",
@@ -990,15 +1014,15 @@ var _ = Describe("API", func() {
 			expectedOutput := []OrgReport{
 				{
 					OrgGuid: "o1",
-					Price:   1800000,
+					Price:   3240000,
 					Spaces: []SpaceReport{
 						{
 							SpaceGuid: "o1s1",
-							Price:     1800000,
+							Price:     3240000,
 							Resources: []ResourceReport{
 								{
 									Name:  "o1s1-app1",
-									Price: 1440000,
+									Price: 2880000,
 								},
 								{
 									Name:  "o1s1-db1",
