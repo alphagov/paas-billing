@@ -55,8 +55,8 @@ var baseTemplate = `
 	<body>
 		<div class="phase-banner">
 			<p>
-				<strong class="phase-tag">ALPHA</strong>
-				<span>This is a pre-release tool</span> – Don't rely on this data!
+				<strong class="phase-tag">Beta</strong>
+				<span>Thank you for your custom</span>
 			</p>
 		</div>
 		<h1 class="heading-xlarge" style="margin:40px 10px">
