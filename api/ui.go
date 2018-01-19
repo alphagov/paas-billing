@@ -224,14 +224,14 @@ var templates = map[string]string{
 									<td class="price">{{ index $resource "price" | in_pounds}}</td>
 								</tr>
 							{{ end }}
-							<tr class="resource">
+							<tr class="space space-total">
 								<td colspan="2"><strong>Space total</strong></td>
 								<td class="price">{{ index $space "price" | in_pounds }}</td>
 							</tr>
 						</table>
 					</div>
 				{{ end }}
-				<div class="space space-total">
+				<div class="org org-total">
 					<table>
 						<tr>
 							<td><strong>Org total</strong></td>
