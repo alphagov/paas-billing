@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/alphagov/paas-usage-events-collector/api"
@@ -36,7 +37,6 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	e.GET("/usage", api.NewUsageHandler(db))
 
 	e.GET("/report/:org_guid", api.NewReportHandler(db))
-	e.GET("/", redirectToReport)
 
 	// Usage and Billing API
 	e.GET("/organisations", api.ListOrgUsage(db))
@@ -59,12 +59,16 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
 	e.POST("/seed_pricing_plans", auth.AdminOnly(api.CreateMissingPricingPlans(db)))
 
+	e.GET("/", listRoutes)
+
 	return e
 }
 
-func redirectToReport(c echo.Context) error {
-	lastMonth := time.Now().UTC().Add(-30 * 24 * time.Hour).Format(time.RFC3339)
-	return c.Redirect(http.StatusFound, "/report?from="+lastMonth)
+func listRoutes(c echo.Context) error {
+	routes := c.Echo().Routes()
+	sort.Slice(routes, func(i, j int) bool { return routes[i].Path < routes[j].Path })
+
+	return c.JSONPretty(http.StatusOK, routes, "  ")
 }
 
 func ListenAndServe(ctx context.Context, e *echo.Echo, addr string) {
