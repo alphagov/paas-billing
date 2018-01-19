@@ -234,8 +234,12 @@ var templates = map[string]string{
 				<div class="org org-total">
 					<table>
 						<tr>
-							<td><strong>Org total</strong></td>
-							<td class="price">{{ index $org "price" | in_pounds}}</td>
+							{{ if index $org "spaces" }}
+								<td><strong>Org total</strong></td>
+								<td class="price">{{ index $org "price" | in_pounds}}</td>
+							{{ else }}
+								<td><strong>No resources found for organisation</strong>
+							{{ end }}
 						</tr>
 					</table>
 				</div>
