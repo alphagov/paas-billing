@@ -185,7 +185,7 @@ var templates = map[string]string{
 			Showing breakdown of resource usage between <strong>{{ $from }}</strong> to <strong>{{ $to }}</strong>
 		</p>
 
-		<form method="GET" action="/report" style="margin-bottom:30px;">
+		<form method="GET" action="{{ .Path }}" style="margin-bottom:30px;">
 			<div style="padding: 20px; margin:2px; background:white; overflow:hidden">
 				<div class="form-group" style="float:left; width: 25%; margin-right:40px;">
 					<label class="form-label" for="rangeFrom">From date</label>
@@ -316,11 +316,12 @@ var compiledTemplates = compile(templates)
 
 // Render renders the JSON data as HTML
 func Render(c echo.Context, r io.Reader, rt int) error {
-	name := c.Path()
-	tmpl, ok := compiledTemplates[name]
+	tmpl, ok := compiledTemplates[c.Path()]
 	if !ok {
 		tmpl = compiledTemplates["default"]
 	}
+
+	name := c.Request().URL.Path
 	return tmpl.Execute(c.Response(), &Data{
 		Title: name,
 		Path:  name,
