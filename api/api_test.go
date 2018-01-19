@@ -824,6 +824,11 @@ var _ = Describe("API", func() {
 
 	Context("Billing report", func() {
 
+		var (
+			org_guid = "o1"
+			path     = "/report/" + org_guid
+		)
+
 		It("should produce a report", func() {
 			appEvents := []cf.UsageEvent{
 				{
@@ -843,9 +848,57 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "STOPPED",
 						"app_guid": "o1s1-app1",
+						"app_name": "o1s1-app1-renamed",
+						"org_guid": "o1",
+						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-58 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STARTED",
+						"app_guid": "o1s1-app2",
 						"app_name": "o1s1-app1",
 						"org_guid": "o1",
 						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-28 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STOPPED",
+						"app_guid": "o1s1-app2",
+						"app_name": "o1s1-app1-renamed",
+						"org_guid": "o1",
+						"space_guid": "o1s1",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STARTED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-49 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STARTED",
+						"app_guid": "o2s1-app1",
+						"app_name": "o2s1-app1",
+						"org_guid": "o2",
+						"space_guid": "o1s2",
+						"instance_count": 2,
+						"memory_in_mb_per_instance": 512,
+						"previous_state": "STOPPED"
+					}`),
+				}, {
+					MetaData: cf.MetaData{CreatedAt: now.Add(-12 * time.Minute)},
+					EntityRaw: json.RawMessage(`{
+						"state": "STOPPED",
+						"app_guid": "o2s1-app1",
+						"app_name": "o2s1-app1-renamed",
+						"org_guid": "o2",
+						"space_guid": "o1s2",
 						"instance_count": 2,
 						"memory_in_mb_per_instance": 512,
 						"previous_state": "STARTED"
@@ -869,7 +922,7 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "DELETED",
 						"service_instance_guid": "o2s1-db1",
-						"service_instance_name": "o2s1-db1",
+						"service_instance_name": "o2s1-db1-renamed",
 						"org_guid": "o2",
 						"space_guid": "o2s1",
 						"service_plan_guid": "` + X2ServicePlan.PlanGuid + `",
@@ -891,7 +944,7 @@ var _ = Describe("API", func() {
 					EntityRaw: json.RawMessage(`{
 						"state": "DELETED",
 						"service_instance_guid": "o1s1-db1",
-						"service_instance_name": "o1s1-db1",
+						"service_instance_name": "o1s1-db1-renamed",
 						"org_guid": "o1",
 						"space_guid": "o1s1",
 						"service_plan_guid": "` + X2ServicePlan.PlanGuid + `",
@@ -921,7 +974,7 @@ var _ = Describe("API", func() {
 			err = sqlClient.UpdateViews()
 			Expect(err).ToNot(HaveOccurred())
 
-			u, err := url.Parse("/report?from=2001-01-01T00:00:00Z&to=" + now.Add(72*time.Hour).Format(time.RFC3339))
+			u, err := url.Parse(path + "?from=2001-01-01T00:00:00Z&to=" + now.Add(72*time.Hour).Format(time.RFC3339))
 			Expect(err).ToNot(HaveOccurred())
 
 			req, err := http.NewRequest("GET", u.String(), nil)
@@ -940,7 +993,7 @@ var _ = Describe("API", func() {
 			Expect(res.StatusCode).To(Equal(http.StatusOK), string(body))
 
 			type ResourceReport struct {
-				Guid  string `json:"guid"`
+				Name  string `json:"name"`
 				Price int64  `json:"price"`
 			}
 			type SpaceReport struct {
@@ -954,43 +1007,25 @@ var _ = Describe("API", func() {
 				Spaces  []SpaceReport `json:"spaces"`
 			}
 
-			var actualOutput []OrgReport
+			var actualOutput OrgReport
 			err = json.Unmarshal(body, &actualOutput)
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
 
-			expectedOutput := []OrgReport{
-				{
-					OrgGuid: "o1",
-					Price:   1800000,
-					Spaces: []SpaceReport{
-						{
-							SpaceGuid: "o1s1",
-							Price:     1800000,
-							Resources: []ResourceReport{
-								{
-									Guid:  "o1s1-app1",
-									Price: 1440000,
-								},
-								{
-									Guid:  "o1s1-db1",
-									Price: 360000,
-								},
+			expectedOutput := OrgReport{
+				OrgGuid: "o1",
+				Price:   3240000,
+				Spaces: []SpaceReport{
+					{
+						SpaceGuid: "o1s1",
+						Price:     3240000,
+						Resources: []ResourceReport{
+							{
+								Name:  "o1s1-app1",
+								Price: 2880000,
 							},
-						},
-					},
-				},
-				{
-					OrgGuid: "o2",
-					Price:   120000,
-					Spaces: []SpaceReport{
-						{
-							SpaceGuid: "o2s1",
-							Price:     120000,
-							Resources: []ResourceReport{
-								{
-									Guid:  "o2s1-db1",
-									Price: 120000,
-								},
+							{
+								Name:  "o1s1-db1",
+								Price: 360000,
 							},
 						},
 					},
@@ -998,7 +1033,5 @@ var _ = Describe("API", func() {
 			}
 			Expect(actualOutput).To(Equal(expectedOutput))
 		})
-
 	})
-
 })

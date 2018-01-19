@@ -55,8 +55,8 @@ var baseTemplate = `
 	<body>
 		<div class="phase-banner">
 			<p>
-				<strong class="phase-tag">ALPHA</strong>
-				<span>This is a pre-release tool</span> – Don't rely on this data!
+				<strong class="phase-tag">Beta</strong>
+				<span>Thank you for your custom</span>
 			</p>
 		</div>
 		<h1 class="heading-xlarge" style="margin:40px 10px">
@@ -177,7 +177,7 @@ var templates = map[string]string{
 			<a href="/pricing_plans">view all plans</a>
 		</div>
 	`,
-	"/report": `
+	"/report/:org_guid": `
 		{{ $from := .Range.From }}
 		{{ $to := .Range.To }}
 
@@ -185,7 +185,7 @@ var templates = map[string]string{
 			Showing breakdown of resource usage between <strong>{{ $from }}</strong> to <strong>{{ $to }}</strong>
 		</p>
 
-		<form method="GET" action="/report" style="margin-bottom:30px;">
+		<form method="GET" action="{{ .Path }}" style="margin-bottom:30px;">
 			<div style="padding: 20px; margin:2px; background:white; overflow:hidden">
 				<div class="form-group" style="float:left; width: 25%; margin-right:40px;">
 					<label class="form-label" for="rangeFrom">From date</label>
@@ -219,24 +219,27 @@ var templates = map[string]string{
 							</tr>
 							{{ range $resource := index $space "resources" }}
 								<tr class="resource">
-									<td>{{ index $resource "guid" | name }}</td>
+									<td>{{ index $resource "name" }}</td>
 									<td>{{ index $resource "pricing_plan_name" }}</td>
-									<td><a href="/resources/{{ index $resource "guid" }}/events?from={{ $from }}&to={{ $to }}">details</a></td>
 									<td class="price">{{ index $resource "price" | in_pounds}}</td>
 								</tr>
 							{{ end }}
-							<tr class="resource">
-								<td colspan="3"><strong>Space total</strong></td>
+							<tr class="space space-total">
+								<td colspan="2"><strong>Space total</strong></td>
 								<td class="price">{{ index $space "price" | in_pounds }}</td>
 							</tr>
 						</table>
 					</div>
 				{{ end }}
-				<div class="space space-total">
+				<div class="org org-total">
 					<table>
 						<tr>
-							<td><strong>Org total</strong></td>
-							<td class="price">{{ index $org "price" | in_pounds}}</td>
+							{{ if index $org "spaces" }}
+								<td><strong>Org total</strong></td>
+								<td class="price">{{ index $org "price" | in_pounds}}</td>
+							{{ else }}
+								<td><strong>No resources found for organisation</strong>
+							{{ end }}
 						</tr>
 					</table>
 				</div>
@@ -294,14 +297,6 @@ var templateFunctions = template.FuncMap{
 			for guid, space := range spaces {
 				nameCacheMap[guid] = space.Name
 			}
-			apps, _ := cf.GetApps()
-			for guid, app := range apps {
-				nameCacheMap[guid] = app.Name
-			}
-			srvs, _ := cf.GetServiceInstances()
-			for guid, srv := range srvs {
-				nameCacheMap[guid] = srv.Name
-			}
 		}
 		name, ok := nameCacheMap[guid]
 		if !ok {
@@ -325,11 +320,12 @@ var compiledTemplates = compile(templates)
 
 // Render renders the JSON data as HTML
 func Render(c echo.Context, r io.Reader, rt int) error {
-	name := c.Path()
-	tmpl, ok := compiledTemplates[name]
+	tmpl, ok := compiledTemplates[c.Path()]
 	if !ok {
 		tmpl = compiledTemplates["default"]
 	}
+
+	name := c.Request().URL.Path
 	return tmpl.Execute(c.Response(), &Data{
 		Title: name,
 		Path:  name,
