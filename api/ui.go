@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
@@ -49,6 +50,19 @@ var baseTemplate = `
 			}
 			strong {
 				font-weight: 600 !important;
+			}
+			@media print {
+				.phase-banner,
+				form
+				{
+					display: none;
+				}
+				.heading-xlarge {
+					margin: 10px !important;
+				}
+				body {
+					zoom: 0.5;
+				}
 			}
 		</style>
 	</head>
@@ -182,7 +196,7 @@ var templates = map[string]string{
 		{{ $to := .Range.To }}
 
 		<p class="lede" style="margin:20px 10px">
-			Showing breakdown of resource usage between <strong>{{ $from }}</strong> to <strong>{{ $to }}</strong>
+			Showing breakdown of resource usage between <strong>{{ $from | format_date }}</strong> to <strong>{{ $to | format_date }}</strong>
 		</p>
 
 		<form method="GET" action="{{ .Path }}" style="margin-bottom:30px;">
@@ -274,6 +288,9 @@ var templateFunctions = template.FuncMap{
 	"in_pounds": func(pence float64) string {
 		p := pence / 100.0
 		return fmt.Sprintf("£ %.2f", p)
+	},
+	"format_date": func(t string) string {
+		return strings.Split(t, "T")[0]
 	},
 	"name": func(guid string) (string, error) {
 		nameCacheLock.Lock()
