@@ -93,7 +93,6 @@ func CreatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		go db.UpdateViews()
 		return nil
 	}
 }
@@ -126,7 +125,7 @@ func UpdatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if pp.Formula == "" {
 			return errors.New("formula is required")
 		}
-		err := render(Single, c, db, `
+		return render(Single, c, db, `
 			update pricing_plans set
 				name = $1,
 				valid_from = $2,
@@ -141,11 +140,6 @@ func UpdatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 				plan_guid,
 				formula
 		`, pp.Name, pp.ValidFrom, pp.PlanGuid, pp.Formula, id)
-		if err != nil {
-			return err
-		}
-		go db.UpdateViews()
-		return nil
 	}
 }
 
@@ -155,7 +149,7 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if id == "" {
 			return errors.New("missing pricing_plan_id")
 		}
-		err := render(Single, c, db, `
+		return render(Single, c, db, `
 			delete from
 				pricing_plans
 			where
@@ -167,18 +161,13 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 				plan_guid,
 				formula
 		`, id)
-		if err != nil {
-			return err
-		}
-		go db.UpdateViews()
-		return nil
 	}
 }
 
 // CreateMissingPricingPlans inserts "free" pricing plans for any plan_guids that don't have them yet
 func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		err := render(Single, c, db, `
+		return render(Single, c, db, `
 			insert into pricing_plans (
 				name,
 				valid_from,
@@ -200,10 +189,5 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 					)
 			) returning name
 		`)
-		if err != nil {
-			return err
-		}
-		go db.UpdateViews()
-		return nil
 	}
 }
