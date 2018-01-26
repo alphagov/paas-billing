@@ -196,9 +196,8 @@ var templates = map[string]string{
 		{{ $to := .Range.To }}
 
 		<p class="lede" style="margin:20px 10px">
-			Showing breakdown of resource usage between <strong>{{ $from | format_date }}</strong> to <strong>{{ $to | format_date }}</strong>
+			Showing breakdown of resource usage between <strong>{{ $from | format_date }}</strong> to <strong>{{ $to | format_date }}</strong>.
 		</p>
-
 		<form method="GET" action="{{ .Path }}" style="margin-bottom:30px;">
 			<div style="padding: 20px; margin:2px; background:white; overflow:hidden">
 				<div class="form-group" style="float:left; width: 25%; margin-right:40px;">
@@ -259,6 +258,10 @@ var templates = map[string]string{
 				</div>
 			</div>
 		{{ end }}
+		<p class="lede" style="margin:20px 10px">
+			Where applicable an exchange for USD to GBP of 0.7533 has been applied.
+		</p>
+
 	`,
 	"/repair": `
 		<p class="lede" class="margin:10px">
