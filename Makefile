@@ -28,6 +28,6 @@ db/bindata.go: db/sql/*.sql db/migrate.go
 
 .PHONY: generate-test-mocks
 generate-test-mocks: ## Generates all test mocks
-	mockgen -package mocks -destination mocks/cloudfoundry.go github.com/alphagov/paas-usage-events-collector/cloudfoundry Client,UsageEventsAPI
-	mockgen -package mocks -destination mocks/db.go github.com/alphagov/paas-usage-events-collector/db SQLClient
+	mockgen -package mocks -destination mocks/cloudfoundry.go github.com/alphagov/paas-billing/cloudfoundry Client,UsageEventsAPI
+	mockgen -package mocks -destination mocks/db.go github.com/alphagov/paas-billing/db SQLClient
 	mockgen -destination=mocks/io.go -package mocks io ReadCloser

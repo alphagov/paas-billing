@@ -3,7 +3,7 @@ package collector_test
 import (
 	"os"
 
-	. "github.com/alphagov/paas-usage-events-collector/collector"
+	. "github.com/alphagov/paas-billing/collector"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

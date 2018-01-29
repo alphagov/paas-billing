@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
+	"github.com/alphagov/paas-billing/cloudfoundry"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"

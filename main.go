@@ -11,11 +11,11 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-usage-events-collector/auth"
-	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	"github.com/alphagov/paas-usage-events-collector/collector"
-	"github.com/alphagov/paas-usage-events-collector/db"
-	"github.com/alphagov/paas-usage-events-collector/server"
+	"github.com/alphagov/paas-billing/auth"
+	"github.com/alphagov/paas-billing/cloudfoundry"
+	"github.com/alphagov/paas-billing/collector"
+	"github.com/alphagov/paas-billing/db"
+	"github.com/alphagov/paas-billing/server"
 	"github.com/pkg/errors"
 )
 

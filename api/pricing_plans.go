@@ -3,7 +3,7 @@ package api
 import (
 	"errors"
 
-	"github.com/alphagov/paas-usage-events-collector/db"
+	"github.com/alphagov/paas-billing/db"
 	"github.com/labstack/echo"
 )
 

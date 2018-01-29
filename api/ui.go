@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/alphagov/paas-usage-events-collector/cloudfoundry"
+	"github.com/alphagov/paas-billing/cloudfoundry"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/labstack/echo"
 )

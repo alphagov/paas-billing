@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/alphagov/paas-usage-events-collector/auth"
-	"github.com/alphagov/paas-usage-events-collector/db"
+	"github.com/alphagov/paas-billing/auth"
+	"github.com/alphagov/paas-billing/db"
 	"github.com/labstack/echo"
 )
 

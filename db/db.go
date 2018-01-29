@@ -6,7 +6,7 @@ import (
 	"io"
 	"strings"
 
-	cf "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
+	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	_ "github.com/lib/pq"
 )
 

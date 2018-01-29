@@ -7,5 +7,5 @@ applications:
    buildpack: go_buildpack
    health-check-type: process
    env:
-     GOPACKAGENAME: github.com/alphagov/paas-usage-events-collector
+     GOPACKAGENAME: github.com/alphagov/paas-billing
    command: ./bin/paas-usage-events-collector

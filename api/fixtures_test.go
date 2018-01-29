@@ -3,8 +3,8 @@ package api_test
 import (
 	"time"
 
-	"github.com/alphagov/paas-usage-events-collector/db"
-	. "github.com/alphagov/paas-usage-events-collector/fixtures"
+	"github.com/alphagov/paas-billing/db"
+	. "github.com/alphagov/paas-billing/fixtures"
 )
 
 func ago(t time.Duration) time.Time {
