@@ -22,7 +22,7 @@ Usage:
 
 To get the current pricing json:
 
-    COLLECTOR_URL=https://paas-usage-events-collector.cloudapps.digital
+    COLLECTOR_URL=https://paas-billing.cloudapps.digital
     curl ${COLLECTOR_URL}/pricing_plans -k \
         -H 'Accept: application/json' \
         -H "Authorization: $(cat ~/.cf/config.json  | jq .AccessToken -r)" \
@@ -36,7 +36,7 @@ if [ -z "${pricing_file}" ]; then
     usage
 fi
 
-COLLECTOR_URL=${COLLECTOR_URL:-https://paas-usage-events-collector.cloudapps.digital}
+COLLECTOR_URL=${COLLECTOR_URL:-https://paas-billing.cloudapps.digital}
 pricing_plans_url="${COLLECTOR_URL}/pricing_plans"
 
 for i in $(cat "${pricing_file}" | jq -r '.[].id'); do
