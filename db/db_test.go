@@ -5,9 +5,9 @@ import (
 	"math"
 	"time"
 
-	cf "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	. "github.com/alphagov/paas-usage-events-collector/db"
-	"github.com/alphagov/paas-usage-events-collector/db/dbhelper"
+	cf "github.com/alphagov/paas-billing/cloudfoundry"
+	. "github.com/alphagov/paas-billing/db"
+	"github.com/alphagov/paas-billing/db/dbhelper"
 	uuid "github.com/satori/go.uuid"
 
 	. "github.com/onsi/ginkgo"

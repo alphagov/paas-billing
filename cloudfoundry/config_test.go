@@ -3,7 +3,7 @@ package cloudfoundry_test
 import (
 	"os"
 
-	. "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
+	. "github.com/alphagov/paas-billing/cloudfoundry"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

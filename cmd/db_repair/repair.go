@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"time"
 
-	cf "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	"github.com/alphagov/paas-usage-events-collector/db"
+	cf "github.com/alphagov/paas-billing/cloudfoundry"
+	"github.com/alphagov/paas-billing/db"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 )
 

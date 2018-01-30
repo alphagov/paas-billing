@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	. "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	"github.com/alphagov/paas-usage-events-collector/mocks"
+	. "github.com/alphagov/paas-billing/cloudfoundry"
+	"github.com/alphagov/paas-billing/mocks"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

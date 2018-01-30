@@ -1,6 +1,6 @@
-# PaaS Usage Events Collector
+# paas-billing
 
-A Golang application for polling the CloudFoundry API for app and service usage events and storing them in Postgres.
+A Golang application for polling the CloudFoundry API for app and service usage events, storing them in Postgres, and querying them.
 
 Cloud Foundry docs on usage events: https://docs.cloudfoundry.org/running/managing-cf/usage-events.html
 

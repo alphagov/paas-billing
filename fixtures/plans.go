@@ -3,7 +3,7 @@ package fixtures
 import (
 	"time"
 
-	"github.com/alphagov/paas-usage-events-collector/db"
+	"github.com/alphagov/paas-billing/db"
 )
 
 type Plans map[string]Plan

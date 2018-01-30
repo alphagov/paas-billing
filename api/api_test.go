@@ -10,11 +10,11 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"github.com/alphagov/paas-usage-events-collector/api"
-	cf "github.com/alphagov/paas-usage-events-collector/cloudfoundry"
-	"github.com/alphagov/paas-usage-events-collector/db"
-	"github.com/alphagov/paas-usage-events-collector/db/dbhelper"
-	"github.com/alphagov/paas-usage-events-collector/server"
+	"github.com/alphagov/paas-billing/api"
+	cf "github.com/alphagov/paas-billing/cloudfoundry"
+	"github.com/alphagov/paas-billing/db"
+	"github.com/alphagov/paas-billing/db/dbhelper"
+	"github.com/alphagov/paas-billing/server"
 	"github.com/labstack/echo"
 	uuid "github.com/satori/go.uuid"
 

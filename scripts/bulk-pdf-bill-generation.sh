@@ -1,7 +1,7 @@
 #!/bin/bash
 set -eu -o pipefail
 
-COLLECTOR_URL=${COLLECTOR_URL:-https://paas-usage-events-collector.cloudapps.digital}
+COLLECTOR_URL=${COLLECTOR_URL:-https://paas-billing.cloudapps.digital}
 report_url="${COLLECTOR_URL}/report"
 
 usage() {
