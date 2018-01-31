@@ -37,17 +37,23 @@ date_to=$(date -d "${month}-01 +1 month" "+%Y-%m-%dT00%%3A00%%3A00Z")
 
 cf_token="$(cat ~/.cf/config.json  | jq .AccessToken -r)"
 
-default_quota_guid="$(cf curl '/v2/quota_definitions?q=name%3Adefault' | jq .resources[].metadata.guid -r)"
+get_all_orgs_without_default_quota() {
+    default_quota_guid="$(cf curl '/v2/quota_definitions?q=name%3Adefault' | jq .resources[].metadata.guid -r)"
+    total_pages="$(cf curl  /v2/organizations?order-by=name | jq .total_pages)"
+    for page in $(seq "${total_pages}"); do
+        cf curl "/v2/organizations?order-by=name&page=$page"  | \
+            jq ".resources[] | select(.entity.quota_definition_guid | contains(\"$default_quota_guid\") | not) | .metadata.guid" -r
+    done
+}
 
-for org_guid in $(cf curl  /v2/organizations?order-by=name  | \
-    jq ".resources[] | select(.entity.quota_definition_guid | contains(\"$default_quota_guid\" ) | not) | .metadata.guid" -r); do
+for org_guid in $(get_all_orgs_without_default_quota); do
 
     org_name=$(cf curl /v2/organizations/${org_guid} | jq .entity.name -r)
     org_managers=$(cf curl /v2/organizations/${org_guid}/managers | jq -r  .resources[].entity.username)
 
     echo "Retrieving report for org: ${org_name} org_guid: ${org_guid} managers: $(echo ${org_managers} | xargs)"
 
-    target_dir="reports/${org_name}"
+    target_dir="reports/${month}/${org_name}"
     mkdir -p "${target_dir}"
     echo ${org_managers} > "${target_dir}/managers.txt"
 
@@ -60,8 +66,6 @@ for org_guid in $(cf curl  /v2/organizations?order-by=name  | \
         -H 'Accept: text/html' \
         -H "Authorization: ${cf_token}" \
         -o "${target_dir}/report_${month}.html"
-
-    sed -i '/<form/,/<\/form/d' "${target_dir}/report_${month}.html"
 
     echo "Converting to PDF"
     docker run \
