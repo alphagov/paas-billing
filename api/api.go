@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
+	"text/template"
 
 	"github.com/alphagov/paas-billing/auth"
 	"github.com/alphagov/paas-billing/db"
@@ -340,20 +342,79 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql stri
 			args = append(args, guid)
 			conditions[i] = fmt.Sprintf("space_guid = $%d", len(args))
 		}
-		cond = "where " + strings.Join(conditions, " or ")
+		cond = "and ( " + strings.Join(conditions, " or ") + " )"
 	}
-	sql = fmt.Sprintf(`
-		with authorized_resources as (
-			select *
-			from billable_range(tstzrange('%s', '%s'))
-			%s
+
+	templateVars := struct {
+		Range     RangeParams
+		Condition string
+		SQL       string
+	}{
+		Range:     rng,
+		Condition: cond,
+		SQL:       sql,
+	}
+	templateSQL := `
+		with
+		valid_pricing_plans as (
+			select
+				pp.*,
+				tstzrange(valid_from, lead(valid_from, 1, 'infinity') over plans) as valid_for
+			from
+				pricing_plans pp
+			window
+				plans as (partition by plan_guid order by valid_from rows between current row and 1 following)
+		),
+		authorized_resources as (
+			select
+				b.id,
+				b.guid,
+				b.name,
+				b.org_guid,
+				b.space_guid,
+				b.memory_in_mb,
+				tstzrange(
+					greatest('{{ .Range.From }}', lower(vpp.valid_for), lower(b.duration)),
+					least('{{ .Range.To }}', upper(vpp.valid_for), upper(b.duration))
+				) as duration,
+				vpp.id AS pricing_plan_id,
+				vpp.name AS pricing_plan_name,
+				vpp.formula,
+				eval_formula(
+					b.memory_in_mb,
+					tstzrange(
+						greatest('{{ .Range.From }}', lower(vpp.valid_for), lower(b.duration)),
+						least('{{ .Range.To }}', upper(vpp.valid_for), upper(b.duration))
+					),
+					vpp.formula
+				) as price
+			from
+				billable b
+			inner join
+				valid_pricing_plans vpp
+			on b.plan_guid = vpp.plan_guid
+				 and vpp.valid_for && b.duration
+				 and vpp.valid_for && tstzrange( '{{ .Range.From }}', '{{ .Range.To }}' )
+			where
+				b.duration &&  tstzrange( '{{ .Range.From }}', '{{ .Range.To }}' )
+				{{ .Condition }}
 		),
 		q as (
-			%s
+			{{ .SQL }}
 		)
 		select * from q
-	`, rng.From, rng.To, cond, sql)
-	return sql, args, nil
+	`
+	var buf bytes.Buffer
+	tmpl, err := template.New("sql").Parse(templateSQL)
+	if err != nil {
+		return "", args, err
+	}
+	err = tmpl.Execute(&buf, templateVars)
+	if err != nil {
+		return "", args, err
+	}
+
+	return buf.String(), args, nil
 }
 
 func withAuthorizedResources(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) (err error) {
