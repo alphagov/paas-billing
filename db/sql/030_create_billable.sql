@@ -78,39 +78,19 @@ resources as (
 		generate_series(1, t.inst_count)
 	from
 		event_ranges t
-),
-
-valid_pricing_plans as (
-	select
-		pp.*,
-		tstzrange(valid_from, lead(valid_from, 1, 'infinity') over plans) as valid_for
-	from
-		pricing_plans pp
-	window
-		plans as (partition by plan_guid order by valid_from rows between current row and 1 following)
 )
 
--- join the pricing plans
--- this results in ONLY the resources that can be billed for being listed
 select
 	r.id,
 	r.guid,
 	r.name,
 	r.org_guid,
 	r.space_guid,
+	r.plan_guid,
 	r.memory_in_mb,
-	tstzrange(
-		greatest(lower(pp.valid_for),lower(r.duration)),
-		least(upper(pp.valid_for),upper(r.duration))
-	) as duration,
-	pp.id as pricing_plan_id,
-	pp.name as pricing_plan_name,
-	pp.formula,
-	eval_formula(r.memory_in_mb, r.duration, pp.formula) as price
+	r.duration
 from
 	resources r
-inner join
-	valid_pricing_plans pp on r.plan_guid = pp.plan_guid and pp.valid_for && r.duration
 where
 	r.state = 'STARTED'
 order by
@@ -120,5 +100,5 @@ order by
 CREATE INDEX IF NOT EXISTS idx_id ON billable (id);
 CREATE INDEX IF NOT EXISTS idx_org ON billable (org_guid);
 CREATE INDEX IF NOT EXISTS idx_space ON billable (space_guid);
-CREATE INDEX IF NOT EXISTS idx_pricing_plan ON billable (pricing_plan_id);
 CREATE INDEX IF NOT EXISTS idx_duration ON billable USING gist (duration);
+CREATE INDEX IF NOT EXISTS idx_plan ON billable (plan_guid);
