@@ -18,7 +18,7 @@ WARNING:
       info. Solution: Wait a while, restart collector.
 
 Usage:
-    ./push-pricing.sh <princing_file.json>
+    ./push-pricing.sh <create|update> <princing_file.json>
 
 To get the current pricing json:
 
@@ -31,21 +31,39 @@ EOF
     exit 1
 }
 
-pricing_file=${1:-}
-if [ -z "${pricing_file}" ]; then
+action=${1:-}
+pricing_file=${2:-}
+if [ -z "${action}" -o -z "${pricing_file}" ]; then
     usage
 fi
 
 COLLECTOR_URL=${COLLECTOR_URL:-https://paas-billing.cloudapps.digital}
 pricing_plans_url="${COLLECTOR_URL}/pricing_plans"
 
-for i in $(cat "${pricing_file}" | jq -r '.[].id'); do
+for i in $(cat "${pricing_file}" | jq -r '.[].id' | sort -n); do
     data="$(cat "${pricing_file}" | jq ".[] | select(.id | contains($i))")"
-    curl --fail "${pricing_plans_url}/$i" \
-        -k \
-        -X PUT \
-        -H "Authorization: $(cat ~/.cf/config.json  | jq .AccessToken -r)" \
-        -H 'Content-Type: application/json' -H 'Accept: application/json' \
-        --data "$data"
-    echo
+    case "${action}" in
+        create)
+            curl --fail "${pricing_plans_url}" \
+                -k \
+                -X POST \
+                -H "Authorization: $(cat ~/.cf/config.json  | jq .AccessToken -r)" \
+                -H 'Content-Type: application/json' -H 'Accept: application/json' \
+                --data "$data"
+            echo
+            ;;
+        update)
+            curl --fail "${pricing_plans_url}/$i" \
+                -k \
+                -X PUT \
+                -H "Authorization: $(cat ~/.cf/config.json  | jq .AccessToken -r)" \
+                -H 'Content-Type: application/json' -H 'Accept: application/json' \
+                --data "$data"
+            echo
+            ;;
+        *)
+            echo "Unknown action: $action"
+            usage
+            ;;
+    esac
 done
