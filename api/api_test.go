@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -10,7 +11,6 @@ import (
 	"net/http/httptest"
 	"net/url"
 
-	"github.com/alphagov/paas-billing/api"
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/db"
 	"github.com/alphagov/paas-billing/db/dbhelper"
@@ -34,6 +34,21 @@ var _ = Describe("API", func() {
 		Formula   string
 		ValidFrom string
 		PlanGuid  string
+	}
+
+	type ResourceReport struct {
+		Name  string `json:"name"`
+		Price int64  `json:"price"`
+	}
+	type SpaceReport struct {
+		SpaceGuid string           `json:"space_guid"`
+		Price     int64            `json:"price"`
+		Resources []ResourceReport `json:"resources"`
+	}
+	type OrgReport struct {
+		OrgGuid string        `json:"org_guid"`
+		Price   int64         `json:"price"`
+		Spaces  []SpaceReport `json:"spaces"`
 	}
 
 	var (
@@ -821,7 +836,75 @@ var _ = Describe("API", func() {
 		}
 	})
 
-	Context("Billing report", func() {
+	Context("Simulated report", func() {
+		var (
+			org_guid = "o1"
+			path     = "/report/" + org_guid
+		)
+
+		It("should produce a report", func() {
+			reqBody := bytes.NewBufferString(`{
+				"events": [
+					{
+						"name": "o1s1-app1",
+						"space_guid": "o1s1",
+						"plan_guid": "` + X4ComputePlan.PlanGuid + `",
+						"memory_in_mb": 1
+					},
+					{
+						"name": "o1s1-db1",
+						"space_guid": "o1s1",
+						"plan_guid": "` + X2ServicePlan.PlanGuid + `"
+					}
+				]
+			}`)
+
+			u, err := url.Parse(path + "?from=" + now.Format(time.RFC3339) + "&to=" + now.Add(24*time.Hour).Format(time.RFC3339))
+			Expect(err).ToNot(HaveOccurred())
+
+			req, err := http.NewRequest("POST", u.String(), reqBody)
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			req.Header.Set(echo.HeaderAccept, echo.MIMEApplicationJSONCharsetUTF8)
+
+			rec := httptest.NewRecorder()
+
+			e := server.New(sqlClient, NonAuthenticated, nil)
+			e.ServeHTTP(rec, req)
+
+			res := rec.Result()
+			body, _ := ioutil.ReadAll(res.Body)
+			Expect(res.StatusCode).To(Equal(http.StatusOK), string(body))
+
+			var actualOutput OrgReport
+			err = json.Unmarshal(body, &actualOutput)
+			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
+
+			expectedOutput := OrgReport{
+				OrgGuid: "o1",
+				Price:   51840000,
+				Spaces: []SpaceReport{
+					{
+						SpaceGuid: "o1s1",
+						Price:     51840000,
+						Resources: []ResourceReport{
+							{
+								Name:  "o1s1-app1",
+								Price: 34560000,
+							},
+							{
+								Name:  "o1s1-db1",
+								Price: 17280000,
+							},
+						},
+					},
+				},
+			}
+			Expect(actualOutput).To(Equal(expectedOutput))
+		})
+	})
+
+	Context("Org report", func() {
 
 		var (
 			org_guid = "o1"
@@ -989,21 +1072,6 @@ var _ = Describe("API", func() {
 			res := rec.Result()
 			body, _ := ioutil.ReadAll(res.Body)
 			Expect(res.StatusCode).To(Equal(http.StatusOK), string(body))
-
-			type ResourceReport struct {
-				Name  string `json:"name"`
-				Price int64  `json:"price"`
-			}
-			type SpaceReport struct {
-				SpaceGuid string           `json:"space_guid"`
-				Price     int64            `json:"price"`
-				Resources []ResourceReport `json:"resources"`
-			}
-			type OrgReport struct {
-				OrgGuid string        `json:"org_guid"`
-				Price   int64         `json:"price"`
-				Spaces  []SpaceReport `json:"spaces"`
-			}
 
 			var actualOutput OrgReport
 			err = json.Unmarshal(body, &actualOutput)

@@ -26,14 +26,15 @@ func (sa *SimpleAuthorizer) Admin() bool {
 type SimpleAuthenticator struct {
 	admin                bool
 	authorizedSpaceGUIDs []string
+	authorizationError   error
 }
 
 func (sa *SimpleAuthenticator) Authorize(c echo.Context) error {
-	return nil
+	return sa.authorizationError
 }
 
 func (sa *SimpleAuthenticator) Exchange(c echo.Context) error {
-	return nil
+	return sa.authorizationError
 }
 
 func (sa *SimpleAuthenticator) NewAuthorizer(token string) (auth.Authorizer, error) {
@@ -66,4 +67,10 @@ var AuthenticatedNonAdmin = &SimpleAuthenticator{
 var AuthenticatedAdmin = &SimpleAuthenticator{
 	admin:                true,
 	authorizedSpaceGUIDs: []string{},
+}
+
+var NonAuthenticated = &SimpleAuthenticator{
+	admin:                false,
+	authorizedSpaceGUIDs: []string{},
+	authorizationError:   nil,
 }

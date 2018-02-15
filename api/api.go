@@ -14,9 +14,11 @@ import (
 	"github.com/labstack/echo"
 )
 
+const billableViewName = "billable"
+
 func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				guid,
 				org_guid,
@@ -29,68 +31,114 @@ func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
 				iso8601(upper(duration)) as stop,
 				price::bigint as price
 			from
-				authorized_resources
+				monetized_resources
 			order by
 				guid, id
 		`)
 	}
 }
 
-func NewReportHandler(db db.SQLClient) echo.HandlerFunc {
+type SimulatedEvents struct {
+	Events []SimulatedEvent `json:"events"`
+}
+
+type SimulatedEvent struct {
+	Name       string `json:"name"`
+	SpaceGUID  string `json:"space_guid"`
+	PlanGUID   string `json:"plan_guid"`
+	MemoryInMB int    `json:"memory_in_mb"`
+}
+
+func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		orgGUID := c.Param("org_guid")
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return withAuthorizedResources(Single, c, db, `
-			with
-			resources as (
-				select
-					name,
-					space_guid,
-					pricing_plan_id,
-					pricing_plan_name,
-					sum(to_seconds(duration)) as duration,
-					sum(price * 100)::bigint as price
-				from
-					authorized_resources
-				where
-					org_guid = $1
-				group by
-					name, space_guid, pricing_plan_id, pricing_plan_name
-				order by
-					name, space_guid, pricing_plan_id
-			),
-			space_resources as (
-				select
-					t.space_guid,
-					sum(t.price) as price,
-					json_agg(row_to_json(t.*)) as resources
-				from
-					resources t
-				group by
-					space_guid
-				order by
-					space_guid
+		rng, ok := c.Get("range").(RangeParams)
+		if !ok {
+			return errors.New("bad request: no range params in context")
+		}
+
+		var events SimulatedEvents
+		err := c.Bind(&events)
+		if err != nil {
+			return err
+		}
+
+		dbTx, err := db.BeginTx()
+		if err != nil {
+			return err
+		}
+		defer dbTx.Rollback()
+
+		tempTableName := "temp_billable"
+		_, err = dbTx.Exec(`CREATE TEMPORARY TABLE ` + tempTableName + ` (
+				id serial,
+				guid text,
+				name text,
+				org_guid text,
+				space_guid text,
+				plan_guid text,
+				memory_in_mb numeric,
+				duration tstzrange
+			)`,
+		)
+		if err != nil {
+			return err
+		}
+		stmt, err := dbTx.Prepare(`INSERT INTO ` + tempTableName + ` (
+		  guid,
+			name,
+			org_guid,
+			space_guid,
+			plan_guid,
+			memory_in_mb,
+			duration
+		) VALUES (
+			$1, $2, $3, $4, $5, $6, tstzrange($7, $8)
+		)`)
+		if err != nil {
+			return err
+		}
+		for _, event := range events.Events {
+			_, err = stmt.Exec(
+				event.Name+"-guid",
+				event.Name,
+				orgGUID,
+				event.SpaceGUID,
+				event.PlanGUID,
+				event.MemoryInMB,
+				rng.From,
+				rng.To,
 			)
-			select
-				$1 org_guid,
-				sum(t.price) as price,
-				json_agg(row_to_json(t.*)) as spaces
-			from
-				space_resources t
-		`, orgGUID)
+			if err != nil {
+				return err
+			}
+		}
+
+		return generateReport(orgGUID, tempTableName, c, dbTx)
+	}
+}
+
+func NewOrgReportHandler(db db.SQLClient) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		orgGUID := c.Param("org_guid")
+		if orgGUID == "" {
+			return errors.New("missing org_guid")
+		}
+		return generateReport(orgGUID, billableViewName, c, db)
 	}
 }
 
 func ListOrgUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			group by
 				org_guid
 			order by
@@ -105,12 +153,12 @@ func GetOrgUsage(db db.SQLClient) echo.HandlerFunc {
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return withAuthorizedResources(Single, c, db, `
+		return withAuthorizedResources(Single, billableViewName, c, db, `
 			select
 				org_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				org_guid = $1
 			group by
@@ -126,13 +174,13 @@ func ListSpacesUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				org_guid = $1
 			group by
@@ -145,13 +193,13 @@ func ListSpacesUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 
 func ListSpacesUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			group by
 				org_guid, space_guid
 			order by
@@ -166,13 +214,13 @@ func GetSpaceUsage(db db.SQLClient) echo.HandlerFunc {
 		if spaceGUID == "" {
 			return errors.New("missing space_guid")
 		}
-		return withAuthorizedResources(Single, c, db, `
+		return withAuthorizedResources(Single, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				space_guid = $1
 			group by
@@ -188,14 +236,14 @@ func ListResourceUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 		if orgGUID == "" {
 			return errors.New("missing org_guid")
 		}
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				org_guid = $1
 			group by
@@ -213,14 +261,14 @@ func ListResourceUsageForSpace(db db.SQLClient) echo.HandlerFunc {
 		if spaceGUID == "" {
 			return errors.New("missing space_guid")
 		}
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				space_guid = $1
 			group by
@@ -233,14 +281,14 @@ func ListResourceUsageForSpace(db db.SQLClient) echo.HandlerFunc {
 
 func ListResourceUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			group by
 				space_guid, org_guid, guid
 			order by
@@ -255,14 +303,14 @@ func GetResourceUsage(db db.SQLClient) echo.HandlerFunc {
 		if resourceGUID == "" {
 			return errors.New("missing resource_guid")
 		}
-		return withAuthorizedResources(Single, c, db, `
+		return withAuthorizedResources(Single, billableViewName, c, db, `
 			select
 				org_guid,
 				space_guid,
 				guid,
 				(sum(price) * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				guid = $1
 			group by
@@ -279,7 +327,7 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 		if resourceGUID == "" {
 			return errors.New("missing resource_guid")
 		}
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				guid,
 				org_guid,
@@ -290,7 +338,7 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 				iso8601(upper(duration)) as to,
 				(price * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			where
 				guid = $1
 			order by
@@ -301,7 +349,7 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 
 func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, c, db, `
+		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				guid,
 				org_guid,
@@ -312,7 +360,7 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				iso8601(upper(duration)) as to,
 				(price * 100)::bigint as price_in_pence
 			from
-				authorized_resources
+				monetized_resources
 			order by
 				id, pricing_plan_id, guid
 		`)
@@ -327,7 +375,7 @@ const (
 	Many
 )
 
-func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql string, args []interface{}) (string, []interface{}, error) {
+func authorizedSpaceFilter(authorizer auth.Authorizer, billableTableName string, rng RangeParams, sql string, args []interface{}) (string, []interface{}, error) {
 	cond := ""
 	if !authorizer.Admin() {
 		spaces, err := authorizer.Spaces()
@@ -342,16 +390,22 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql stri
 			args = append(args, guid)
 			conditions[i] = fmt.Sprintf("space_guid = $%d", len(args))
 		}
-		cond = "and ( " + strings.Join(conditions, " or ") + " )"
+		cond = "where " + strings.Join(conditions, " or ")
 	}
 
+	return monetizedResourcesFilter(cond, billableTableName, rng, sql, args)
+}
+
+func monetizedResourcesFilter(filterCondition string, billableTableName string, rng RangeParams, sql string, args []interface{}) (string, []interface{}, error) {
 	templateVars := struct {
+		TableName string
 		Range     RangeParams
 		Condition string
 		SQL       string
 	}{
+		TableName: billableTableName,
 		Range:     rng,
-		Condition: cond,
+		Condition: filterCondition,
 		SQL:       sql,
 	}
 	templateSQL := `
@@ -366,6 +420,11 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql stri
 				plans as (partition by plan_guid order by valid_from rows between current row and 1 following)
 		),
 		authorized_resources as (
+			select *
+			from {{ .TableName }}
+			{{ .Condition }}
+		),
+		monetized_resources as (
 			select
 				b.id,
 				b.guid,
@@ -389,7 +448,7 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql stri
 					vpp.formula
 				) as price
 			from
-				billable b
+				authorized_resources b
 			inner join
 				valid_pricing_plans vpp
 			on b.plan_guid = vpp.plan_guid
@@ -397,8 +456,7 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql stri
 				 and vpp.valid_for && tstzrange( '{{ .Range.From }}', '{{ .Range.To }}' )
 			where
 				b.duration &&  tstzrange( '{{ .Range.From }}', '{{ .Range.To }}' )
-				{{ .Condition }}
-		),
+	  ),
 		q as (
 			{{ .SQL }}
 		)
@@ -417,7 +475,19 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, rng RangeParams, sql stri
 	return buf.String(), args, nil
 }
 
-func withAuthorizedResources(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) (err error) {
+func withAllResources(rt resourceType, billableTableName string, c echo.Context, db db.SQLClient, sql string, args ...interface{}) (err error) {
+	rng, ok := c.Get("range").(RangeParams)
+	if !ok {
+		return errors.New("bad request: no range params in context")
+	}
+	sql, args, err = monetizedResourcesFilter("", billableTableName, rng, sql, args)
+	if err != nil {
+		return err
+	}
+	return render(rt, c, db, sql, args...)
+}
+
+func withAuthorizedResources(rt resourceType, billableTableName string, c echo.Context, db db.SQLClient, sql string, args ...interface{}) (err error) {
 	rng, ok := c.Get("range").(RangeParams)
 	if !ok {
 		return errors.New("bad request: no range params in context")
@@ -426,11 +496,52 @@ func withAuthorizedResources(rt resourceType, c echo.Context, db db.SQLClient, s
 	if !ok {
 		return errors.New("unauthorized: no authorizer in context")
 	}
-	sql, args, err = authorizedSpaceFilter(authorizer, rng, sql, args)
+	sql, args, err = authorizedSpaceFilter(authorizer, billableTableName, rng, sql, args)
 	if err != nil {
 		return err
 	}
 	return render(rt, c, db, sql, args...)
+}
+
+func generateReport(orgGUID string, billableTableName string, c echo.Context, db db.SQLClient) error {
+	return withAllResources(Single, billableTableName, c, db, `
+		with
+		resources as (
+			select
+				name,
+				space_guid,
+				pricing_plan_id,
+				pricing_plan_name,
+				sum(to_seconds(duration)) as duration,
+				sum(price * 100)::bigint as price
+			from
+				monetized_resources
+			where
+				org_guid = $1
+			group by
+				name, space_guid, pricing_plan_id, pricing_plan_name
+			order by
+				name, space_guid, pricing_plan_id
+		),
+		space_resources as (
+			select
+				t.space_guid,
+				sum(t.price) as price,
+				json_agg(row_to_json(t.*)) as resources
+			from
+				resources t
+			group by
+				space_guid
+			order by
+				space_guid
+		)
+		select
+			$1 org_guid,
+			sum(t.price) as price,
+			json_agg(row_to_json(t.*)) as spaces
+		from
+			space_resources t
+	`, orgGUID)
 }
 
 func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args ...interface{}) error {
