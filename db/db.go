@@ -2,6 +2,7 @@ package db
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -26,32 +27,86 @@ type SQLClient interface {
 	InitSchema() error
 	InsertUsageEventList(data *cf.UsageEventList, tableName string) error
 	FetchLastGUID(tableName string) (string, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
 	QueryJSON(q string, args ...interface{}) io.Reader
 	QueryRowJSON(q string, args ...interface{}) io.Reader
 	UpdateViews() error
-	Close() error
+	BeginTx() (SQLClient, error)
+	Rollback() error
+	Commit() error
+}
+
+type SQLConn interface {
+	QueryRow(query string, args ...interface{}) *sql.Row
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+	Exec(query string, args ...interface{}) (sql.Result, error)
+	Prepare(query string) (*sql.Stmt, error)
 }
 
 // PostgresClient is the Postgres DB client for handling usage event queries
 type PostgresClient struct {
-	Conn *sql.DB
+	db   *sql.DB
+	tx   *sql.Tx
+	Conn SQLConn
 }
 
 // NewPostgresClient creates a new Postgres client
 func NewPostgresClient(connectionString string) (*PostgresClient, error) {
-	conn, err := sql.Open("postgres", connectionString)
+	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		return nil, err
 	}
 	pc := &PostgresClient{
-		Conn: conn,
+		db:   db,
+		tx:   nil,
+		Conn: db,
 	}
 	return pc, nil
 }
 
+func (pc *PostgresClient) BeginTx() (SQLClient, error) {
+	if pc.tx != nil {
+		return nil, errors.New("cannot create a transaction within a transaction")
+	}
+	tx, err := pc.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	newPc := &PostgresClient{
+		db:   pc.db,
+		tx:   tx,
+		Conn: tx,
+	}
+	return newPc, nil
+}
+
+func (pc *PostgresClient) Rollback() error {
+	if pc.tx == nil {
+		return errors.New("cannot rollback unless in a transaction")
+	}
+	return pc.tx.Rollback()
+}
+
+func (pc *PostgresClient) Commit() error {
+	if pc.tx == nil {
+		return errors.New("cannot commit unless in a transaction")
+	}
+	return pc.tx.Commit()
+}
+
 // Close the connection
 func (pc *PostgresClient) Close() error {
-	return pc.Conn.Close()
+	if pc.tx != nil {
+		pc.tx.Commit()
+	}
+	return pc.db.Close()
+}
+func (pc *PostgresClient) Exec(query string, args ...interface{}) (sql.Result, error) {
+	return pc.Conn.Exec(query, args...)
+}
+func (pc *PostgresClient) Prepare(query string) (*sql.Stmt, error) {
+	return pc.Conn.Prepare(query)
 }
 
 // InsertUsageEventList saves the usage event records in the database
