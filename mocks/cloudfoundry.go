@@ -4,12 +4,13 @@
 package mocks
 
 import (
-	cloudfoundry "github.com/alphagov/paas-billing/cloudfoundry"
-	go_cfclient "github.com/alphagov/paas-billing/vendor/github.com/cloudfoundry-community/go-cfclient"
-	gomock "github.com/golang/mock/gomock"
 	http "net/http"
 	reflect "reflect"
 	time "time"
+
+	cloudfoundry "github.com/alphagov/paas-billing/cloudfoundry"
+	go_cfclient "github.com/cloudfoundry-community/go-cfclient"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockClient is a mock of Client interface
