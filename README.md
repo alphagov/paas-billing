@@ -59,11 +59,18 @@ make test
 
 ### Regenerating the mocks
 
-The tests are using generated mocks created with [gomock](https://github.com/golang/mock). If you change any of the interfaces you have to regenerate the mocks with the provided **generate-test-mocks** make target:
+The tests are using generated mocks created with [gomock](https://github.com/golang/mock). If you change any of the interfaces you have to regenerate the mocks.
 
-```
-make generate-test-mocks
-```
+Due to [golang/mock#138](https://github.com/golang/mock/issues/138) and [golang/mock#95](https://github.com/golang/mock/issues/95) you will need to install the same version of `gomock` as vendored in this project:
+
+    GOMOCK_VERSION=$(dep status | awk '/github.com\/golang\/mock/ {print $2}')
+    go get -d github.com/golang/mock && \
+    git -C ${GOPATH}/src/github.com/golang/mock checkout "${GOMOCK_VERSION}" && \
+    go install github.com/golang/mock/mockgen
+
+Then regenerate the mocks with the **generate-test-mocks** make target:
+
+    make generate-test-mocks
 
 ## Run application locally
 
