@@ -398,15 +398,17 @@ func authorizedSpaceFilter(authorizer auth.Authorizer, billableTableName string,
 
 func monetizedResourcesFilter(filterCondition string, billableTableName string, rng RangeParams, sql string, args []interface{}) (string, []interface{}, error) {
 	templateVars := struct {
-		TableName string
-		Range     RangeParams
-		Condition string
-		SQL       string
+		TableName            string
+		RangeFromPlaceholder string
+		RangeToPlaceholder   string
+		Condition            string
+		SQL                  string
 	}{
-		TableName: billableTableName,
-		Range:     rng,
-		Condition: filterCondition,
-		SQL:       sql,
+		TableName:            billableTableName,
+		RangeFromPlaceholder: fmt.Sprintf("$%d", len(args)+1),
+		RangeToPlaceholder:   fmt.Sprintf("$%d", len(args)+2),
+		Condition:            filterCondition,
+		SQL:                  sql,
 	}
 	templateSQL := `
 		with
@@ -433,8 +435,8 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				b.space_guid,
 				b.memory_in_mb,
 				tstzrange(
-					greatest('{{ .Range.From }}', lower(vpp.valid_for), lower(b.duration)),
-					least('{{ .Range.To }}', upper(vpp.valid_for), upper(b.duration))
+					greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
+					least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
 				) as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
@@ -442,8 +444,8 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				eval_formula(
 					b.memory_in_mb,
 					tstzrange(
-						greatest('{{ .Range.From }}', lower(vpp.valid_for), lower(b.duration)),
-						least('{{ .Range.To }}', upper(vpp.valid_for), upper(b.duration))
+						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
+						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
 					),
 					vpp.formula
 				) as price
@@ -453,9 +455,9 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				valid_pricing_plans vpp
 			on b.plan_guid = vpp.plan_guid
 				 and vpp.valid_for && b.duration
-				 and vpp.valid_for && tstzrange( '{{ .Range.From }}', '{{ .Range.To }}' )
+				 and vpp.valid_for && tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
 			where
-				b.duration &&  tstzrange( '{{ .Range.From }}', '{{ .Range.To }}' )
+				b.duration &&  tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
 	  ),
 		q as (
 			{{ .SQL }}
@@ -472,7 +474,7 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 		return "", args, err
 	}
 
-	return buf.String(), args, nil
+	return buf.String(), append(args, rng.From, rng.To), nil
 }
 
 func withAllResources(rt resourceType, billableTableName string, c echo.Context, db db.SQLClient, sql string, args ...interface{}) (err error) {
