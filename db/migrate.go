@@ -13,7 +13,7 @@ func (pc *PostgresClient) InitSchema() (err error) {
 	names := AssetNames()
 	sort.Strings(names)
 
-	tx, txErr := pc.Conn.Begin()
+	tx, txErr := pc.db.Begin()
 	if txErr != nil {
 		return txErr
 	}

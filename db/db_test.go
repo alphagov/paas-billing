@@ -149,6 +149,38 @@ var _ = Describe("Db", func() {
 		TestUsageEvents(ServiceUsageTableName)
 	})
 
+	Describe("transactions", func() {
+		Context("in a transaction", func() {
+			var txDB SQLClient
+
+			BeforeEach(func() {
+				var err error
+				txDB, err = sqlClient.BeginTx()
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			AfterEach(func() {
+				Expect(txDB.Rollback()).To(Succeed())
+			})
+
+			It("should error if trying to create a new transaction", func() {
+				txDB2, err := txDB.BeginTx()
+				Expect(err).To(MatchError("cannot create a transaction within a transaction"))
+				Expect(txDB2).To(BeNil())
+			})
+		})
+
+		Context("not in a transaction", func() {
+			It("should error if calling commit", func() {
+				Expect(sqlClient.Commit()).To(MatchError("cannot commit unless in a transaction"))
+			})
+
+			It("should error if calling rollback", func() {
+				Expect(sqlClient.Rollback()).To(MatchError("cannot rollback unless in a transaction"))
+			})
+		})
+	})
+
 	Describe("Pricing Formulae", func() {
 
 		var insert = func(formula string, out interface{}) error {

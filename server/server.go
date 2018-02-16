@@ -27,38 +27,42 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	// Never crash on panic
 	e.Use(middleware.Recover())
 
-	// Require a token for all requests
-	e.Use(auth.UAATokenAuthentication(authority))
-
 	// Validate and parse range query param
 	e.Use(api.ValidateRangeParams)
 
-	// Deprecated endpoint, favor /resources and /events
-	e.GET("/usage", api.NewUsageHandler(db))
+	authGroup := e.Group("", auth.UAATokenAuthentication(authority))
+	adminGroup := authGroup.Group("", auth.AdminOnly)
 
-	e.GET("/report/:org_guid", api.NewReportHandler(db))
+	e.GET("/oauth/authorize", authority.Authorize)
+	e.GET("/oauth/callback", authority.Exchange)
+
+	e.POST("/forecast/report", api.NewSimulatedReportHandler(db))
+
+	// Deprecated endpoint, favor /resources and /events
+	authGroup.GET("/usage", api.NewUsageHandler(db))
+
+	authGroup.GET("/report/:org_guid", api.NewOrgReportHandler(db))
 
 	// Usage and Billing API
-	e.GET("/organisations", api.ListOrgUsage(db))
-	e.GET("/organisations/:org_guid", api.GetOrgUsage(db))
-	e.GET("/organisations/:org_guid/spaces", api.ListSpacesUsageForOrg(db))
-	e.GET("/organisations/:org_guid/resources", api.ListResourceUsageForOrg(db))
-	e.GET("/spaces", api.ListSpacesUsage(db))
-	e.GET("/spaces/:space_guid", api.GetSpaceUsage(db))
-	e.GET("/spaces/:space_guid/resources", api.ListResourceUsageForSpace(db))
-	e.GET("/resources", api.ListResourceUsage(db))
-	e.GET("/resources/:resource_guid", api.GetResourceUsage(db))
-	e.GET("/events", api.ListEventUsage(db))
-	e.GET("/resources/:resource_guid/events", api.ListEventUsageForResource(db))
+	authGroup.GET("/organisations", api.ListOrgUsage(db))
+	authGroup.GET("/organisations/:org_guid", api.GetOrgUsage(db))
+	authGroup.GET("/organisations/:org_guid/spaces", api.ListSpacesUsageForOrg(db))
+	authGroup.GET("/organisations/:org_guid/resources", api.ListResourceUsageForOrg(db))
+	authGroup.GET("/spaces", api.ListSpacesUsage(db))
+	authGroup.GET("/spaces/:space_guid", api.GetSpaceUsage(db))
+	authGroup.GET("/spaces/:space_guid/resources", api.ListResourceUsageForSpace(db))
+	authGroup.GET("/resources", api.ListResourceUsage(db))
+	authGroup.GET("/resources/:resource_guid", api.GetResourceUsage(db))
+	authGroup.GET("/events", api.ListEventUsage(db))
+	authGroup.GET("/resources/:resource_guid/events", api.ListEventUsageForResource(db))
 
 	// Pricing data API
-	e.GET("/pricing_plans", api.ListPricingPlans(db))
-	e.GET("/pricing_plans/:pricing_plan_id", api.GetPricingPlan(db))
-	e.POST("/pricing_plans", auth.AdminOnly(api.CreatePricingPlan(db)))
-	e.PUT("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.UpdatePricingPlan(db)))
-	e.DELETE("/pricing_plans/:pricing_plan_id", auth.AdminOnly(api.DestroyPricingPlan(db)))
-	e.POST("/seed_pricing_plans", auth.AdminOnly(api.CreateMissingPricingPlans(db)))
-
+	authGroup.GET("/pricing_plans", api.ListPricingPlans(db))
+	authGroup.GET("/pricing_plans/:pricing_plan_id", api.GetPricingPlan(db))
+	adminGroup.POST("/pricing_plans", api.CreatePricingPlan(db))
+	adminGroup.PUT("/pricing_plans/:pricing_plan_id", api.UpdatePricingPlan(db))
+	adminGroup.DELETE("/pricing_plans/:pricing_plan_id", api.DestroyPricingPlan(db))
+	adminGroup.POST("/seed_pricing_plans", api.CreateMissingPricingPlans(db))
 	e.GET("/", listRoutes)
 
 	return e
