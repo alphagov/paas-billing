@@ -20,12 +20,6 @@ type Authenticator interface {
 func UAATokenAuthentication(authority Authenticator) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			if c.Path() == "/oauth/authorize" {
-				return authority.Authorize(c)
-			}
-			if c.Path() == "/oauth/callback" {
-				return authority.Exchange(c)
-			}
 			token, err := getTokenFromRequest(c)
 			if err != nil {
 				return unauthorized(c, err)

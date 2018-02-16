@@ -33,6 +33,9 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	authGroup := e.Group("", auth.UAATokenAuthentication(authority))
 	adminGroup := authGroup.Group("", auth.AdminOnly)
 
+	e.GET("/oauth/authorize", authority.Authorize)
+	e.GET("/oauth/callback", authority.Exchange)
+
 	e.POST("/report/:org_guid", api.NewSimulatedReportHandler(db))
 
 	// Deprecated endpoint, favor /resources and /events
