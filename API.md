@@ -27,6 +27,9 @@ database.
 
 * Pricing plans can change over time so they have a valid_from field. The monetized calculation handles splitting usage over the valid ranges.TER
 
+* In the pricing plans you can use the following functions:
+    - **ceil**: converts to the nearest integer greater than or equal to argument. It can be used to calculate billable hours, e.g. `$time_in_seconds / 3600 * 1.5` will bill the tenants for 1.5 for every started hour.
+
 * A REST/JSON API exposes aggregated data at several levels. Only guid details are returned in the data at the moment. If you want names you would need to call out the cf:
     - `/organisations` list totals for all orgs
     - `/organisations/:org_guid` list total for a single org

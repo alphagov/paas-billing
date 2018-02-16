@@ -222,6 +222,13 @@ var _ = Describe("Db", func() {
 			Expect(out).To(Equal(60 * 2))
 		})
 
+		It("Should not truncate the result of a division of $time_in_seconds", func() {
+			var out float64
+			err := insert("$time_in_seconds / 3600 * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(60 * 2 / 3600.0))
+		})
+
 		It("Should allow $memory_in_mb variable", func() {
 			var out int
 			err := insert("$memory_in_mb * 2", &out)
@@ -229,11 +236,38 @@ var _ = Describe("Db", func() {
 			Expect(out).To(Equal(64 * 2))
 		})
 
+		It("Should not truncate the result of a division of $memory_in_mb", func() {
+			var out float64
+			err := insert("$memory_in_mb / 1024 * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(64 / 1024.0 * 2))
+		})
+
 		It("Should allow power of operator", func() {
 			var out float64
 			err := insert("2^2", &out)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(Equal(math.Pow(2, 2)))
+		})
+
+		It("Should allow ceil function", func() {
+			var out float64
+			err := insert("ceil(5.0/3.0)", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(BeNumerically("==", 2))
+		})
+
+		It("Should allow ceil function with a variable", func() {
+			var out float64
+			err := insert("ceil($time_in_seconds / 3600) * 10", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(BeNumerically("==", 10))
+		})
+
+		It("Should throw error if ceil is used wrongly", func() {
+			var out float64
+			err := insert("ceil(5", &out)
+			Expect(err).To(HaveOccurred())
 		})
 
 		It("Should not allow `;`", func() {

@@ -170,7 +170,8 @@ var templates = map[string]string{
 							<code>+</code>,
 							<code>-</code>,
 							<code>/</code>,
-							<code>*</code>
+							<code>*</code>,
+							<code>ceil(value)</code>
 						</span>
 					</label>
 					<input class="form-control" name="formula" placeholder="$time_in_seconds * 1.3" type="text" value="">
