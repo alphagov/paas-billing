@@ -1,4 +1,4 @@
-# Billing API 
+# Billing API
 
 ## Overview
 
@@ -7,13 +7,12 @@ that usage. It may make sense to rename this repository "paas-billing" in the
 future, and use it to contain those items that are dependent on the billing
 database.
 
-* A `MATERIALIZED VIEW` is created in the database that gets updated at a set interval (currently 1hr) which normalizes the raw event data into rows of `resource_guid`, `time period`, `pricing_plan_id` , then joins the rows with data from a `pricing_plans` table that contains the information required to calculate the prices. The view caches and indexes data in the following form so that we can perform queries against it efficiently. 
+* A `MATERIALIZED VIEW` is created in the database that gets updated at a set interval (currently 1hr) which normalizes the raw event data into rows of `resource_guid`, `time period`, `pricing_plan_id`. The view caches and indexes data in the following form so that we can perform queries against it efficiently.
 
-| ... | duration | guid | org | space | pricing_plan_id | price | ... |
+| ... | duration | guid | org | space | plan | memory_in_mb | ... |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| ... | `2017-11-01 08:14` to `2017-11-19 08:14` | {thing1} | {org1} | {space1} | {planA} | £x | ... |
-| ... | `2017-11-01 09:10` to `2017-11-19 10:10` | {thing2} | {org2} | {space1} | {planB} | £x | ... |
-
+| ... | `2017-11-01 08:14` to `2017-11-19 08:14` | {thing1} | {org1} | {space1} | {planA} | x | ... |
+| ... | `2017-11-01 09:10` to `2017-11-19 10:10` | {thing2} | {org2} | {space1} | {planB} | y | ... |
 
 * A `pricing_plans` table is added to the database that contains the formulas required to calculate costs for each resource. For example a pricing_plan row might look like:
 
@@ -23,7 +22,10 @@ database.
 | 2 | compute instance | 2017-11-01 | {plan_guid} | `($memory_in_mb / 1000) * ($time_in_seconds)` |
 | 3 | tiny postgres | 2017-11-01 | {plan_guid} | `1 * $time_in_seconds` |
 
-* Pricing plans can change over time so they have a valid_from field. The view calculation handles splitting usage over the valid ranges.
+
+* The API would joins the rows from that view with data from a `pricing_plans` table that contains the information required to calculate the prices.
+
+* Pricing plans can change over time so they have a valid_from field. The monetized calculation handles splitting usage over the valid ranges.TER
 
 * A REST/JSON API exposes aggregated data at several levels. Only guid details are returned in the data at the moment. If you want names you would need to call out the cf:
     - `/organisations` list totals for all orgs
@@ -38,6 +40,8 @@ database.
     - `/events` [experimental] list all events ("events" are all the start/stop points with calculated billing, unlike "resources" which are aggregate totals for each item over a range). Events would allow you to see _when_ something happens
     - `/resources/:resource_guid/events` as above but for a single resource
     - `/pricing_plans` fetch the pricing plans
+    - `/report/:org_guid` generate a report for the given `:org_guid`
+    - `/forecast/report` generate a forecast report for a given set of events
 
 * A (throwaway) example HTML rendering of an aggregated report can be found at `/` you will be prompted to login via UAA. This is meant purely as an illustration of what is possible for now.
 
