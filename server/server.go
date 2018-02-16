@@ -36,7 +36,7 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	e.GET("/oauth/authorize", authority.Authorize)
 	e.GET("/oauth/callback", authority.Exchange)
 
-	e.POST("/report/:org_guid", api.NewSimulatedReportHandler(db))
+	e.POST("/forecast/report", api.NewSimulatedReportHandler(db))
 
 	// Deprecated endpoint, favor /resources and /events
 	authGroup.GET("/usage", api.NewUsageHandler(db))

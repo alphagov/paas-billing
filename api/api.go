@@ -51,10 +51,7 @@ type SimulatedEvent struct {
 
 func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		orgGUID := c.Param("org_guid")
-		if orgGUID == "" {
-			return errors.New("missing org_guid")
-		}
+		orgGUID := "simulated-org"
 		rng, ok := c.Get("range").(RangeParams)
 		if !ok {
 			return errors.New("bad request: no range params in context")

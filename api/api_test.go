@@ -838,8 +838,7 @@ var _ = Describe("API", func() {
 
 	Context("Simulated report", func() {
 		var (
-			org_guid = "o1"
-			path     = "/report/" + org_guid
+			path = "/forecast/report"
 		)
 
 		It("should produce a report", func() {
@@ -881,7 +880,7 @@ var _ = Describe("API", func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
 
 			expectedOutput := OrgReport{
-				OrgGuid: "o1",
+				OrgGuid: "simulated-org",
 				Price:   51840000,
 				Spaces: []SpaceReport{
 					{
