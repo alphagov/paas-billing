@@ -11,6 +11,7 @@ BEGIN
 	invalid_formula := (select regexp_replace(invalid_formula, '([0-9]+)', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\$memory_in_mb', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\$time_in_seconds', '#', 'g'));
+	invalid_formula := (select regexp_replace(invalid_formula, 'ceil', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\(|\)', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\*', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\-', '#', 'g'));
@@ -35,4 +36,3 @@ $$ language plpgsql;
 DROP TRIGGER IF EXISTS tgr_validate_formula ON pricing_plans;
 CREATE TRIGGER tgr_validate_formula BEFORE INSERT OR UPDATE ON pricing_plans
 FOR EACH ROW EXECUTE PROCEDURE validate_formula();
-

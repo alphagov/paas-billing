@@ -25,7 +25,10 @@ database.
 
 * The API would joins the rows from that view with data from a `pricing_plans` table that contains the information required to calculate the prices.
 
-* Pricing plans can change over time so they have a valid_from field. The monetized calculation handles splitting usage over the valid ranges.TER
+* Pricing plans can change over time so they have a valid_from field. The monetized calculation handles splitting usage over the valid ranges.
+
+* In the pricing plans you can use the following functions:
+    - **ceil**: converts to the nearest integer greater than or equal to argument. It can be used to calculate billable hours, e.g. `$time_in_seconds / 3600 * 1.5` will bill the tenants for 1.5 for every started hour.
 
 * A REST/JSON API exposes aggregated data at several levels. Only guid details are returned in the data at the moment. If you want names you would need to call out the cf:
     - `/organisations` list totals for all orgs
@@ -76,4 +79,3 @@ Query an endpoint with a range (times must be in ISO8601 format as below):
 ```
 curl -vv -H 'Accept: application/json' 'http://localhost:8881/organisations?from=2010-01-01T00:00:00Z&to=2017-12-01T00:00:00Z' | jq .
 ```
-
