@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -121,6 +122,10 @@ var _ = Describe("API", func() {
 		return res.StatusCode, v
 	}
 
+	var get = func(path string) (int, interface{}) {
+		return send("GET", echo.MIMEApplicationForm, path, bytes.NewReader(nil))
+	}
+
 	var post = func(path string, data io.Reader) (int, interface{}) {
 		return send("POST", echo.MIMEApplicationForm, path, data)
 	}
@@ -139,6 +144,82 @@ var _ = Describe("API", func() {
 		b2, err := json.Marshal(v2)
 		Expect(err).ToNot(HaveOccurred(), "ExpectJSON failed for actual value")
 		Expect(string(b1)).To(MatchJSON(string(b2)))
+	}
+
+	var itShouldFetchPricingPlanComponents = func() {
+		path := "/pricing_plan_components"
+		var out interface{}
+		request(path, &out)
+		ExpectJSON(out, []map[string]interface{}{
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				"id":              101,
+				"name":            "ComputePlanA/1",
+				"pricing_plan_id": 10,
+			},
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				"id":              102,
+				"name":            "ComputePlanA/2",
+				"pricing_plan_id": 10,
+			},
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+				"id":              111,
+				"name":            "ComputePlanB/1",
+				"pricing_plan_id": 11,
+			},
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * 0.2",
+				"id":              201,
+				"name":            "ServicePlanA/1",
+				"pricing_plan_id": 20,
+			},
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * 0.3",
+				"id":              202,
+				"name":            "ServicePlanA/2",
+				"pricing_plan_id": 20,
+			},
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * 1",
+				"id":              301,
+				"name":            "ServicePlanB/1",
+				"pricing_plan_id": 30,
+			},
+		})
+	}
+
+	var itShouldFetchPricingPlanComponentsByPlan = func() {
+		path := "/pricing_plans/10/components"
+		var out interface{}
+		request(path, &out)
+		ExpectJSON(out, []map[string]interface{}{
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				"id":              101,
+				"name":            "ComputePlanA/1",
+				"pricing_plan_id": 10,
+			},
+			{
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				"id":              102,
+				"name":            "ComputePlanA/2",
+				"pricing_plan_id": 10,
+			},
+		})
+	}
+
+	var itShouldFetchPricingPlanComponentById = func() {
+		path := "/pricing_plan_components/101"
+		var out interface{}
+		request(path, &out)
+		ExpectJSON(out, map[string]interface{}{
+			"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+			"id":              101,
+			"name":            "ComputePlanA/1",
+			"pricing_plan_id": 10,
+		})
 	}
 
 	Context("As non admin", func() {
@@ -646,6 +727,10 @@ var _ = Describe("API", func() {
 			})
 		})
 
+		Context("/pricing_plans/:pricing_plan_id/components", func() {
+			It("should fetch the pricing plan components by plan", itShouldFetchPricingPlanComponentsByPlan)
+		})
+
 		Context("POST /pricing_plans", func() {
 
 			const (
@@ -691,6 +776,53 @@ var _ = Describe("API", func() {
 			It("should delete a pricing plan (via form DELETE)", func() {
 				form := url.Values{}
 				status, _ := del(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
+		Context("/pricing_plan_components", func() {
+			It("should fetch the pricing plan components", itShouldFetchPricingPlanComponents)
+		})
+
+		Context("/pricing_plan_components/:id", func() {
+
+			It("should fetch pricing plan component by id", itShouldFetchPricingPlanComponentById)
+
+			It("should return 404 for non-existing plan component", func() {
+				path := "/pricing_plan_components/999"
+				status, res := get(path)
+				Expect(status).To(Equal(http.StatusNotFound))
+				Expect(res).To(Equal(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "not found",
+					}},
+				))
+			})
+		})
+
+		Context("POST /pricing_plan_components", func() {
+
+			const (
+				path = "/pricing_plan_components"
+			)
+
+			It("should only allow create for admins", func() {
+				status, _ := post(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
+		Context("/pricing_plan_components/:id", func() {
+
+			var path = "/pricing_plan_components/123"
+
+			It("should only allow update for admins", func() {
+				status, _ := put(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+
+			It("should only allow delete for admins", func() {
+				status, _ := del(path, strings.NewReader(url.Values{}.Encode()))
 				Expect(status).To(Equal(http.StatusUnauthorized))
 			})
 		})
@@ -807,6 +939,10 @@ var _ = Describe("API", func() {
 			})
 		})
 
+		Context("/pricing_plans/:pricing_plan_id/components", func() {
+			It("should fetch the pricing plan components by plan", itShouldFetchPricingPlanComponentsByPlan)
+		})
+
 		Context("POST /pricing_plans", func() {
 
 			const (
@@ -874,6 +1010,108 @@ var _ = Describe("API", func() {
 					"plan_guid":  db.ComputePlanGuid,
 					"valid_from": agoRFC3339(1 * time.Hour),
 				})
+			})
+		})
+
+		Context("/pricing_plan_components", func() {
+			It("should fetch the pricing plan components", itShouldFetchPricingPlanComponents)
+		})
+
+		Context("/pricing_plan_components/:id", func() {
+			It("should fetch pricing plan component by id", itShouldFetchPricingPlanComponentById)
+		})
+
+		Context("POST /pricing_plan_components", func() {
+
+			const (
+				path = "/pricing_plan_components"
+			)
+
+			It("should create a pricing plan component (form POST)", func() {
+				form := url.Values{}
+				form.Add("name", "NewPlanComp")
+				form.Add("pricing_plan_id", "10")
+				form.Add("formula", "$memory_in_mb * 1")
+				status, out := post(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"id":              1,
+					"pricing_plan_id": 10,
+					"name":            "NewPlanComp",
+					"formula":         "$memory_in_mb * 1",
+				})
+			})
+		})
+
+		Context("/pricing_plan_components/:id", func() {
+
+			var (
+				id   = 101
+				path = "/pricing_plan_components/" + strconv.Itoa(id)
+			)
+
+			It("should update a pricing plan component (via form PUT)", func() {
+				form := url.Values{}
+				form.Add("name", "UpdatedPlan")
+				form.Add("pricing_plan_id", "20")
+				form.Add("formula", "10*10")
+				status, out := put(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"formula":         "10*10",
+					"id":              101,
+					"name":            "UpdatedPlan",
+					"pricing_plan_id": 20,
+				})
+			})
+
+			It("should return with 404 when trying to update non-existing component", func() {
+				path = "/pricing_plan_components/999"
+				form := url.Values{}
+				form.Add("name", "UpdatedPlan")
+				form.Add("pricing_plan_id", "20")
+				form.Add("formula", "10*10")
+				status, out := put(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusNotFound))
+				Expect(out).To(Equal(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "not found",
+					}},
+				))
+			})
+		})
+
+		Context("/pricing_plan_components/:id", func() {
+
+			var (
+				id   = 101
+				path = "/pricing_plan_components/" + strconv.Itoa(id)
+			)
+
+			It("should delete a pricing plan component (via form DELETE)", func() {
+				form := url.Values{}
+				status, out := del(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+					"id":              101,
+					"name":            "ComputePlanA/1",
+					"pricing_plan_id": 10,
+				})
+
+				status, _ = get(path)
+				Expect(status).To(Equal(http.StatusNotFound))
+			})
+
+			It("should return with 404 when trying to delete non-existing component", func() {
+				path = "/pricing_plan_components/999"
+				status, out := del(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusNotFound))
+				Expect(out).To(Equal(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "not found",
+					}},
+				))
 			})
 		})
 
