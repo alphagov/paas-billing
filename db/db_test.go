@@ -318,6 +318,103 @@ var _ = Describe("Db", func() {
 		})
 
 	})
+
+	Context("pricing_plan_components", func() {
+
+		BeforeEach(func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plans (id, name, valid_from, plan_guid, formula) values (
+					1,
+					'PlanA',
+					current_timestamp,
+					'GUID',
+					'1+1'
+				)
+			`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ensure I can insert a valid record", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1+1")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ensure the pricing_plan_id belongs to an existing plan", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 2, "PlanB 1", "1+1")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
+		})
+
+		It("should ensure name is not empty", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "", "1+1")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+
+		It("should ensure formula is not empty", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("formula can not be empty"))
+		})
+
+		It("should ensure formula is valid", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1 + foo")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("illegal token in formula"))
+		})
+
+		It("should ensure unique pricing_plan_id + name", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1+1")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1+2")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("duplicate key"))
+		})
+
+	})
 })
 
 // SelectUsageEvents returns with all the usage events stored in the database

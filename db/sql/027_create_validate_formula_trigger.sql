@@ -5,6 +5,9 @@ DECLARE
 	illegal_token text;
 	dummy_price numeric;
 BEGIN
+	IF (NEW.formula = '') THEN
+		RAISE EXCEPTION 'formula can not be empty';
+	END IF;
 	invalid_formula := lower(NEW.formula);
 	invalid_formula := (select regexp_replace(invalid_formula, '::(integer|bigint|numeric)', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '([0-9]+)?\.([0-9]+)', '#', 'g'));
