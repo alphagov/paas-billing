@@ -12,8 +12,9 @@ func ago(t time.Duration) time.Time {
 }
 
 var planFixtures = Plans{
-	"ComputePlanA": {
+	{
 		ID:        10,
+		Name:      "ComputePlanA",
 		PlanGuid:  db.ComputePlanGuid,
 		ValidFrom: ago(100 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 1",
@@ -30,8 +31,9 @@ var planFixtures = Plans{
 			},
 		},
 	},
-	"ComputePlanB": {
+	{
 		ID:        11,
+		Name:      "ComputePlanB",
 		PlanGuid:  db.ComputePlanGuid,
 		ValidFrom: ago(1 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
@@ -43,8 +45,9 @@ var planFixtures = Plans{
 			},
 		},
 	},
-	"ServicePlanA": {
+	{
 		ID:        20,
+		Name:      "ServicePlanA",
 		PlanGuid:  "00000000-0000-0000-0000-100000000000",
 		ValidFrom: ago(100 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * 0.5",
@@ -61,8 +64,9 @@ var planFixtures = Plans{
 			},
 		},
 	},
-	"ServicePlanB": {
+	{
 		ID:        30,
+		Name:      "ServicePlanB",
 		PlanGuid:  "00000000-0000-0000-0000-200000000000",
 		ValidFrom: ago(100 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * 1",

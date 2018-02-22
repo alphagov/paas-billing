@@ -14,6 +14,7 @@ import (
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/db"
 	"github.com/alphagov/paas-billing/db/dbhelper"
+	"github.com/alphagov/paas-billing/fixtures"
 	"github.com/alphagov/paas-billing/server"
 	"github.com/labstack/echo"
 	uuid "github.com/satori/go.uuid"
@@ -27,14 +28,6 @@ var (
 )
 
 var _ = Describe("API", func() {
-
-	type PricingPlanFixture struct {
-		Id        int
-		Name      string
-		Formula   string
-		ValidFrom string
-		PlanGuid  string
-	}
 
 	type ResourceReport struct {
 		Name  string `json:"name"`
@@ -52,28 +45,64 @@ var _ = Describe("API", func() {
 	}
 
 	var (
-		X10ComputePlan = PricingPlanFixture{
-			Id:        1,
+		X10ComputePlan = fixtures.Plan{
+			ID:        1,
 			Name:      "x10-compute-plan",
 			Formula:   "$time_in_seconds * 10",
-			ValidFrom: now.Add(-(100 * 24 * time.Hour)).Format(time.RFC3339),
+			ValidFrom: now.Add(-(100 * 24 * time.Hour)),
 			PlanGuid:  db.ComputePlanGuid,
+			Components: []fixtures.PricingPlanComponent{
+				{
+					ID:      11,
+					Name:    "x10-compute-plan/1",
+					Formula: "$time_in_seconds * 4",
+				},
+				{
+					ID:      12,
+					Name:    "x10-compute-plan/2",
+					Formula: "$time_in_seconds * 6",
+				},
+			},
 		}
-		X4ComputePlan = PricingPlanFixture{
-			Id:        2,
+		X4ComputePlan = fixtures.Plan{
+			ID:        2,
 			Name:      "x4-compute-plan",
 			Formula:   "$time_in_seconds * 4",
-			ValidFrom: now.Add(-(10 * 24 * time.Hour)).Format(time.RFC3339),
+			ValidFrom: now.Add(-(10 * 24 * time.Hour)),
 			PlanGuid:  db.ComputePlanGuid,
+			Components: []fixtures.PricingPlanComponent{
+				{
+					ID:      21,
+					Name:    "x4-compute-plan/1",
+					Formula: "$time_in_seconds * 1",
+				},
+				{
+					ID:      22,
+					Name:    "x4-compute-plan/2",
+					Formula: "$time_in_seconds * 3",
+				},
+			},
 		}
-		X2ServicePlan = PricingPlanFixture{
-			Id:        3,
+		X2ServicePlan = fixtures.Plan{
+			ID:        3,
 			Name:      "x2-service-plan",
 			Formula:   "$time_in_seconds * 2",
-			ValidFrom: "-infinity",
+			ValidFrom: time.Unix(0, 0),
 			PlanGuid:  uuid.NewV4().String(),
+			Components: []fixtures.PricingPlanComponent{
+				{
+					ID:      31,
+					Name:    "x2-service-plan/1",
+					Formula: "$time_in_seconds * 0.5",
+				},
+				{
+					ID:      32,
+					Name:    "x2-service-plan/2",
+					Formula: "$time_in_seconds * 1.5",
+				},
+			},
 		}
-		pricingPlans = []PricingPlanFixture{
+		pricingPlans = fixtures.Plans{
 			X4ComputePlan,
 			X10ComputePlan,
 			X2ServicePlan,
@@ -94,19 +123,8 @@ var _ = Describe("API", func() {
 		err = sqlClient.InitSchema()
 		Expect(err).ToNot(HaveOccurred())
 
-		for _, plan := range pricingPlans {
-			_, err = sqlClient.Conn.Exec(`
-				INSERT INTO pricing_plans(id, name, valid_from, plan_guid, formula) VALUES (
-					$1,
-					$2,
-					$3,
-					$4,
-					$5
-				);
-			`, plan.Id, plan.Name, plan.ValidFrom, plan.PlanGuid, plan.Formula)
-			Expect(err).ToNot(HaveOccurred())
-		}
-
+		err = pricingPlans.Insert(sqlClient)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -173,7 +191,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
 						Start:           now.Add(-60 * time.Minute),
@@ -221,7 +239,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X10ComputePlan.Name,
-						PricingPlanId:   X10ComputePlan.Id,
+						PricingPlanId:   X10ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
 						Start:           now.Add(-(20 * 24 * time.Hour)),
@@ -233,7 +251,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
 						Start:           now.Add(-(10 * 24 * time.Hour)),
@@ -277,7 +295,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
 						Start:           now.Add(-60 * time.Minute),
@@ -289,7 +307,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
 						Start:           now.Add(-60 * time.Minute),
@@ -357,7 +375,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      512,
 						Start:           now.Add(-90 * time.Minute),
@@ -368,7 +386,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid2",
 						SpaceGuid:       "space_guid2",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name2",
 						MemoryInMb:      64,
 						Start:           now.Add(-90 * time.Minute),
@@ -379,7 +397,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid2",
 						SpaceGuid:       "space_guid2",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name2",
 						MemoryInMb:      64,
 						Start:           now.Add(-90 * time.Minute),
@@ -435,7 +453,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      512,
 						Start:           now.Add(-90 * time.Minute),
@@ -446,7 +464,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      1024,
 						Start:           now.Add(-60 * time.Minute),
@@ -457,7 +475,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      1024,
 						Start:           now.Add(-60 * time.Minute),
@@ -492,7 +510,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      512,
 						Start:           now.Add(-10 * time.Minute),
@@ -526,7 +544,7 @@ var _ = Describe("API", func() {
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						Name:            "db-service-1",
-						PricingPlanId:   X2ServicePlan.Id,
+						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Start:           now.Add(-1 * time.Hour),
 						Stop:            now,
@@ -578,7 +596,7 @@ var _ = Describe("API", func() {
 						Guid:            "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
-						PricingPlanId:   X2ServicePlan.Id,
+						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
 						Start:           now.Add(-60 * time.Minute),
@@ -589,7 +607,7 @@ var _ = Describe("API", func() {
 						Guid:            "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
-						PricingPlanId:   X2ServicePlan.Id,
+						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
 						Start:           now.Add(-50 * time.Minute),
@@ -631,7 +649,7 @@ var _ = Describe("API", func() {
 						Guid:            "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
-						PricingPlanId:   X2ServicePlan.Id,
+						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
 						Start:           now.Add(-60 * time.Minute),
@@ -752,7 +770,7 @@ var _ = Describe("API", func() {
 						Guid:            "app2",
 						OrgGuid:         "org_guid2",
 						SpaceGuid:       "space_guid2",
-						PricingPlanId:   X4ComputePlan.Id,
+						PricingPlanId:   X4ComputePlan.ID,
 						PricingPlanName: X4ComputePlan.Name,
 						Name:            "app_name2",
 						MemoryInMb:      512,
@@ -764,7 +782,7 @@ var _ = Describe("API", func() {
 						Guid:            "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
-						PricingPlanId:   X2ServicePlan.Id,
+						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
 						Start:           now.Add(-41 * time.Minute),
