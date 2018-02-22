@@ -559,8 +559,17 @@ func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args .
 	for _, accept := range accepts {
 		if accept == echo.MIMEApplicationJSON || accept == echo.MIMEApplicationJSONCharsetUTF8 {
 			c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			_, err := io.Copy(c.Response(), r)
-			return err
+			written, err := io.Copy(c.Response(), r)
+			if err != nil {
+				return err
+			}
+
+			if rt == Single && written == 0 {
+				c.Response().WriteHeader(http.StatusNotFound)
+				c.Response().Write([]byte(`{"error":{"message":"not found"}}`))
+			}
+
+			return nil
 		} else if accept == echo.MIMETextHTML || accept == echo.MIMETextHTMLCharsetUTF8 {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
 			c.Response().WriteHeader(http.StatusOK)
