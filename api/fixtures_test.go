@@ -17,24 +17,62 @@ var planFixtures = Plans{
 		PlanGuid:  db.ComputePlanGuid,
 		ValidFrom: ago(100 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 1",
+		Components: []PricingPlanComponent{
+			{
+				ID:      101,
+				Name:    "ComputePlanA/1",
+				Formula: "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+			},
+			{
+				ID:      102,
+				Name:    "ComputePlanA/2",
+				Formula: "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+			},
+		},
 	},
 	"ComputePlanB": {
 		ID:        11,
 		PlanGuid:  db.ComputePlanGuid,
 		ValidFrom: ago(1 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+		Components: []PricingPlanComponent{
+			{
+				ID:      111,
+				Name:    "ComputePlanB/1",
+				Formula: "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+			},
+		},
 	},
 	"ServicePlanA": {
 		ID:        20,
 		PlanGuid:  "00000000-0000-0000-0000-100000000000",
 		ValidFrom: ago(100 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * 0.5",
+		Components: []PricingPlanComponent{
+			{
+				ID:      201,
+				Name:    "ServicePlanA/1",
+				Formula: "($time_in_seconds / 60 / 60) * 0.2",
+			},
+			{
+				ID:      202,
+				Name:    "ServicePlanA/2",
+				Formula: "($time_in_seconds / 60 / 60) * 0.3",
+			},
+		},
 	},
 	"ServicePlanB": {
 		ID:        30,
 		PlanGuid:  "00000000-0000-0000-0000-200000000000",
 		ValidFrom: ago(100 * time.Hour),
 		Formula:   "($time_in_seconds / 60 / 60) * 1",
+		Components: []PricingPlanComponent{
+			{
+				ID:      301,
+				Name:    "ServicePlanB/1",
+				Formula: "($time_in_seconds / 60 / 60) * 1",
+			},
+		},
 	},
 }
 
