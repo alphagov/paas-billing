@@ -159,7 +159,7 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 // CreateMissingPricingPlans inserts "free" pricing plans for any plan_guids that don't have them yet
 func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		err := render(Single, c, db, `
+		_, err := db.Exec(`
 			insert into pricing_plans (
 				name,
 				valid_from,
@@ -176,6 +176,28 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 					and not raw_message->>'service_plan_name' ~* 'CATS-|fake'
 					and raw_message->>'service_plan_guid' not in (
 						select plan_guid from pricing_plans
+					)
+			)
+		`)
+		if err != nil {
+			return err
+		}
+
+		err = render(Single, c, db, `
+			insert into pricing_plan_components (
+				pricing_plan_id,
+				name,
+				formula
+			) (
+				select
+					id,
+					name||'/1',
+					'0'::text
+				from
+					pricing_plans
+				where
+					id not in (
+						select pricing_plan_id from pricing_plan_components
 					)
 			) returning name
 		`)
