@@ -38,9 +38,6 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 
 	e.POST("/forecast/report", api.NewSimulatedReportHandler(db))
 
-	// Deprecated endpoint, favor /resources and /events
-	authGroup.GET("/usage", api.NewUsageHandler(db))
-
 	authGroup.GET("/report/:org_guid", api.NewOrgReportHandler(db))
 
 	// Usage and Billing API

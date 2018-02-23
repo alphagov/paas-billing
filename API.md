@@ -40,7 +40,7 @@ database.
     - `/spaces/:space_guid/resources` list totals for each resource in space
     - `/resources` list totals for all resources
     - `/resources/:resource_guid` list total for a single resource
-    - `/events` [experimental] list all events ("events" are all the start/stop points with calculated billing, unlike "resources" which are aggregate totals for each item over a range). Events would allow you to see _when_ something happens
+    - `/events` list all events ("events" are all the start/stop points with calculated billing, unlike "resources" which are aggregate totals for each item over a range). Events would allow you to see _when_ something happens
     - `/resources/:resource_guid/events` as above but for a single resource
     - `/pricing_plans` fetch the pricing plans
     - `/report/:org_guid` generate a report for the given `:org_guid`

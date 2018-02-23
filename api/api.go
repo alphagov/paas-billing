@@ -16,46 +16,6 @@ import (
 
 const billableViewName = "billable"
 
-func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, billableViewName, c, db, `
-			with
-			summed_resources as (
-				select
-					guid,
-					id,
-					pricing_plan_id,
-					min(pricing_plan_component_id) as pricing_plan_component_id,
-					sum(price::bigint) as price
-				from
-					monetized_resources
-				group by
-					guid, id, pricing_plan_id
-			)
-			select
-				mr.guid,
-				mr.org_guid,
-				mr.space_guid,
-				mr.pricing_plan_id,
-				mr.pricing_plan_name,
-				mr.name,
-				mr.memory_in_mb,
-				iso8601(lower(mr.duration)) as start,
-				iso8601(upper(mr.duration)) as stop,
-				sr.price::bigint
-			from
-				summed_resources sr
-			inner join
-				monetized_resources mr
-			on
-				sr.id = mr.id
-				and sr.pricing_plan_component_id = mr.pricing_plan_component_id
-			order by
-				mr.guid, mr.id, mr.pricing_plan_id
-		`)
-	}
-}
-
 type SimulatedEvents struct {
 	Events []SimulatedEvent `json:"events"`
 }

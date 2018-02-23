@@ -650,20 +650,6 @@ var _ = Describe("API", func() {
 
 		})
 
-		Context("/events", func() {
-
-			const (
-				path = "/events"
-			)
-
-			It("should return events all events", func() {
-				var out interface{}
-				request(path, &out)
-				// TODO: this is hard to test :)
-			})
-
-		})
-
 		Context("/pricing_plans", func() {
 
 			const (

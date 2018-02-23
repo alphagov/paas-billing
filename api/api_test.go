@@ -144,9 +144,9 @@ var _ = Describe("API", func() {
 			PricingPlanId   int       `json:"pricing_plan_id"`
 			PricingPlanName string    `json:"pricing_plan_name"`
 			MemoryInMb      int64     `json:"memory_in_mb"`
-			Start           time.Time `json:"start"`
-			Stop            time.Time `json:"stop"`
-			Price           int64     `json:price"`
+			From            time.Time `json:"from"`
+			To              time.Time `json:"to"`
+			Price           int64     `json:"price"`
 		}
 
 		cases := []struct {
@@ -194,8 +194,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           30 * 60 * 4,
 					},
 				},
@@ -242,8 +242,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X10ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						Start:           now.Add(-(20 * 24 * time.Hour)),
-						Stop:            now.Add(-(10 * 24 * time.Hour)),
+						From:            now.Add(-(20 * 24 * time.Hour)),
+						To:              now.Add(-(10 * 24 * time.Hour)),
 						Price:           10 * (24 * 60 * 60) * 10,
 					},
 					{
@@ -254,8 +254,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						Start:           now.Add(-(10 * 24 * time.Hour)),
-						Stop:            now,
+						From:            now.Add(-(10 * 24 * time.Hour)),
+						To:              now,
 						Price:           10 * (24 * 60 * 60) * 4,
 					},
 				},
@@ -298,8 +298,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           30 * 60 * 4,
 					},
 					{
@@ -310,8 +310,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           30 * 60 * 4,
 					},
 				},
@@ -378,8 +378,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      512,
-						Start:           now.Add(-90 * time.Minute),
-						Stop:            now.Add(-60 * time.Minute),
+						From:            now.Add(-90 * time.Minute),
+						To:              now.Add(-60 * time.Minute),
 						Price:           30 * 60 * 4,
 					}, {
 						Guid:            "app2",
@@ -389,8 +389,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name2",
 						MemoryInMb:      64,
-						Start:           now.Add(-90 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-90 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           60 * 60 * 4,
 					}, {
 						Guid:            "app2",
@@ -400,8 +400,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name2",
 						MemoryInMb:      64,
-						Start:           now.Add(-90 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-90 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           60 * 60 * 4,
 					},
 				},
@@ -456,8 +456,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      512,
-						Start:           now.Add(-90 * time.Minute),
-						Stop:            now.Add(-60 * time.Minute),
+						From:            now.Add(-90 * time.Minute),
+						To:              now.Add(-60 * time.Minute),
 						Price:           30 * 60 * 4,
 					}, {
 						Guid:            "app1",
@@ -467,8 +467,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      1024,
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           30 * 60 * 4,
 					}, {
 						Guid:            "app1",
@@ -478,8 +478,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      1024,
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           30 * 60 * 4,
 					},
 				},
@@ -513,8 +513,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name1",
 						MemoryInMb:      512,
-						Start:           now.Add(-10 * time.Minute),
-						Stop:            now,
+						From:            now.Add(-10 * time.Minute),
+						To:              now,
 						Price:           10 * 60 * 4,
 					},
 				},
@@ -546,8 +546,8 @@ var _ = Describe("API", func() {
 						Name:            "db-service-1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
-						Start:           now.Add(-1 * time.Hour),
-						Stop:            now,
+						From:            now.Add(-1 * time.Hour),
+						To:              now,
 						Price:           7200,
 					},
 				},
@@ -599,8 +599,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-50 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-50 * time.Minute),
 						Price:           1200,
 					},
 					{
@@ -610,8 +610,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
-						Start:           now.Add(-50 * time.Minute),
-						Stop:            now.Add(-40 * time.Minute),
+						From:            now.Add(-50 * time.Minute),
+						To:              now.Add(-40 * time.Minute),
 						Price:           1200,
 					},
 				},
@@ -652,8 +652,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
-						Start:           now.Add(-60 * time.Minute),
-						Stop:            now.Add(-30 * time.Minute),
+						From:            now.Add(-60 * time.Minute),
+						To:              now.Add(-30 * time.Minute),
 						Price:           60 * 30 * 2,
 					},
 				},
@@ -774,8 +774,8 @@ var _ = Describe("API", func() {
 						PricingPlanName: X4ComputePlan.Name,
 						Name:            "app_name2",
 						MemoryInMb:      512,
-						Start:           now.Add(-60 * time.Minute), // start of selected range
-						Stop:            now.Add(-31 * time.Minute),
+						From:            now.Add(-60 * time.Minute), // start of selected range
+						To:              now.Add(-31 * time.Minute),
 						Price:           29 * 60 * 4,
 					},
 					{
@@ -785,8 +785,8 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						Name:            "db-service-1",
-						Start:           now.Add(-41 * time.Minute),
-						Stop:            now.Add(-31 * time.Minute),
+						From:            now.Add(-41 * time.Minute),
+						To:              now.Add(-31 * time.Minute),
 						Price:           10 * 60 * 2,
 					},
 				},
@@ -825,7 +825,7 @@ var _ = Describe("API", func() {
 				err := sqlClient.UpdateViews()
 				Expect(err).ToNot(HaveOccurred())
 
-				u, err := url.Parse("/usage")
+				u, err := url.Parse("/events")
 				Expect(err).ToNot(HaveOccurred())
 				if tc.RequestQuery != nil {
 					u.RawQuery = tc.RequestQuery.Encode()
