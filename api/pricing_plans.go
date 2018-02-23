@@ -93,7 +93,6 @@ func CreatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		go db.UpdateViews()
 		return nil
 	}
 }
@@ -144,7 +143,6 @@ func UpdatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		go db.UpdateViews()
 		return nil
 	}
 }
@@ -170,7 +168,6 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		go db.UpdateViews()
 		return nil
 	}
 }
@@ -203,7 +200,6 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		go db.UpdateViews()
 		return nil
 	}
 }

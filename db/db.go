@@ -146,7 +146,7 @@ func (pc *PostgresClient) FetchLastGUID(tableName string) (string, error) {
 
 // UpdateViews updates the indexed materialized views used to generate reports
 func (pc *PostgresClient) UpdateViews() error {
-	_, err := pc.Conn.Exec("REFRESH MATERIALIZED VIEW billable")
+	_, err := pc.Conn.Exec("REFRESH MATERIALIZED VIEW CONCURRENTLY billable")
 	return err
 }
 

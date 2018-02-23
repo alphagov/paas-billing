@@ -68,36 +68,29 @@ event_ranges as (
 		resource_states as (partition by guid order by id rows between current row and 1 following)
 	order by
 		guid, id
-),
+)
 
 -- generate rows for every "instance" of an app
 -- this results in a row per-instance
-resources as (
-	select
-		t.*,
-		generate_series(1, t.inst_count)
-	from
-		event_ranges t
-)
-
 select
-	r.id,
-	r.guid,
-	r.name,
-	r.org_guid,
-	r.space_guid,
-	r.plan_guid,
-	r.memory_in_mb,
-	r.duration
+	t.id || '-' || t.guid || '-' || generate_series(1, t.inst_count) AS id,
+	t.guid,
+	t.name,
+	t.org_guid,
+	t.space_guid,
+	t.plan_guid,
+	t.memory_in_mb,
+	t.duration,
+	t.state
 from
-	resources r
+	event_ranges t
 where
-	r.state = 'STARTED'
+	t.state = 'STARTED'
 order by
-	r.id
+	t.id
 ;
 
-CREATE INDEX IF NOT EXISTS idx_id ON billable (id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_id ON billable (id);
 CREATE INDEX IF NOT EXISTS idx_org ON billable (org_guid);
 CREATE INDEX IF NOT EXISTS idx_space ON billable (space_guid);
 CREATE INDEX IF NOT EXISTS idx_duration ON billable USING gist (duration);
