@@ -437,14 +437,16 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				) as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
-				vpp.formula,
+				ppc.id AS pricing_plan_component_id,
+				ppc.name AS pricing_plan_component_name,
+				ppc.formula,
 				eval_formula(
 					b.memory_in_mb,
 					tstzrange(
 						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
 						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
 					),
-					vpp.formula
+					ppc.formula
 				) as price
 			from
 				authorized_resources b
@@ -453,6 +455,10 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 			on b.plan_guid = vpp.plan_guid
 				 and vpp.valid_for && b.duration
 				 and vpp.valid_for && tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
+			inner join
+				pricing_plan_components ppc
+			on
+				ppc.pricing_plan_id = vpp.id
 			where
 				b.duration &&  tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
 	  ),
