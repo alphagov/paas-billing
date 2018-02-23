@@ -661,28 +661,24 @@ var _ = Describe("API", func() {
 				request(path, &out)
 				ExpectJSON(out, []map[string]interface{}{
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * 0.5",
 						"id":         20,
 						"name":       "ServicePlanA",
 						"plan_guid":  "00000000-0000-0000-0000-100000000000",
 						"valid_from": agoRFC3339(100 * time.Hour),
 					},
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * 1",
 						"id":         30,
 						"name":       "ServicePlanB",
 						"plan_guid":  "00000000-0000-0000-0000-200000000000",
 						"valid_from": agoRFC3339(100 * time.Hour),
 					},
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * $memory_in_mb * 1",
 						"id":         10,
 						"name":       "ComputePlanA",
 						"plan_guid":  db.ComputePlanGuid,
 						"valid_from": agoRFC3339(100 * time.Hour),
 					},
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
 						"id":         11,
 						"name":       "ComputePlanB",
 						"plan_guid":  db.ComputePlanGuid,
@@ -704,7 +700,6 @@ var _ = Describe("API", func() {
 				var out interface{}
 				request(path, &out)
 				ExpectJSON(out, map[string]interface{}{
-					"formula":    "($time_in_seconds / 60 / 60) * 1",
 					"id":         id,
 					"name":       "ServicePlanB",
 					"plan_guid":  "00000000-0000-0000-0000-200000000000",
@@ -728,7 +723,6 @@ var _ = Describe("API", func() {
 				form.Add("name", "NewPlan")
 				form.Add("valid_from", agoRFC3339(1*time.Minute))
 				form.Add("plan_guid", "aaaaaaa-bbbb-cccc-ddddddddddddd")
-				form.Add("formula", "$memory_in_mb * 1")
 				status, _ := post(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusUnauthorized))
 			})
@@ -746,7 +740,6 @@ var _ = Describe("API", func() {
 				form.Add("name", "UpdatedPlan")
 				form.Add("valid_from", agoRFC3339(111*time.Hour))
 				form.Add("plan_guid", db.ComputePlanGuid)
-				form.Add("formula", "10*10")
 				status, _ := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusUnauthorized))
 			})
@@ -873,28 +866,24 @@ var _ = Describe("API", func() {
 				request(path, &out)
 				ExpectJSON(out, []map[string]interface{}{
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * 0.5",
 						"id":         20,
 						"name":       "ServicePlanA",
 						"plan_guid":  "00000000-0000-0000-0000-100000000000",
 						"valid_from": agoRFC3339(100 * time.Hour),
 					},
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * 1",
 						"id":         30,
 						"name":       "ServicePlanB",
 						"plan_guid":  "00000000-0000-0000-0000-200000000000",
 						"valid_from": agoRFC3339(100 * time.Hour),
 					},
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * $memory_in_mb * 1",
 						"id":         10,
 						"name":       "ComputePlanA",
 						"plan_guid":  db.ComputePlanGuid,
 						"valid_from": agoRFC3339(100 * time.Hour),
 					},
 					{
-						"formula":    "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
 						"id":         11,
 						"name":       "ComputePlanB",
 						"plan_guid":  db.ComputePlanGuid,
@@ -916,7 +905,6 @@ var _ = Describe("API", func() {
 				var out interface{}
 				request(path, &out)
 				ExpectJSON(out, map[string]interface{}{
-					"formula":    "($time_in_seconds / 60 / 60) * 1",
 					"id":         id,
 					"name":       "ServicePlanB",
 					"plan_guid":  "00000000-0000-0000-0000-200000000000",
@@ -940,7 +928,6 @@ var _ = Describe("API", func() {
 				form.Add("name", "NewPlan")
 				form.Add("valid_from", agoRFC3339(1*time.Minute))
 				form.Add("plan_guid", "aaaaaaa-bbbb-cccc-ddddddddddddd")
-				form.Add("formula", "$memory_in_mb * 1")
 				status, out := post(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
@@ -948,7 +935,6 @@ var _ = Describe("API", func() {
 					"name":       "NewPlan",
 					"valid_from": agoRFC3339(1 * time.Minute),
 					"plan_guid":  "aaaaaaa-bbbb-cccc-ddddddddddddd",
-					"formula":    "$memory_in_mb * 1",
 				})
 			})
 		})
@@ -965,11 +951,9 @@ var _ = Describe("API", func() {
 				form.Add("name", "UpdatedPlan")
 				form.Add("valid_from", agoRFC3339(111*time.Hour))
 				form.Add("plan_guid", db.ComputePlanGuid)
-				form.Add("formula", "10*10")
 				status, out := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
-					"formula":    "10*10",
 					"id":         11,
 					"name":       "UpdatedPlan",
 					"plan_guid":  db.ComputePlanGuid,
@@ -990,7 +974,6 @@ var _ = Describe("API", func() {
 				status, out := del(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
-					"formula":    "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
 					"id":         11,
 					"name":       "ComputePlanB",
 					"plan_guid":  db.ComputePlanGuid,

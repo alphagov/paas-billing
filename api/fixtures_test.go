@@ -17,7 +17,6 @@ var planFixtures = Plans{
 		Name:      "ComputePlanA",
 		PlanGuid:  db.ComputePlanGuid,
 		ValidFrom: ago(100 * time.Hour),
-		Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 1",
 		Components: []PricingPlanComponent{
 			{
 				ID:      101,
@@ -36,7 +35,6 @@ var planFixtures = Plans{
 		Name:      "ComputePlanB",
 		PlanGuid:  db.ComputePlanGuid,
 		ValidFrom: ago(1 * time.Hour),
-		Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
 		Components: []PricingPlanComponent{
 			{
 				ID:      111,
@@ -50,7 +48,6 @@ var planFixtures = Plans{
 		Name:      "ServicePlanA",
 		PlanGuid:  "00000000-0000-0000-0000-100000000000",
 		ValidFrom: ago(100 * time.Hour),
-		Formula:   "($time_in_seconds / 60 / 60) * 0.5",
 		Components: []PricingPlanComponent{
 			{
 				ID:      201,
@@ -69,7 +66,6 @@ var planFixtures = Plans{
 		Name:      "ServicePlanB",
 		PlanGuid:  "00000000-0000-0000-0000-200000000000",
 		ValidFrom: ago(100 * time.Hour),
-		Formula:   "($time_in_seconds / 60 / 60) * 1",
 		Components: []PricingPlanComponent{
 			{
 				ID:      301,

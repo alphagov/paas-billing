@@ -48,7 +48,6 @@ var _ = Describe("API", func() {
 		X10ComputePlan = fixtures.Plan{
 			ID:        1,
 			Name:      "x10-compute-plan",
-			Formula:   "$time_in_seconds * 10",
 			ValidFrom: now.Add(-(100 * 24 * time.Hour)),
 			PlanGuid:  db.ComputePlanGuid,
 			Components: []fixtures.PricingPlanComponent{
@@ -67,7 +66,6 @@ var _ = Describe("API", func() {
 		X4ComputePlan = fixtures.Plan{
 			ID:        2,
 			Name:      "x4-compute-plan",
-			Formula:   "$time_in_seconds * 4",
 			ValidFrom: now.Add(-(10 * 24 * time.Hour)),
 			PlanGuid:  db.ComputePlanGuid,
 			Components: []fixtures.PricingPlanComponent{
@@ -86,7 +84,6 @@ var _ = Describe("API", func() {
 		X2ServicePlan = fixtures.Plan{
 			ID:        3,
 			Name:      "x2-service-plan",
-			Formula:   "$time_in_seconds * 2",
 			ValidFrom: time.Unix(0, 0),
 			PlanGuid:  uuid.NewV4().String(),
 			Components: []fixtures.PricingPlanComponent{

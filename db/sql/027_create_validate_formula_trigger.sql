@@ -34,8 +34,3 @@ BEGIN
 	RETURN NEW;
 END;
 $$ language plpgsql;
-
--- setup trigger
-DROP TRIGGER IF EXISTS tgr_validate_formula ON pricing_plans;
-CREATE TRIGGER tgr_validate_formula BEFORE INSERT OR UPDATE ON pricing_plans
-FOR EACH ROW EXECUTE PROCEDURE validate_formula();

@@ -14,10 +14,9 @@ func ListPricingPlans(db db.SQLClient) echo.HandlerFunc {
 				id,
 				iso8601(valid_from) as valid_from,
 				name,
-				plan_guid,
-				formula
+				plan_guid
 			from
-				pricing_plans	
+				pricing_plans
 			order by
 				valid_from, plan_guid
 		`)
@@ -35,8 +34,7 @@ func GetPricingPlan(db db.SQLClient) echo.HandlerFunc {
 				id,
 				iso8601(valid_from) as valid_from,
 				name,
-				plan_guid,
-				formula
+				plan_guid
 			from
 				pricing_plans
 			where
@@ -53,7 +51,6 @@ func CreatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		Name      string `json:"name" form:"name"`
 		ValidFrom string `json:"valid_from" form:"valid_from"`
 		PlanGuid  string `json:"plan_guid" form:"plan_guid"`
-		Formula   string `json:"formula" form:"formula"`
 	}
 	return func(c echo.Context) error {
 		pp := CreatePricingPlan{}
@@ -69,27 +66,21 @@ func CreatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if pp.PlanGuid == "" {
 			return errors.New("plan_guid is required")
 		}
-		if pp.Formula == "" {
-			return errors.New("formula is required")
-		}
 		err := render(Single, c, db, `
 			insert into pricing_plans (
 				name,
 				valid_from,
-				plan_guid,
-				formula
+				plan_guid
 			) values (
 				$1,
 				$2,
-				$3,
-				$4
+				$3
 			) returning
 				id,
 				name,
 				iso8601(valid_from) as valid_from,
-				plan_guid,
-				formula
-		`, pp.Name, pp.ValidFrom, pp.PlanGuid, pp.Formula)
+				plan_guid
+		`, pp.Name, pp.ValidFrom, pp.PlanGuid)
 		if err != nil {
 			return err
 		}
@@ -102,7 +93,6 @@ func UpdatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		Name      string `json:"name" form:"name"`
 		ValidFrom string `json:"valid_from" form:"valid_from"`
 		PlanGuid  string `json:"plan_guid" form:"plan_guid"`
-		Formula   string `json:"formula" form:"formula"`
 	}
 	return func(c echo.Context) error {
 		id := c.Param("pricing_plan_id")
@@ -122,24 +112,19 @@ func UpdatePricingPlan(db db.SQLClient) echo.HandlerFunc {
 		if pp.PlanGuid == "" {
 			return errors.New("plan_guid is required")
 		}
-		if pp.Formula == "" {
-			return errors.New("formula is required")
-		}
 		err := render(Single, c, db, `
 			update pricing_plans set
 				name = $1,
 				valid_from = $2,
-				plan_guid = $3,
-				formula = $4
+				plan_guid = $3
 			where
-				id = $5
+				id = $4
 			returning
 				id,
 				name,
 				iso8601(valid_from) as valid_from,
-				plan_guid,
-				formula
-		`, pp.Name, pp.ValidFrom, pp.PlanGuid, pp.Formula, id)
+				plan_guid
+		`, pp.Name, pp.ValidFrom, pp.PlanGuid, id)
 		if err != nil {
 			return err
 		}
@@ -162,8 +147,7 @@ func DestroyPricingPlan(db db.SQLClient) echo.HandlerFunc {
 				id,
 				name,
 				iso8601(valid_from) as valid_from,
-				plan_guid,
-				formula
+				plan_guid
 		`, id)
 		if err != nil {
 			return err
@@ -179,14 +163,12 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 			insert into pricing_plans (
 				name,
 				valid_from,
-				plan_guid,
-				formula
+				plan_guid
 			) (
 				select distinct
 					raw_message->>'service_plan_name' as name,
 					'2001-01-01'::timestamptz as valid_from,
-					raw_message->>'service_plan_guid' as plan_guid,
-					'0'::text as formula
+					raw_message->>'service_plan_guid' as plan_guid
 				from
 					service_usage_events
 				where
