@@ -183,7 +183,7 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 			return err
 		}
 
-		err = render(Single, c, db, `
+		err = render(Empty, c, db, `
 			insert into pricing_plan_components (
 				pricing_plan_id,
 				name,
@@ -199,7 +199,7 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 					id not in (
 						select pricing_plan_id from pricing_plan_components
 					)
-			) returning name
+			)
 		`)
 		if err != nil {
 			return err

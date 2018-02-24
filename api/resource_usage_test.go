@@ -806,6 +806,14 @@ var _ = Describe("API", func() {
 			})
 		})
 
+		Context("/seed_pricing_plans", func() {
+			It("should be unauthorized", func() {
+				path := "/seed_pricing_plans"
+				status, _ := post(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
 	})
 
 	Context("as admin", func() {
@@ -1081,6 +1089,17 @@ var _ = Describe("API", func() {
 						"message": "not found",
 					}},
 				))
+			})
+		})
+
+		Context("/seed_pricing_plans", func() {
+			It("should be able to call and return with 200", func() {
+				path := "/seed_pricing_plans"
+				status, out := post(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"success": true,
+				})
 			})
 		})
 

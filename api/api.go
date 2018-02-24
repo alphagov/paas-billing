@@ -383,6 +383,7 @@ type resourceType int
 
 const (
 	Invalid resourceType = iota
+	Empty
 	Single
 	Many
 )
@@ -570,6 +571,12 @@ func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args .
 		r = db.QueryRowJSON(sql, args...)
 	} else if rt == Many {
 		r = db.QueryJSON(sql, args...)
+	} else if rt == Empty {
+		_, err := db.Exec(sql, args...)
+		if err != nil {
+			return err
+		}
+		r = bytes.NewReader(nil)
 	}
 	acceptHeader := c.Request().Header.Get(echo.HeaderAccept)
 	accepts := strings.Split(acceptHeader, ",")
@@ -580,6 +587,11 @@ func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args .
 	for _, accept := range accepts {
 		if accept == echo.MIMEApplicationJSON || accept == echo.MIMEApplicationJSONCharsetUTF8 {
 			c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+			if rt == Empty {
+				c.Response().Write([]byte(`{"success":true}`))
+				return nil
+			}
+
 			written, err := io.Copy(c.Response(), r)
 			if err != nil {
 				return err
