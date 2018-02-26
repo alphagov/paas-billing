@@ -16,28 +16,6 @@ import (
 
 const billableViewName = "billable"
 
-func NewUsageHandler(db db.SQLClient) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return withAuthorizedResources(Many, billableViewName, c, db, `
-			select
-				guid,
-				org_guid,
-				space_guid,
-				pricing_plan_id,
-				pricing_plan_name,
-				name,
-				memory_in_mb,
-				iso8601(lower(duration)) as start,
-				iso8601(upper(duration)) as stop,
-				price::bigint as price
-			from
-				monetized_resources
-			order by
-				guid, id
-		`)
-	}
-}
-
 type SimulatedEvents struct {
 	Events []SimulatedEvent `json:"events"`
 }
@@ -333,13 +311,15 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_name,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
-				(price * 100)::bigint as price_in_pence
+				sum((price * 100)::bigint) as price_in_pence
 			from
-				monetized_resources
+				monetized_resources mr
 			where
 				guid = $1
+			group by
+				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid, duration
 			order by
-				id, pricing_plan_id, guid
+				guid, id, pricing_plan_id
 		`, resourceGUID)
 	}
 }
@@ -353,13 +333,18 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				space_guid,
 				pricing_plan_id,
 				pricing_plan_name,
+				name,
+				memory_in_mb,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
-				(price * 100)::bigint as price_in_pence
+				sum(price::bigint) as price
 			from
 				monetized_resources
+			group by
+				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid,
+				name, memory_in_mb, duration
 			order by
-				id, pricing_plan_id, guid
+				guid, id, pricing_plan_id
 		`)
 	}
 }
@@ -368,6 +353,7 @@ type resourceType int
 
 const (
 	Invalid resourceType = iota
+	Empty
 	Single
 	Many
 )
@@ -437,14 +423,16 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				) as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
-				vpp.formula,
+				ppc.id AS pricing_plan_component_id,
+				ppc.name AS pricing_plan_component_name,
+				ppc.formula,
 				eval_formula(
 					b.memory_in_mb,
 					tstzrange(
 						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
 						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
 					),
-					vpp.formula
+					ppc.formula
 				) as price
 			from
 				authorized_resources b
@@ -453,6 +441,10 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 			on b.plan_guid = vpp.plan_guid
 				 and vpp.valid_for && b.duration
 				 and vpp.valid_for && tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
+			inner join
+				pricing_plan_components ppc
+			on
+				ppc.pricing_plan_id = vpp.id
 			where
 				b.duration &&  tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
 	  ),
@@ -549,6 +541,12 @@ func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args .
 		r = db.QueryRowJSON(sql, args...)
 	} else if rt == Many {
 		r = db.QueryJSON(sql, args...)
+	} else if rt == Empty {
+		_, err := db.Exec(sql, args...)
+		if err != nil {
+			return err
+		}
+		r = bytes.NewReader(nil)
 	}
 	acceptHeader := c.Request().Header.Get(echo.HeaderAccept)
 	accepts := strings.Split(acceptHeader, ",")
@@ -559,8 +557,22 @@ func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args .
 	for _, accept := range accepts {
 		if accept == echo.MIMEApplicationJSON || accept == echo.MIMEApplicationJSONCharsetUTF8 {
 			c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			_, err := io.Copy(c.Response(), r)
-			return err
+			if rt == Empty {
+				c.Response().Write([]byte(`{"success":true}`))
+				return nil
+			}
+
+			written, err := io.Copy(c.Response(), r)
+			if err != nil {
+				return err
+			}
+
+			if rt == Single && written == 0 {
+				c.Response().WriteHeader(http.StatusNotFound)
+				c.Response().Write([]byte(`{"error":{"message":"not found"}}`))
+			}
+
+			return nil
 		} else if accept == echo.MIMETextHTML || accept == echo.MIMETextHTMLCharsetUTF8 {
 			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
 			c.Response().WriteHeader(http.StatusOK)

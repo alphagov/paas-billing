@@ -184,14 +184,24 @@ var _ = Describe("Db", func() {
 	Describe("Pricing Formulae", func() {
 
 		var insert = func(formula string, out interface{}) error {
-			return sqlClient.Conn.QueryRow(`
-				insert into pricing_plans(name, valid_from, plan_guid, formula) values (
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plans(name, valid_from, plan_guid) values (
 					'FormulaTestPlan',
 					'-infinity',
-					$1,
-					$2
+					$1
+				);
+			`, uuid.NewV4().String())
+			if err != nil {
+				return err
+			}
+
+			return sqlClient.Conn.QueryRow(`
+				insert into pricing_plan_components(pricing_plan_id, name, formula) values (
+					1,
+					'FormulaTestPlan/1',
+					$1
 				) returning eval_formula(64, tstzrange(now(), now() + '60 seconds'), formula) as result
-			`, uuid.NewV4().String(), formula).Scan(out)
+			`, formula).Scan(out)
 		}
 
 		It("Should allow basic integer formulae", func() {
@@ -298,23 +308,117 @@ var _ = Describe("Db", func() {
 			t := time.Now()
 			guid := uuid.NewV4().String()
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plans (name, valid_from, plan_guid, formula) values (
+				insert into pricing_plans (name, valid_from, plan_guid) values (
 					$1,
 					$2,
-					$3,
-					'1+1'
+					$3
 				)
 			`, "PlanA", t.Format(time.RFC3339), guid)
 			Expect(err).ToNot(HaveOccurred())
 			_, err = sqlClient.Conn.Exec(`
-				insert into pricing_plans (name, valid_from, plan_guid, formula) values (
+				insert into pricing_plans (name, valid_from, plan_guid) values (
 					$1,
 					$2,
-					$3,
-					'1+1'
+					$3
 				)
 			`, "PlanB", t.Format(time.RFC3339), guid)
 			Expect(err).To(HaveOccurred())
+		})
+
+	})
+
+	Context("pricing_plan_components", func() {
+
+		BeforeEach(func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plans (id, name, valid_from, plan_guid) values (
+					1,
+					'PlanA',
+					current_timestamp,
+					'GUID'
+				)
+			`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ensure I can insert a valid record", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1+1")
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ensure the pricing_plan_id belongs to an existing plan", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 2, "PlanB 1", "1+1")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
+		})
+
+		It("should ensure name is not empty", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "", "1+1")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+
+		It("should ensure formula is not empty", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("formula can not be empty"))
+		})
+
+		It("should ensure formula is valid", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1 + foo")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("illegal token in formula"))
+		})
+
+		It("should ensure unique pricing_plan_id + name", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1+1")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+					$1,
+					$2,
+					$3
+				)
+			`, 1, "PlanA 1", "1+2")
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("duplicate key"))
 		})
 
 	})

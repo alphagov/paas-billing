@@ -38,9 +38,6 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 
 	e.POST("/forecast/report", api.NewSimulatedReportHandler(db))
 
-	// Deprecated endpoint, favor /resources and /events
-	authGroup.GET("/usage", api.NewUsageHandler(db))
-
 	authGroup.GET("/report/:org_guid", api.NewOrgReportHandler(db))
 
 	// Usage and Billing API
@@ -59,10 +56,17 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	// Pricing data API
 	authGroup.GET("/pricing_plans", api.ListPricingPlans(db))
 	authGroup.GET("/pricing_plans/:pricing_plan_id", api.GetPricingPlan(db))
+	authGroup.GET("/pricing_plans/:pricing_plan_id/components", api.ListPricingPlanComponentsByPlan(db))
 	adminGroup.POST("/pricing_plans", api.CreatePricingPlan(db))
 	adminGroup.PUT("/pricing_plans/:pricing_plan_id", api.UpdatePricingPlan(db))
 	adminGroup.DELETE("/pricing_plans/:pricing_plan_id", api.DestroyPricingPlan(db))
 	adminGroup.POST("/seed_pricing_plans", api.CreateMissingPricingPlans(db))
+	authGroup.GET("/pricing_plan_components", api.ListPricingPlanComponents(db))
+	authGroup.GET("/pricing_plan_components/:id", api.GetPricingPlanComponent(db))
+	adminGroup.POST("/pricing_plan_components", api.CreatePricingPlanComponent(db))
+	adminGroup.PUT("/pricing_plan_components/:id", api.UpdatePricingPlanComponent(db))
+	adminGroup.DELETE("/pricing_plan_components/:id", api.DestroyPricingPlanComponent(db))
+
 	e.GET("/", listRoutes)
 
 	return e

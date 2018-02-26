@@ -81,35 +81,6 @@ var baseTemplate = `
 	</body>
 	</html>
 {{end}}
-
-{{define "pricingtable" }}
-	<div class="table">
-		{{ range $row := . }}
-			{{ if eq (0) (index $row "idx") }}
-				<div class="tr">
-					{{ range $key, $value := $row }}
-						{{ if ne $key "idx" }}
-							<div class="td">
-								<label style="font-size:10px; display:block">{{ $key }}</label>
-							</div>
-						{{ end }}
-					{{ end }}
-				</div>
-			{{ end }}
-			<form method="POST" action="/pricing_plans/{{ index $row "id" }}" class="tr">
-				{{ range $key, $value := $row }}
-					{{ if ne $key "idx" }}
-						<div class="td">
-							<input name="{{ $key }}" placeholder="{{ $key }}" value="{{ $value }}">
-						</div>
-					{{ end }}
-				{{ end }}
-				<div class="td"><button class="button" type="submit" name="_method" value="PUT">Update</button></div>
-				<div class="td"><button class="button" type="submit" name="_method" value="DELETE">Delete</button></div>
-			</form>
-		{{ end }}
-	</div>
-{{end}}
 `
 
 var templates = map[string]string{
@@ -129,7 +100,7 @@ var templates = map[string]string{
 					</tr>
 				{{ end }}
 				<tr>
-						
+
 					{{ range $key, $value := $row }}
 						{{ if ne $key "idx" }}
 							<td>{{ $value }}</td>
@@ -138,59 +109,6 @@ var templates = map[string]string{
 				</tr>
 			{{ end }}
 		</table>
-	`,
-	"/pricing_plans": `
-		<p class="lede" class="margin:10px">
-			Pricing Plans
-		</p>
-		{{ template "pricingtable" .Rows }}
-		<p class="lede" class="margin:10px">
-			Create A new Plan
-		</p>
-		<div class="table">
-			<form method="POST" action="/pricing_plans" class="tr">
-				<div class="form-group">
-					<label class="form-label">Plan name</label>
-					<input class="form-control" name="name" placeholder="eg. Postgres Tiny" type="text" value="ComputePlanAlpha">
-				</div>
-				<div class="form-group">
-					<label class="form-label">Valid From Date</label>
-					<input class="form-control" name="valid_from" placeholder="2010-01-01T00:00:00Z" type="text" value="">
-				</div>
-				<div class="form-group">
-					<label class="form-label">Service or Compute Plan GUID</label>
-					<input class="form-control" name="plan_guid" placeholder="" type="text" value="f4d4b95a-f55e-4593-8d54-3364c25798c4">
-				</div>
-				<div class="form-group">
-					<label class="form-label">
-						Formula
-						<span class="hint">You can use 
-							<code>$time_in_seconds</code>,
-							<code>$memory_in_mb</code>,
-							<code>+</code>,
-							<code>-</code>,
-							<code>/</code>,
-							<code>*</code>,
-							<code>ceil(value)</code>
-						</span>
-					</label>
-					<input class="form-control" name="formula" placeholder="$time_in_seconds * 1.3" type="text" value="">
-				</div>
-				<button class="button" type="submit">Create pricing plan</button></div>
-			</form>
-			<form method="POST" action="/seed_pricing_plans" class="tr">
-				<div class="td"><button class="button" type="submit">Seed missing pricing plans</button></div>
-			</form>
-		</div>
-	`,
-	"/pricing_plans/:pricing_plan_id": `
-		<p class="lede" class="margin:10px">
-			Pricing Plan Details
-		</p>
-		{{ template "pricingtable" .Rows }}
-		<div>
-			<a href="/pricing_plans">view all plans</a>
-		</div>
 	`,
 	"/report/:org_guid": `
 		{{ $from := .Range.From }}
@@ -276,7 +194,7 @@ var templates = map[string]string{
 				<div class="td"><button class="button" type="submit">Re generate missing events</button></div>
 			</form>
 		</div>
-	
+
 	`,
 }
 

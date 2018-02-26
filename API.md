@@ -3,27 +3,38 @@
 ## Overview
 
 The "Billing API" allows us to query resource usage and calculate costs for
-that usage. It may make sense to rename this repository "paas-billing" in the
-future, and use it to contain those items that are dependent on the billing
-database.
+that usage.
 
-* A `MATERIALIZED VIEW` is created in the database that gets updated at a set interval (currently 1hr) which normalizes the raw event data into rows of `resource_guid`, `time period`, `pricing_plan_id`. The view caches and indexes data in the following form so that we can perform queries against it efficiently.
+* A materialised view called `billing` is created in the database that gets updated at a set interval (currently 1hr) which normalizes the raw event data into rows of `resource_guid`, `time period`, `pricing_plan_id`. The view caches and indexes data in the following form so that we can perform queries against it efficiently.
 
 | ... | duration | guid | org | space | plan | memory_in_mb | ... |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | ... | `2017-11-01 08:14` to `2017-11-19 08:14` | {thing1} | {org1} | {space1} | {planA} | x | ... |
 | ... | `2017-11-01 09:10` to `2017-11-19 10:10` | {thing2} | {org2} | {space1} | {planB} | y | ... |
 
-* A `pricing_plans` table is added to the database that contains the formulas required to calculate costs for each resource. For example a pricing_plan row might look like:
+* The `pricing_plans` and `pricing_plan_components` tables are added to the database which contains the formulas required to calculate costs for each resource.
 
+For example a pricing_plan row might look like:
 
-| id | name | valid_from | plan_guid | formula |
+| id | name | valid_from | plan_guid |
 | --- | --- | --- | --- | --- |
-| 2 | compute instance | 2017-11-01 | {plan_guid} | `($memory_in_mb / 1000) * ($time_in_seconds)` |
-| 3 | tiny postgres | 2017-11-01 | {plan_guid} | `1 * $time_in_seconds` |
+| 1 | compute instance | 2017-11-01 | {plan_guid} |
+| 2 | tiny postgres | 2017-11-01 | {plan_guid} |
 
+And a pricing_plan_components row might look like:
 
-* The API would joins the rows from that view with data from a `pricing_plans` table that contains the information required to calculate the prices.
+| id | pricing_plan_id | name | formula |
+| --- | --- | --- | --- |
+| 1 | 1 | Memory usage | `($memory_in_mb / 1000) * 0.33` |
+| 2 | 1 | Runtime usage | `$time_in_seconds * 0.15` |
+
+In this example the final formula for the `compute instance` plan would be:
+
+```
+($memory_in_mb / 1000) * 0.33 + $time_in_seconds * 0.15
+```
+
+* The API would join the rows from that view with data from the `pricing_plans` and `pricing_plan_components` tables which contains the information required to calculate the prices.
 
 * Pricing plans can change over time so they have a valid_from field. The monetized calculation handles splitting usage over the valid ranges.
 
@@ -40,7 +51,7 @@ database.
     - `/spaces/:space_guid/resources` list totals for each resource in space
     - `/resources` list totals for all resources
     - `/resources/:resource_guid` list total for a single resource
-    - `/events` [experimental] list all events ("events" are all the start/stop points with calculated billing, unlike "resources" which are aggregate totals for each item over a range). Events would allow you to see _when_ something happens
+    - `/events` list all events ("events" are all the start/stop points with calculated billing, unlike "resources" which are aggregate totals for each item over a range). Events would allow you to see _when_ something happens
     - `/resources/:resource_guid/events` as above but for a single resource
     - `/pricing_plans` fetch the pricing plans
     - `/report/:org_guid` generate a report for the given `:org_guid`

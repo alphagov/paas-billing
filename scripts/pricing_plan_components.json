@@ -1,0 +1,104 @@
+[
+  {
+    "id": 1,
+    "pricing_plan_id": 1,
+    "name": "ComputePlanAlpha",
+    "formula": "($time_in_seconds/3600)*($memory_in_mb/1024)*0.01"
+  },
+  {
+    "id": 2,
+    "pricing_plan_id": 2,
+    "name": "Postgres db.m4.2xlarge (L-HA-enc-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*1.612"
+  },
+  {
+    "id": 3,
+    "pricing_plan_id": 3,
+    "name": "Compose Elasticsearch (tiny)",
+    "formula": "($time_in_seconds/2678400)*45.00"
+  },
+  {
+    "id": 4,
+    "pricing_plan_id": 4,
+    "name": "Postgres db.t2.micro (Free)",
+    "formula": "($time_in_seconds/3600)*0.02"
+  },
+  {
+    "id": 5,
+    "pricing_plan_id": 5,
+    "name": "MySQL db.t2.micro (Free)",
+    "formula": "($time_in_seconds/3600)*0.018"
+  },
+  {
+    "id": 6,
+    "pricing_plan_id": 6,
+    "name": "Postgres db.t2.small (S-HA-enc-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.078"
+  },
+  {
+    "id": 7,
+    "pricing_plan_id": 7,
+    "name": "Postgres db.m4.large (M-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.201"
+  },
+  {
+    "id": 8,
+    "pricing_plan_id": 8,
+    "name": "Postgres db.m4.large (M-HA-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.402"
+  },
+  {
+    "id": 9,
+    "pricing_plan_id": 9,
+    "name": "Elasticahe Redis cache.t2.micro (tiny)",
+    "formula": "($time_in_seconds/3600)*0.018"
+  },
+  {
+    "id": 10,
+    "pricing_plan_id": 10,
+    "name": "Mongo (tiny)",
+    "formula": "($time_in_seconds/2678400)*31.00"
+  },
+  {
+    "id": 11,
+    "pricing_plan_id": 11,
+    "name": "Cloudfront CDN (custom domain)",
+    "formula": "0"
+  },
+  {
+    "id": 12,
+    "pricing_plan_id": 12,
+    "name": "Postgres db.t2.small (S-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.039"
+  },
+  {
+    "id": 13,
+    "pricing_plan_id": 13,
+    "name": "Compose Redis (tiny)",
+    "formula": "($time_in_seconds/2678400)*6.64"
+  },
+  {
+    "id": 14,
+    "pricing_plan_id": 14,
+    "name": "Postgres db.m4.large (M-HA-enc-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.402"
+  },
+  {
+    "id": 15,
+    "pricing_plan_id": 15,
+    "name": "Postgres db.m4.2xlarge (L-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.806"
+  },
+  {
+    "id": 16,
+    "pricing_plan_id": 16,
+    "name": "Postgres db.t2.small (S-HA-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*0.078"
+  },
+  {
+    "id": 17,
+    "pricing_plan_id": 17,
+    "name": "Postgres db.m4.2xlarge (L-HA-dedicated-9.5)",
+    "formula": "($time_in_seconds/3600)*1.612"
+  }
+]

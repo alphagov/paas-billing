@@ -5,6 +5,9 @@ DECLARE
 	illegal_token text;
 	dummy_price numeric;
 BEGIN
+	IF (NEW.formula = '') THEN
+		RAISE EXCEPTION 'formula can not be empty';
+	END IF;
 	invalid_formula := lower(NEW.formula);
 	invalid_formula := (select regexp_replace(invalid_formula, '::(integer|bigint|numeric)', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '([0-9]+)?\.([0-9]+)', '#', 'g'));
@@ -31,8 +34,3 @@ BEGIN
 	RETURN NEW;
 END;
 $$ language plpgsql;
-
--- setup trigger
-DROP TRIGGER IF EXISTS tgr_validate_formula ON pricing_plans;
-CREATE TRIGGER tgr_validate_formula BEFORE INSERT OR UPDATE ON pricing_plans
-FOR EACH ROW EXECUTE PROCEDURE validate_formula();
