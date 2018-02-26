@@ -303,38 +303,23 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 			return errors.New("missing resource_guid")
 		}
 		return withAuthorizedResources(Many, billableViewName, c, db, `
-			with
-			summed_resources as (
-				select
-					id,
-					pricing_plan_id,
-					min(pricing_plan_component_id) as pricing_plan_component_id,
-					sum((price * 100)::bigint) as price_in_pence
-				from
-					monetized_resources
-				where
-					guid = $1
-				group by
-					id, pricing_plan_id
-			)
 			select
-				mr.guid,
-				mr.org_guid,
-				mr.space_guid,
-				mr.pricing_plan_id,
-				mr.pricing_plan_name,
-				iso8601(lower(mr.duration)) as from,
-				iso8601(upper(mr.duration)) as to,
-				sr.price_in_pence::bigint
+				guid,
+				org_guid,
+				space_guid,
+				pricing_plan_id,
+				pricing_plan_name,
+				iso8601(lower(duration)) as from,
+				iso8601(upper(duration)) as to,
+				sum((price * 100)::bigint) as price_in_pence
 			from
-				summed_resources sr
-			inner join
 				monetized_resources mr
-			on
-				mr.id = sr.id
-				and mr.pricing_plan_component_id = sr.pricing_plan_component_id
+			where
+				guid = $1
+			group by
+				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid, duration
 			order by
-				sr.id, sr.pricing_plan_id
+				guid, id, pricing_plan_id
 		`, resourceGUID)
 	}
 }
@@ -342,39 +327,24 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return withAuthorizedResources(Many, billableViewName, c, db, `
-			with
-			summed_resources as (
-				select
-					guid,
-					id,
-					pricing_plan_id,
-					min(pricing_plan_component_id) as pricing_plan_component_id,
-					sum(price::bigint) as price
-				from
-					monetized_resources
-				group by
-					guid, id, pricing_plan_id
-			)
 			select
-				mr.guid,
-				mr.org_guid,
-				mr.space_guid,
-				mr.pricing_plan_id,
-				mr.pricing_plan_name,
-				mr.name,
-				mr.memory_in_mb,
-				iso8601(lower(mr.duration)) as from,
-				iso8601(upper(mr.duration)) as to,
-				sr.price::bigint
+				guid,
+				org_guid,
+				space_guid,
+				pricing_plan_id,
+				pricing_plan_name,
+				name,
+				memory_in_mb,
+				iso8601(lower(duration)) as from,
+				iso8601(upper(duration)) as to,
+				sum(price::bigint) as price
 			from
-				summed_resources sr
-			inner join
-				monetized_resources mr
-			on
-				sr.id = mr.id
-				and sr.pricing_plan_component_id = mr.pricing_plan_component_id
+				monetized_resources
+			group by
+				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid,
+				name, memory_in_mb, duration
 			order by
-				sr.guid, sr.id, sr.pricing_plan_id
+				guid, id, pricing_plan_id
 		`)
 	}
 }
