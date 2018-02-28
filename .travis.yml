@@ -17,4 +17,5 @@ install:
   - true
 
 script:
+  - export DATABASE_SCHEMA_DIR="$TRAVIS_BUILD_DIR/db/sql"
   - make test
