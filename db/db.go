@@ -23,6 +23,7 @@ const (
 )
 
 // SQLClient is a general interface for handling usage event queries
+//go:generate counterfeiter -o fakes/fake_sqlclient.go . SQLClient
 type SQLClient interface {
 	InitSchema() error
 	InsertUsageEventList(data *cf.UsageEventList, tableName string) error
