@@ -14,6 +14,7 @@ import (
 	"github.com/alphagov/paas-billing/auth"
 	"github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/collector"
+	collector_cf "github.com/alphagov/paas-billing/collector/cloudfoundry"
 	"github.com/alphagov/paas-billing/db"
 	"github.com/alphagov/paas-billing/server"
 	"github.com/pkg/errors"
@@ -55,17 +56,9 @@ func Main() error {
 		return errors.Wrap(clientErr, "failed to connect to Cloud Foundry")
 	}
 
-	collectorConfig := collector.CreateConfigFromEnv()
-
-	collector, collectorErr := collector.New(
-		cloudfoundry.NewAppUsageEventsAPI(cfClient, logger),
-		cloudfoundry.NewServiceUsageEventsAPI(cfClient, logger),
-		sqlClient,
-		collectorConfig,
-		logger,
-	)
-	if collectorErr != nil {
-		return errors.Wrap(collectorErr, "failed to initialise collector")
+	collectorConfig, err := collector.CreateConfigFromEnv()
+	if err != nil {
+		return errors.Wrap(err, "configuration error")
 	}
 
 	uaaConfig, err := auth.CreateConfigFromEnv()
@@ -88,10 +81,33 @@ func Main() error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		defer logger.Info("stopped event collector")
-		logger.Info("starting event collector")
-		collector.Run(ctx)
-		shutdown()
+		defer shutdown()
+
+		appUsageEventsCollector := collector.New(
+			collectorConfig,
+			logger,
+			collector_cf.NewEventFetcher(
+				sqlClient,
+				cloudfoundry.NewAppUsageEventsAPI(cfClient, logger),
+			),
+		)
+		appUsageEventsCollector.Run(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer shutdown()
+
+		serviceUsageEventsCollector := collector.New(
+			collectorConfig,
+			logger,
+			collector_cf.NewEventFetcher(
+				sqlClient,
+				cloudfoundry.NewServiceUsageEventsAPI(cfClient, logger),
+			),
+		)
+		serviceUsageEventsCollector.Run(ctx)
 	}()
 
 	wg.Add(1)
