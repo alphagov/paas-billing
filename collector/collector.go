@@ -49,7 +49,7 @@ func (c *Collector) Run(ctx context.Context) {
 		case <-timer.C:
 			cnt, err := c.eventFetcher.FetchEvents(c.logger, c.config.FetchLimit, c.config.RecordMinAge)
 			if err != nil {
-				c.logger.Error("fetch-events", err)
+				c.logger.Error("fetch", err)
 			}
 
 			if cnt == c.config.FetchLimit {
