@@ -31,3 +31,4 @@ generate-test-mocks: ## Generates all test mocks
 	mockgen -package mocks -destination mocks/cloudfoundry.go github.com/alphagov/paas-billing/cloudfoundry Client,UsageEventsAPI
 	mockgen -package mocks -destination mocks/db.go github.com/alphagov/paas-billing/db SQLClient
 	mockgen -destination=mocks/io.go -package mocks io ReadCloser
+	go generate ./...
