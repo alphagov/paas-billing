@@ -15,6 +15,8 @@ import (
 	"github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/collector"
 	collector_cf "github.com/alphagov/paas-billing/collector/cloudfoundry"
+	collector_compose "github.com/alphagov/paas-billing/collector/compose"
+	"github.com/alphagov/paas-billing/compose"
 	"github.com/alphagov/paas-billing/db"
 	"github.com/alphagov/paas-billing/server"
 	"github.com/pkg/errors"
@@ -40,6 +42,14 @@ func createCFClient() (cloudfoundry.Client, error) {
 	return cloudfoundry.NewClient(config)
 }
 
+func createComposeClient() (compose.Client, error) {
+	composeApiKey := os.Getenv("COMPOSE_API_KEY")
+	if composeApiKey == "" {
+		return nil, errors.New("you must define COMPOSE_API_KEY")
+	}
+	return compose.NewClient(composeApiKey)
+}
+
 func Main() error {
 
 	sqlClient, err := db.NewPostgresClient(os.Getenv("DATABASE_URL"))
@@ -54,6 +64,11 @@ func Main() error {
 	cfClient, clientErr := createCFClient()
 	if clientErr != nil {
 		return errors.Wrap(clientErr, "failed to connect to Cloud Foundry")
+	}
+
+	composeClient, err := createComposeClient()
+	if err != nil {
+		return err
 	}
 
 	collectorConfig, err := collector.CreateConfigFromEnv()
@@ -108,6 +123,19 @@ func Main() error {
 			),
 		)
 		serviceUsageEventsCollector.Run(ctx)
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		defer shutdown()
+
+		composeEventsCollector := collector.New(
+			collectorConfig,
+			logger,
+			collector_compose.NewEventFetcher(sqlClient, composeClient),
+		)
+		composeEventsCollector.Run(ctx)
 	}()
 
 	wg.Add(1)
