@@ -12,7 +12,6 @@ import (
 
 // InitSchema initialises the database tables and functions
 func (pc *PostgresClient) InitSchema() (err error) {
-	// WARNING: this won't work if the binary is shipped without the code.
 	schemaDir := schemaDataDir()
 	files, err := filepath.Glob(filepath.Join(schemaDir, "*.sql"))
 	if err != nil {
