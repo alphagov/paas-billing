@@ -5,11 +5,13 @@ package mocks
 
 import (
 	sql "database/sql"
-	cloudfoundry "github.com/alphagov/paas-billing/cloudfoundry"
-	db "github.com/alphagov/paas-billing/db"
-	gomock "github.com/golang/mock/gomock"
 	io "io"
 	reflect "reflect"
+
+	cloudfoundry "github.com/alphagov/paas-billing/cloudfoundry"
+	db "github.com/alphagov/paas-billing/db"
+	gocomposeapi "github.com/compose/gocomposeapi"
+	gomock "github.com/golang/mock/gomock"
 )
 
 // MockSQLClient is a mock of SQLClient interface
@@ -78,6 +80,32 @@ func (_mr *MockSQLClientMockRecorder) Exec(arg0 interface{}, arg1 ...interface{}
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "Exec", reflect.TypeOf((*MockSQLClient)(nil).Exec), _s...)
 }
 
+// FetchComposeCursor mocks base method
+func (_m *MockSQLClient) FetchComposeCursor() (*string, error) {
+	ret := _m.ctrl.Call(_m, "FetchComposeCursor")
+	ret0, _ := ret[0].(*string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchComposeCursor indicates an expected call of FetchComposeCursor
+func (_mr *MockSQLClientMockRecorder) FetchComposeCursor() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "FetchComposeCursor", reflect.TypeOf((*MockSQLClient)(nil).FetchComposeCursor))
+}
+
+// FetchComposeLatestEventID mocks base method
+func (_m *MockSQLClient) FetchComposeLatestEventID() (*string, error) {
+	ret := _m.ctrl.Call(_m, "FetchComposeLatestEventID")
+	ret0, _ := ret[0].(*string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// FetchComposeLatestEventID indicates an expected call of FetchComposeLatestEventID
+func (_mr *MockSQLClientMockRecorder) FetchComposeLatestEventID() *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "FetchComposeLatestEventID", reflect.TypeOf((*MockSQLClient)(nil).FetchComposeLatestEventID))
+}
+
 // FetchLastGUID mocks base method
 func (_m *MockSQLClient) FetchLastGUID(_param0 string) (string, error) {
 	ret := _m.ctrl.Call(_m, "FetchLastGUID", _param0)
@@ -101,6 +129,42 @@ func (_m *MockSQLClient) InitSchema() error {
 // InitSchema indicates an expected call of InitSchema
 func (_mr *MockSQLClientMockRecorder) InitSchema() *gomock.Call {
 	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "InitSchema", reflect.TypeOf((*MockSQLClient)(nil).InitSchema))
+}
+
+// InsertComposeAuditEvents mocks base method
+func (_m *MockSQLClient) InsertComposeAuditEvents(_param0 []gocomposeapi.AuditEvent) error {
+	ret := _m.ctrl.Call(_m, "InsertComposeAuditEvents", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertComposeAuditEvents indicates an expected call of InsertComposeAuditEvents
+func (_mr *MockSQLClientMockRecorder) InsertComposeAuditEvents(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "InsertComposeAuditEvents", reflect.TypeOf((*MockSQLClient)(nil).InsertComposeAuditEvents), arg0)
+}
+
+// InsertComposeCursor mocks base method
+func (_m *MockSQLClient) InsertComposeCursor(_param0 *string) error {
+	ret := _m.ctrl.Call(_m, "InsertComposeCursor", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertComposeCursor indicates an expected call of InsertComposeCursor
+func (_mr *MockSQLClientMockRecorder) InsertComposeCursor(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "InsertComposeCursor", reflect.TypeOf((*MockSQLClient)(nil).InsertComposeCursor), arg0)
+}
+
+// InsertComposeLatestEventID mocks base method
+func (_m *MockSQLClient) InsertComposeLatestEventID(_param0 string) error {
+	ret := _m.ctrl.Call(_m, "InsertComposeLatestEventID", _param0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// InsertComposeLatestEventID indicates an expected call of InsertComposeLatestEventID
+func (_mr *MockSQLClientMockRecorder) InsertComposeLatestEventID(arg0 interface{}) *gomock.Call {
+	return _mr.mock.ctrl.RecordCallWithMethodType(_mr.mock, "InsertComposeLatestEventID", reflect.TypeOf((*MockSQLClient)(nil).InsertComposeLatestEventID), arg0)
 }
 
 // InsertUsageEventList mocks base method

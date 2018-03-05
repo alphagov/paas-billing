@@ -8,6 +8,7 @@ import (
 
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/db"
+	"github.com/compose/gocomposeapi"
 	_ "github.com/lib/pq"
 )
 
@@ -133,6 +134,61 @@ type FakeSQLClient struct {
 		result1 error
 	}
 	commitReturnsOnCall map[int]struct {
+		result1 error
+	}
+	InsertComposeCursorStub        func(*string) error
+	insertComposeCursorMutex       sync.RWMutex
+	insertComposeCursorArgsForCall []struct {
+		arg1 *string
+	}
+	insertComposeCursorReturns struct {
+		result1 error
+	}
+	insertComposeCursorReturnsOnCall map[int]struct {
+		result1 error
+	}
+	FetchComposeCursorStub        func() (*string, error)
+	fetchComposeCursorMutex       sync.RWMutex
+	fetchComposeCursorArgsForCall []struct{}
+	fetchComposeCursorReturns     struct {
+		result1 *string
+		result2 error
+	}
+	fetchComposeCursorReturnsOnCall map[int]struct {
+		result1 *string
+		result2 error
+	}
+	InsertComposeLatestEventIDStub        func(string) error
+	insertComposeLatestEventIDMutex       sync.RWMutex
+	insertComposeLatestEventIDArgsForCall []struct {
+		arg1 string
+	}
+	insertComposeLatestEventIDReturns struct {
+		result1 error
+	}
+	insertComposeLatestEventIDReturnsOnCall map[int]struct {
+		result1 error
+	}
+	FetchComposeLatestEventIDStub        func() (*string, error)
+	fetchComposeLatestEventIDMutex       sync.RWMutex
+	fetchComposeLatestEventIDArgsForCall []struct{}
+	fetchComposeLatestEventIDReturns     struct {
+		result1 *string
+		result2 error
+	}
+	fetchComposeLatestEventIDReturnsOnCall map[int]struct {
+		result1 *string
+		result2 error
+	}
+	InsertComposeAuditEventsStub        func([]composeapi.AuditEvent) error
+	insertComposeAuditEventsMutex       sync.RWMutex
+	insertComposeAuditEventsArgsForCall []struct {
+		arg1 []composeapi.AuditEvent
+	}
+	insertComposeAuditEventsReturns struct {
+		result1 error
+	}
+	insertComposeAuditEventsReturnsOnCall map[int]struct {
 		result1 error
 	}
 	invocations      map[string][][]interface{}
@@ -643,6 +699,241 @@ func (fake *FakeSQLClient) CommitReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeSQLClient) InsertComposeCursor(arg1 *string) error {
+	fake.insertComposeCursorMutex.Lock()
+	ret, specificReturn := fake.insertComposeCursorReturnsOnCall[len(fake.insertComposeCursorArgsForCall)]
+	fake.insertComposeCursorArgsForCall = append(fake.insertComposeCursorArgsForCall, struct {
+		arg1 *string
+	}{arg1})
+	fake.recordInvocation("InsertComposeCursor", []interface{}{arg1})
+	fake.insertComposeCursorMutex.Unlock()
+	if fake.InsertComposeCursorStub != nil {
+		return fake.InsertComposeCursorStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.insertComposeCursorReturns.result1
+}
+
+func (fake *FakeSQLClient) InsertComposeCursorCallCount() int {
+	fake.insertComposeCursorMutex.RLock()
+	defer fake.insertComposeCursorMutex.RUnlock()
+	return len(fake.insertComposeCursorArgsForCall)
+}
+
+func (fake *FakeSQLClient) InsertComposeCursorArgsForCall(i int) *string {
+	fake.insertComposeCursorMutex.RLock()
+	defer fake.insertComposeCursorMutex.RUnlock()
+	return fake.insertComposeCursorArgsForCall[i].arg1
+}
+
+func (fake *FakeSQLClient) InsertComposeCursorReturns(result1 error) {
+	fake.InsertComposeCursorStub = nil
+	fake.insertComposeCursorReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSQLClient) InsertComposeCursorReturnsOnCall(i int, result1 error) {
+	fake.InsertComposeCursorStub = nil
+	if fake.insertComposeCursorReturnsOnCall == nil {
+		fake.insertComposeCursorReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.insertComposeCursorReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSQLClient) FetchComposeCursor() (*string, error) {
+	fake.fetchComposeCursorMutex.Lock()
+	ret, specificReturn := fake.fetchComposeCursorReturnsOnCall[len(fake.fetchComposeCursorArgsForCall)]
+	fake.fetchComposeCursorArgsForCall = append(fake.fetchComposeCursorArgsForCall, struct{}{})
+	fake.recordInvocation("FetchComposeCursor", []interface{}{})
+	fake.fetchComposeCursorMutex.Unlock()
+	if fake.FetchComposeCursorStub != nil {
+		return fake.FetchComposeCursorStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.fetchComposeCursorReturns.result1, fake.fetchComposeCursorReturns.result2
+}
+
+func (fake *FakeSQLClient) FetchComposeCursorCallCount() int {
+	fake.fetchComposeCursorMutex.RLock()
+	defer fake.fetchComposeCursorMutex.RUnlock()
+	return len(fake.fetchComposeCursorArgsForCall)
+}
+
+func (fake *FakeSQLClient) FetchComposeCursorReturns(result1 *string, result2 error) {
+	fake.FetchComposeCursorStub = nil
+	fake.fetchComposeCursorReturns = struct {
+		result1 *string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSQLClient) FetchComposeCursorReturnsOnCall(i int, result1 *string, result2 error) {
+	fake.FetchComposeCursorStub = nil
+	if fake.fetchComposeCursorReturnsOnCall == nil {
+		fake.fetchComposeCursorReturnsOnCall = make(map[int]struct {
+			result1 *string
+			result2 error
+		})
+	}
+	fake.fetchComposeCursorReturnsOnCall[i] = struct {
+		result1 *string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSQLClient) InsertComposeLatestEventID(arg1 string) error {
+	fake.insertComposeLatestEventIDMutex.Lock()
+	ret, specificReturn := fake.insertComposeLatestEventIDReturnsOnCall[len(fake.insertComposeLatestEventIDArgsForCall)]
+	fake.insertComposeLatestEventIDArgsForCall = append(fake.insertComposeLatestEventIDArgsForCall, struct {
+		arg1 string
+	}{arg1})
+	fake.recordInvocation("InsertComposeLatestEventID", []interface{}{arg1})
+	fake.insertComposeLatestEventIDMutex.Unlock()
+	if fake.InsertComposeLatestEventIDStub != nil {
+		return fake.InsertComposeLatestEventIDStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.insertComposeLatestEventIDReturns.result1
+}
+
+func (fake *FakeSQLClient) InsertComposeLatestEventIDCallCount() int {
+	fake.insertComposeLatestEventIDMutex.RLock()
+	defer fake.insertComposeLatestEventIDMutex.RUnlock()
+	return len(fake.insertComposeLatestEventIDArgsForCall)
+}
+
+func (fake *FakeSQLClient) InsertComposeLatestEventIDArgsForCall(i int) string {
+	fake.insertComposeLatestEventIDMutex.RLock()
+	defer fake.insertComposeLatestEventIDMutex.RUnlock()
+	return fake.insertComposeLatestEventIDArgsForCall[i].arg1
+}
+
+func (fake *FakeSQLClient) InsertComposeLatestEventIDReturns(result1 error) {
+	fake.InsertComposeLatestEventIDStub = nil
+	fake.insertComposeLatestEventIDReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSQLClient) InsertComposeLatestEventIDReturnsOnCall(i int, result1 error) {
+	fake.InsertComposeLatestEventIDStub = nil
+	if fake.insertComposeLatestEventIDReturnsOnCall == nil {
+		fake.insertComposeLatestEventIDReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.insertComposeLatestEventIDReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSQLClient) FetchComposeLatestEventID() (*string, error) {
+	fake.fetchComposeLatestEventIDMutex.Lock()
+	ret, specificReturn := fake.fetchComposeLatestEventIDReturnsOnCall[len(fake.fetchComposeLatestEventIDArgsForCall)]
+	fake.fetchComposeLatestEventIDArgsForCall = append(fake.fetchComposeLatestEventIDArgsForCall, struct{}{})
+	fake.recordInvocation("FetchComposeLatestEventID", []interface{}{})
+	fake.fetchComposeLatestEventIDMutex.Unlock()
+	if fake.FetchComposeLatestEventIDStub != nil {
+		return fake.FetchComposeLatestEventIDStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.fetchComposeLatestEventIDReturns.result1, fake.fetchComposeLatestEventIDReturns.result2
+}
+
+func (fake *FakeSQLClient) FetchComposeLatestEventIDCallCount() int {
+	fake.fetchComposeLatestEventIDMutex.RLock()
+	defer fake.fetchComposeLatestEventIDMutex.RUnlock()
+	return len(fake.fetchComposeLatestEventIDArgsForCall)
+}
+
+func (fake *FakeSQLClient) FetchComposeLatestEventIDReturns(result1 *string, result2 error) {
+	fake.FetchComposeLatestEventIDStub = nil
+	fake.fetchComposeLatestEventIDReturns = struct {
+		result1 *string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSQLClient) FetchComposeLatestEventIDReturnsOnCall(i int, result1 *string, result2 error) {
+	fake.FetchComposeLatestEventIDStub = nil
+	if fake.fetchComposeLatestEventIDReturnsOnCall == nil {
+		fake.fetchComposeLatestEventIDReturnsOnCall = make(map[int]struct {
+			result1 *string
+			result2 error
+		})
+	}
+	fake.fetchComposeLatestEventIDReturnsOnCall[i] = struct {
+		result1 *string
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeSQLClient) InsertComposeAuditEvents(arg1 []composeapi.AuditEvent) error {
+	var arg1Copy []composeapi.AuditEvent
+	if arg1 != nil {
+		arg1Copy = make([]composeapi.AuditEvent, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.insertComposeAuditEventsMutex.Lock()
+	ret, specificReturn := fake.insertComposeAuditEventsReturnsOnCall[len(fake.insertComposeAuditEventsArgsForCall)]
+	fake.insertComposeAuditEventsArgsForCall = append(fake.insertComposeAuditEventsArgsForCall, struct {
+		arg1 []composeapi.AuditEvent
+	}{arg1Copy})
+	fake.recordInvocation("InsertComposeAuditEvents", []interface{}{arg1Copy})
+	fake.insertComposeAuditEventsMutex.Unlock()
+	if fake.InsertComposeAuditEventsStub != nil {
+		return fake.InsertComposeAuditEventsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.insertComposeAuditEventsReturns.result1
+}
+
+func (fake *FakeSQLClient) InsertComposeAuditEventsCallCount() int {
+	fake.insertComposeAuditEventsMutex.RLock()
+	defer fake.insertComposeAuditEventsMutex.RUnlock()
+	return len(fake.insertComposeAuditEventsArgsForCall)
+}
+
+func (fake *FakeSQLClient) InsertComposeAuditEventsArgsForCall(i int) []composeapi.AuditEvent {
+	fake.insertComposeAuditEventsMutex.RLock()
+	defer fake.insertComposeAuditEventsMutex.RUnlock()
+	return fake.insertComposeAuditEventsArgsForCall[i].arg1
+}
+
+func (fake *FakeSQLClient) InsertComposeAuditEventsReturns(result1 error) {
+	fake.InsertComposeAuditEventsStub = nil
+	fake.insertComposeAuditEventsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeSQLClient) InsertComposeAuditEventsReturnsOnCall(i int, result1 error) {
+	fake.InsertComposeAuditEventsStub = nil
+	if fake.insertComposeAuditEventsReturnsOnCall == nil {
+		fake.insertComposeAuditEventsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.insertComposeAuditEventsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeSQLClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -668,6 +959,16 @@ func (fake *FakeSQLClient) Invocations() map[string][][]interface{} {
 	defer fake.rollbackMutex.RUnlock()
 	fake.commitMutex.RLock()
 	defer fake.commitMutex.RUnlock()
+	fake.insertComposeCursorMutex.RLock()
+	defer fake.insertComposeCursorMutex.RUnlock()
+	fake.fetchComposeCursorMutex.RLock()
+	defer fake.fetchComposeCursorMutex.RUnlock()
+	fake.insertComposeLatestEventIDMutex.RLock()
+	defer fake.insertComposeLatestEventIDMutex.RUnlock()
+	fake.fetchComposeLatestEventIDMutex.RLock()
+	defer fake.fetchComposeLatestEventIDMutex.RUnlock()
+	fake.insertComposeAuditEventsMutex.RLock()
+	defer fake.insertComposeAuditEventsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
