@@ -12,6 +12,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 )
 
@@ -419,7 +420,7 @@ var _ = Describe("Db", func() {
 	Context("pricing_plans", func() {
 
 		It("should ensure unique valid_from + plan_guid", func() {
-			t := time.Now()
+			timeFirstOfMonth := "2017-04-01T00:00:00Z"
 			guid := uuid.NewV4().String()
 			_, err := sqlClient.Conn.Exec(`
 				insert into pricing_plans (name, valid_from, plan_guid) values (
@@ -427,7 +428,7 @@ var _ = Describe("Db", func() {
 					$2,
 					$3
 				)
-			`, "PlanA", t.Format(time.RFC3339), guid)
+			`, "PlanA", timeFirstOfMonth, guid)
 			Expect(err).ToNot(HaveOccurred())
 			_, err = sqlClient.Conn.Exec(`
 				insert into pricing_plans (name, valid_from, plan_guid) values (
@@ -435,9 +436,28 @@ var _ = Describe("Db", func() {
 					$2,
 					$3
 				)
-			`, "PlanB", t.Format(time.RFC3339), guid)
+			`, "PlanB", timeFirstOfMonth, guid)
 			Expect(err).To(HaveOccurred())
 		})
+
+		DescribeTable("reject placing plans with valid_from that isn't the start of the month",
+			func(timestamp string) {
+				guid := uuid.NewV4().String()
+				_, err := sqlClient.Conn.Exec(`
+					insert into pricing_plans (name, valid_from, plan_guid) values (
+						$1,
+						$2,
+						$3
+					)
+				`, "PlanC", timestamp, guid)
+				Expect(err).To(MatchError(`pq: new row for relation "pricing_plans" violates check constraint "valid_from_start_of_month"`))
+			},
+			Entry("not first day of month", "2017-04-04T00:00:00Z"),
+			Entry("not midnight (hour)", "2017-04-01T01:00:00Z"),
+			Entry("not midnight (minute)", "2017-04-01T00:01:00Z"),
+			Entry("not midnight (second)", "2017-04-01T01:00:01Z"),
+			Entry("not midnight (different timezone)", "2017-04-01T00:00:00+01:00"),
+		)
 
 	})
 
@@ -448,10 +468,10 @@ var _ = Describe("Db", func() {
 				insert into pricing_plans (id, name, valid_from, plan_guid) values (
 					1,
 					'PlanA',
-					current_timestamp,
+					$1,
 					'GUID'
 				)
-			`)
+				`, "2017-12-01T00:00:00Z")
 			Expect(err).ToNot(HaveOccurred())
 		})
 
