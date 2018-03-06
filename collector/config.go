@@ -19,7 +19,7 @@ type Config struct {
 
 func CreateDefaultConfig() *Config {
 	return &Config{
-		DefaultSchedule: time.Duration(1 * time.Minute),
+		DefaultSchedule: time.Duration(15 * time.Minute),
 		MinWaitTime:     time.Duration(3 * time.Second),
 		FetchLimit:      50,
 		RecordMinAge:    time.Duration(5 * time.Minute),
