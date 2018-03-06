@@ -302,7 +302,7 @@ var _ = Describe("Db", func() {
 			_, err := sqlClient.Conn.Exec(`
 				insert into pricing_plans(name, valid_from, plan_guid) values (
 					'FormulaTestPlan',
-					'-infinity',
+					'2000-01-01',
 					$1
 				);
 			`, uuid.NewV4().String())

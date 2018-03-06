@@ -11,12 +11,16 @@ func ago(t time.Duration) time.Time {
 	return now.Add(0 - t)
 }
 
+func monthsAgo(months int) time.Time {
+	return now.AddDate(0, -months, 0)
+}
+
 var planFixtures = Plans{
 	{
 		ID:        10,
 		Name:      "ComputePlanA",
 		PlanGuid:  db.ComputePlanGuid,
-		ValidFrom: ago(100 * time.Hour),
+		ValidFrom: monthsAgo(3),
 		Components: []PricingPlanComponent{
 			{
 				ID:      101,
@@ -34,7 +38,7 @@ var planFixtures = Plans{
 		ID:        11,
 		Name:      "ComputePlanB",
 		PlanGuid:  db.ComputePlanGuid,
-		ValidFrom: ago(1 * time.Hour),
+		ValidFrom: monthsAgo(1),
 		Components: []PricingPlanComponent{
 			{
 				ID:      111,
@@ -47,7 +51,7 @@ var planFixtures = Plans{
 		ID:        20,
 		Name:      "ServicePlanA",
 		PlanGuid:  "00000000-0000-0000-0000-100000000000",
-		ValidFrom: ago(100 * time.Hour),
+		ValidFrom: monthsAgo(3),
 		Components: []PricingPlanComponent{
 			{
 				ID:      201,
@@ -65,7 +69,7 @@ var planFixtures = Plans{
 		ID:        30,
 		Name:      "ServicePlanB",
 		PlanGuid:  "00000000-0000-0000-0000-200000000000",
-		ValidFrom: ago(100 * time.Hour),
+		ValidFrom: monthsAgo(3),
 		Components: []PricingPlanComponent{
 			{
 				ID:      301,
@@ -99,7 +103,7 @@ var orgsFixtures = Orgs{
 					State:                 "STARTED",
 					InstanceCount:         1,
 					MemoryInMBPerInstance: 64,
-					Time: ago(10 * time.Hour),
+					Time: monthsAgo(3),
 				},
 			},
 		},

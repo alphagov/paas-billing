@@ -23,8 +23,13 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+const (
+	ThreeMonthsInHours = 1488
+	OneMonthInHours    = 720
+)
+
 var (
-	now = time.Now().UTC().Round(time.Second)
+	now = time.Date(2017, time.October, 1, 0, 0, 0, 0, time.UTC)
 )
 
 var _ = Describe("API", func() {
@@ -48,7 +53,7 @@ var _ = Describe("API", func() {
 		X10ComputePlan = fixtures.Plan{
 			ID:        1,
 			Name:      "x10-compute-plan",
-			ValidFrom: now.Add(-(100 * 24 * time.Hour)),
+			ValidFrom: monthsAgo(3),
 			PlanGuid:  db.ComputePlanGuid,
 			Components: []fixtures.PricingPlanComponent{
 				{
@@ -66,7 +71,7 @@ var _ = Describe("API", func() {
 		X4ComputePlan = fixtures.Plan{
 			ID:        2,
 			Name:      "x4-compute-plan",
-			ValidFrom: now.Add(-(10 * 24 * time.Hour)),
+			ValidFrom: monthsAgo(1),
 			PlanGuid:  db.ComputePlanGuid,
 			Components: []fixtures.PricingPlanComponent{
 				{
@@ -200,12 +205,12 @@ var _ = Describe("API", func() {
 			{
 				Name: "should return 2 compute usage row for a pair of STARTED / STOPPED app events (1x instance) that spans a pricing_plan boundry",
 				RequestQuery: url.Values{
-					"from": []string{now.Add(-(30 * 24 * time.Hour)).Format(time.RFC3339)},
+					"from": []string{monthsAgo(3).Format(time.RFC3339)},
 					"to":   []string{now.Format(time.RFC3339)},
 				},
 				AppEvents: []cf.UsageEvent{
 					{
-						MetaData: cf.MetaData{CreatedAt: now.Add(-(20 * 24 * time.Hour))},
+						MetaData: cf.MetaData{CreatedAt: monthsAgo(3)},
 						EntityRaw: json.RawMessage(`{
 							"state": "STARTED",
 							"app_guid": "app",
@@ -239,9 +244,9 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X10ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						From:            now.Add(-(20 * 24 * time.Hour)),
-						To:              now.Add(-(10 * 24 * time.Hour)),
-						Price:           10 * (24 * 60 * 60) * 10,
+						From:            monthsAgo(3),
+						To:              monthsAgo(1),
+						Price:           ThreeMonthsInHours * (60 * 60) * 10,
 					},
 					{
 						Guid:            "app",
@@ -251,9 +256,9 @@ var _ = Describe("API", func() {
 						PricingPlanId:   X4ComputePlan.ID,
 						Name:            "app_name",
 						MemoryInMb:      512,
-						From:            now.Add(-(10 * 24 * time.Hour)),
+						From:            monthsAgo(1),
 						To:              now,
-						Price:           10 * (24 * 60 * 60) * 4,
+						Price:           OneMonthInHours * (60 * 60) * 4,
 					},
 				},
 			},
