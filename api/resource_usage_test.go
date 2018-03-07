@@ -982,6 +982,20 @@ var _ = Describe("API", func() {
 					"plan_guid":  "aaaaaaa-bbbb-cccc-ddddddddddddd",
 				})
 			})
+
+			It("should not create a pricing plan that violates valid_from constraint (form POST)", func() {
+				invalidFrom := "2017-04-04T00:00:00Z"
+				form := url.Values{}
+				form.Add("name", "NewPlan")
+				form.Add("valid_from", invalidFrom)
+				form.Add("plan_guid", "aaaaaaa-bbbb-cccc-ddddddddddddd")
+				status, out := post(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusBadRequest))
+				ExpectJSON(out, map[string]interface{}{
+					"error":      "constraint violation",
+					"constraint": "valid_from_start_of_month",
+				})
+			})
 		})
 
 		Context("/pricing_plans/:id", func() {

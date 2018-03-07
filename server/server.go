@@ -13,10 +13,12 @@ import (
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 	"github.com/labstack/gommon/log"
+	"github.com/lib/pq"
 )
 
 func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) *echo.Echo {
 	e := echo.New()
+	e.HTTPErrorHandler = errorHandler
 	e.Logger.SetLevel(log.INFO)
 
 	// Allow HTML forms to override POST method using _method param
@@ -70,6 +72,34 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	e.GET("/", listRoutes)
 
 	return e
+}
+
+type ErrorResponse struct {
+	Error      string `json:"error"`
+	Constraint string `json:"constraint,omitempty"`
+}
+
+func errorHandler(err error, c echo.Context) {
+	code := http.StatusInternalServerError
+	resp := ErrorResponse{
+		Error: "internal server error",
+	}
+
+	switch v := err.(type) {
+	case *echo.HTTPError:
+		code = v.Code
+		resp.Error = v.Error()
+	case *pq.Error:
+		if v.Code.Name() == "check_violation" {
+			code = http.StatusBadRequest
+			resp.Error = "constraint violation"
+			resp.Constraint = v.Constraint
+		}
+	}
+
+	if err := c.JSON(code, resp); err != nil {
+		c.Logger().Error(err)
+	}
 }
 
 func listRoutes(c echo.Context) error {
