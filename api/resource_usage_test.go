@@ -242,6 +242,35 @@ var _ = Describe("API", func() {
 		})
 	}
 
+	var itShouldFetchVATRates = func() {
+		path := "/vat_rates"
+		var out interface{}
+		doRequest(path, &out, map[string]string{})
+		ExpectJSON(out, []map[string]interface{}{
+			{
+				"id":   1,
+				"name": "Standard",
+				"rate": 0.2,
+			},
+			{
+				"id":   2,
+				"name": "Zero rate",
+				"rate": 0,
+			},
+		})
+	}
+
+	var itShouldFetchVATRateByID = func() {
+		path := "/vat_rates/1"
+		var out interface{}
+		doRequest(path, &out, map[string]string{})
+		ExpectJSON(out, map[string]interface{}{
+			"id":   1,
+			"name": "Standard",
+			"rate": 0.2,
+		})
+	}
+
 	Context("As non admin", func() {
 
 		BeforeEach(func() {
@@ -957,6 +986,53 @@ var _ = Describe("API", func() {
 			})
 		})
 
+		Context("/vat_rates", func() {
+			It("should fetch the VAT rates", itShouldFetchVATRates)
+		})
+
+		Context("/vat_rates/:id", func() {
+
+			It("should fetch VAT rate by ID", itShouldFetchVATRateByID)
+
+			It("should return 404 for non-existing VAT rate", func() {
+				path := "/vat_rates/999"
+				status, res := get(path)
+				Expect(status).To(Equal(http.StatusNotFound))
+				Expect(res).To(Equal(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "not found",
+					}},
+				))
+			})
+		})
+
+		Context("POST /vat_rates", func() {
+
+			const (
+				path = "/vat_rates"
+			)
+
+			It("should only allow create for admins", func() {
+				status, _ := post(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
+		Context("/vat_rates/:id", func() {
+
+			var path = "/vat_rates/2"
+
+			It("should only allow update for admins", func() {
+				status, _ := put(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+
+			It("should only allow delete for admins", func() {
+				status, _ := del(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusUnauthorized))
+			})
+		})
+
 		Context("/seed_pricing_plans", func() {
 			It("should be unauthorized", func() {
 				path := "/seed_pricing_plans"
@@ -1278,6 +1354,107 @@ var _ = Describe("API", func() {
 
 			It("should return with 404 when trying to delete non-existing component", func() {
 				path = "/pricing_plan_components/999"
+				status, out := del(path, strings.NewReader(url.Values{}.Encode()))
+				Expect(status).To(Equal(http.StatusNotFound))
+				Expect(out).To(Equal(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "not found",
+					}},
+				))
+			})
+		})
+
+		Context("/vat_rates", func() {
+			It("should fetch the vat rates", itShouldFetchVATRates)
+		})
+
+		Context("/vat_rates/:id", func() {
+			It("should fetch the vat rate by id", itShouldFetchVATRateByID)
+		})
+
+		Context("POST /vat_rates", func() {
+
+			const (
+				path = "/vat_rates"
+			)
+
+			It("should create a VAT rate (form POST)", func() {
+				form := url.Values{}
+				form.Add("name", "New rate")
+				form.Add("rate", "0.25")
+				status, out := post(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"id":   3,
+					"name": "New rate",
+					"rate": 0.25,
+				})
+			})
+		})
+
+		Context("/vat_rates/:id", func() {
+
+			var (
+				id   = 2
+				path = "/vat_rates/" + strconv.Itoa(id)
+			)
+
+			It("should update a VAT rate (via form PUT)", func() {
+				form := url.Values{}
+				form.Add("name", "Updated rate")
+				form.Add("rate", "0.25")
+				status, out := put(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"id":   2,
+					"name": "Updated rate",
+					"rate": 0.25,
+				})
+			})
+
+			It("should return with 404 when trying to update non-existing VAT rate", func() {
+				path = "/vat_rates/999"
+				form := url.Values{}
+				form.Add("name", "Updated rate")
+				form.Add("rate", "0.25")
+				status, out := put(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusNotFound))
+				Expect(out).To(Equal(map[string]interface{}{
+					"error": map[string]interface{}{
+						"message": "not found",
+					}},
+				))
+			})
+		})
+
+		Context("/vat_rates/:id", func() {
+
+			var (
+				id   = 3
+				path = "/vat_rates/" + strconv.Itoa(id)
+			)
+
+			BeforeEach(func() {
+				_, err := sqlClient.Exec("INSERT INTO vat_rates (name, rate) VALUES ('delete me', 0.5)")
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should delete a VAT rate (via form DELETE)", func() {
+				form := url.Values{}
+				status, out := del(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusOK))
+				ExpectJSON(out, map[string]interface{}{
+					"id":   3,
+					"name": "delete me",
+					"rate": 0.5,
+				})
+
+				status, _ = get(path)
+				Expect(status).To(Equal(http.StatusNotFound))
+			})
+
+			It("should return with 404 when trying to delete non-existing VAT rate", func() {
+				path = "/vat_rates/999"
 				status, out := del(path, strings.NewReader(url.Values{}.Encode()))
 				Expect(status).To(Equal(http.StatusNotFound))
 				Expect(out).To(Equal(map[string]interface{}{

@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/alphagov/paas-billing/db"
 	"github.com/labstack/echo"
@@ -41,18 +40,6 @@ func (p *PricingPlanComponent) Validate() error {
 		return errors.New("vat_rate_id is required")
 	}
 	return nil
-}
-
-func parseIntParam(c echo.Context, name string) (int, error) {
-	valueStr := c.Param(name)
-	if valueStr == "" {
-		return 0, fmt.Errorf("%s is missing", name)
-	}
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return 0, fmt.Errorf("%s is invalid, it must be a numeric value", name)
-	}
-	return value, nil
 }
 
 func ListPricingPlanComponents(db db.SQLClient) echo.HandlerFunc {
