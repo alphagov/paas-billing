@@ -311,10 +311,11 @@ var _ = Describe("Db", func() {
 			}
 
 			return sqlClient.Conn.QueryRow(`
-				insert into pricing_plan_components(pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components(pricing_plan_id, name, formula, vat_rate_id) values (
 					1,
 					'FormulaTestPlan/1',
-					$1
+					$1,
+					1
 				) returning eval_formula(64, tstzrange(now(), now() + '60 seconds'), formula) as result
 			`, formula).Scan(out)
 		}
@@ -477,80 +478,100 @@ var _ = Describe("Db", func() {
 
 		It("should ensure I can insert a valid record", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 1, "PlanA 1", "1+1")
+			`, 1, "PlanA 1", "1+1", 1)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should ensure the pricing_plan_id belongs to an existing plan", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 2, "PlanB 1", "1+1")
+			`, 2, "PlanB 1", "1+1", 1)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
+		})
+
+		It("should ensure the vat_rate_id belongs to an existing vat_rate", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+					$1,
+					$2,
+					$3,
+					$4
+				)
+			`, 1, "PlanA 1", "1+1", 999)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
 		})
 
 		It("should ensure name is not empty", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 1, "", "1+1")
+			`, 1, "", "1+1", 1)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
 		})
 
 		It("should ensure formula is not empty", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 1, "PlanA 1", "")
+			`, 1, "PlanA 1", "", 1)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("formula can not be empty"))
 		})
 
 		It("should ensure formula is valid", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 1, "PlanA 1", "1 + foo")
+			`, 1, "PlanA 1", "1 + foo", 1)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("illegal token in formula"))
 		})
 
 		It("should ensure unique pricing_plan_id + name", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 1, "PlanA 1", "1+1")
+			`, 1, "PlanA 1", "1+1", 1)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
 					$1,
 					$2,
-					$3
+					$3,
+					$4
 				)
-			`, 1, "PlanA 1", "1+2")
+			`, 1, "PlanA 1", "1+2", 1)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("duplicate key"))
 		})
@@ -573,6 +594,32 @@ var _ = Describe("Db", func() {
 			_, err := sqlClient.Conn.Exec(`insert into vat_rates (name, rate) values ('test', -0.1)`)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+
+		It("should ensure I can't delete a referenced vat_rates record", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plans (id, name, valid_from, plan_guid) values (
+					1,
+					'PlanA',
+					$1,
+					'GUID'
+				)
+				`, "2017-12-01T00:00:00Z")
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+					$1,
+					$2,
+					$3,
+					$4
+				)
+			`, 1, "PlanA 1", "1+1", 1)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = sqlClient.Conn.Exec(`delete from vat_rates WHERE id = 1`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
 		})
 	})
 })

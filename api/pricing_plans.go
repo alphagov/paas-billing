@@ -187,12 +187,14 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 			insert into pricing_plan_components (
 				pricing_plan_id,
 				name,
-				formula
+				formula,
+				vat_rate_id
 			) (
 				select
 					id,
 					name||'/1',
-					'0'::text
+					'0'::text,
+					1
 				from
 					pricing_plans
 				where

@@ -155,36 +155,42 @@ var _ = Describe("API", func() {
 				"id":              101,
 				"name":            "ComputePlanA/1",
 				"pricing_plan_id": 10,
+				"vat_rate_id":     1,
 			},
 			{
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
 				"id":              102,
 				"name":            "ComputePlanA/2",
 				"pricing_plan_id": 10,
+				"vat_rate_id":     1,
 			},
 			{
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
 				"id":              111,
 				"name":            "ComputePlanB/1",
 				"pricing_plan_id": 11,
+				"vat_rate_id":     1,
 			},
 			{
 				"formula":         "($time_in_seconds / 60 / 60) * 0.2",
 				"id":              201,
 				"name":            "ServicePlanA/1",
 				"pricing_plan_id": 20,
+				"vat_rate_id":     1,
 			},
 			{
 				"formula":         "($time_in_seconds / 60 / 60) * 0.3",
 				"id":              202,
 				"name":            "ServicePlanA/2",
 				"pricing_plan_id": 20,
+				"vat_rate_id":     1,
 			},
 			{
 				"formula":         "($time_in_seconds / 60 / 60) * 1",
 				"id":              301,
 				"name":            "ServicePlanB/1",
 				"pricing_plan_id": 30,
+				"vat_rate_id":     1,
 			},
 		})
 	}
@@ -201,12 +207,14 @@ var _ = Describe("API", func() {
 				"id":              101,
 				"name":            "ComputePlanA/1",
 				"pricing_plan_id": 10,
+				"vat_rate_id":     1,
 			},
 			{
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
 				"id":              102,
 				"name":            "ComputePlanA/2",
 				"pricing_plan_id": 10,
+				"vat_rate_id":     1,
 			},
 		})
 	}
@@ -222,6 +230,7 @@ var _ = Describe("API", func() {
 			"id":              101,
 			"name":            "ComputePlanA/1",
 			"pricing_plan_id": 10,
+			"vat_rate_id":     1,
 		})
 	}
 
@@ -1061,6 +1070,7 @@ var _ = Describe("API", func() {
 				form.Add("name", "NewPlanComp")
 				form.Add("pricing_plan_id", "10")
 				form.Add("formula", "$memory_in_mb * 1")
+				form.Add("vat_rate_id", "2")
 				status, out := post(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
@@ -1068,6 +1078,7 @@ var _ = Describe("API", func() {
 					"pricing_plan_id": 10,
 					"name":            "NewPlanComp",
 					"formula":         "$memory_in_mb * 1",
+					"vat_rate_id":     2,
 				})
 			})
 		})
@@ -1084,6 +1095,7 @@ var _ = Describe("API", func() {
 				form.Add("name", "UpdatedPlan")
 				form.Add("pricing_plan_id", "20")
 				form.Add("formula", "10*10")
+				form.Add("vat_rate_id", "2")
 				status, out := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
@@ -1091,6 +1103,7 @@ var _ = Describe("API", func() {
 					"id":              101,
 					"name":            "UpdatedPlan",
 					"pricing_plan_id": 20,
+					"vat_rate_id":     2,
 				})
 			})
 
@@ -1100,6 +1113,7 @@ var _ = Describe("API", func() {
 				form.Add("name", "UpdatedPlan")
 				form.Add("pricing_plan_id", "20")
 				form.Add("formula", "10*10")
+				form.Add("vat_rate_id", "2")
 				status, out := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusNotFound))
 				Expect(out).To(Equal(map[string]interface{}{
@@ -1126,6 +1140,7 @@ var _ = Describe("API", func() {
 					"id":              101,
 					"name":            "ComputePlanA/1",
 					"pricing_plan_id": 10,
+					"vat_rate_id":     1,
 				})
 
 				status, _ = get(path)

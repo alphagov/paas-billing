@@ -23,14 +23,16 @@ var planFixtures = Plans{
 		ValidFrom: monthsAgo(3),
 		Components: []PricingPlanComponent{
 			{
-				ID:      101,
-				Name:    "ComputePlanA/1",
-				Formula: "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				ID:        101,
+				Name:      "ComputePlanA/1",
+				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				VATRateID: 1,
 			},
 			{
-				ID:      102,
-				Name:    "ComputePlanA/2",
-				Formula: "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				ID:        102,
+				Name:      "ComputePlanA/2",
+				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				VATRateID: 1,
 			},
 		},
 	},
@@ -41,9 +43,10 @@ var planFixtures = Plans{
 		ValidFrom: monthsAgo(1),
 		Components: []PricingPlanComponent{
 			{
-				ID:      111,
-				Name:    "ComputePlanB/1",
-				Formula: "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+				ID:        111,
+				Name:      "ComputePlanB/1",
+				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+				VATRateID: 1,
 			},
 		},
 	},
@@ -54,14 +57,16 @@ var planFixtures = Plans{
 		ValidFrom: monthsAgo(3),
 		Components: []PricingPlanComponent{
 			{
-				ID:      201,
-				Name:    "ServicePlanA/1",
-				Formula: "($time_in_seconds / 60 / 60) * 0.2",
+				ID:        201,
+				Name:      "ServicePlanA/1",
+				Formula:   "($time_in_seconds / 60 / 60) * 0.2",
+				VATRateID: 1,
 			},
 			{
-				ID:      202,
-				Name:    "ServicePlanA/2",
-				Formula: "($time_in_seconds / 60 / 60) * 0.3",
+				ID:        202,
+				Name:      "ServicePlanA/2",
+				Formula:   "($time_in_seconds / 60 / 60) * 0.3",
+				VATRateID: 1,
 			},
 		},
 	},
@@ -72,9 +77,10 @@ var planFixtures = Plans{
 		ValidFrom: monthsAgo(3),
 		Components: []PricingPlanComponent{
 			{
-				ID:      301,
-				Name:    "ServicePlanB/1",
-				Formula: "($time_in_seconds / 60 / 60) * 1",
+				ID:        301,
+				Name:      "ServicePlanB/1",
+				Formula:   "($time_in_seconds / 60 / 60) * 1",
+				VATRateID: 1,
 			},
 		},
 	},
