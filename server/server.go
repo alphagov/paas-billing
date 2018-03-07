@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sort"
 	"time"
@@ -88,7 +89,7 @@ func errorHandler(err error, c echo.Context) {
 	switch v := err.(type) {
 	case *echo.HTTPError:
 		code = v.Code
-		resp.Error = v.Error()
+		resp.Error = fmt.Sprintf("%s", v.Message)
 	case *pq.Error:
 		if v.Code.Name() == "check_violation" {
 			code = http.StatusBadRequest
