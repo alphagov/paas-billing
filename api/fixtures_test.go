@@ -84,6 +84,26 @@ var planFixtures = Plans{
 			},
 		},
 	},
+	{
+		ID:        40,
+		Name:      "VATTest",
+		PlanGuid:  "00000000-0000-0000-0000-300000000000",
+		ValidFrom: monthsAgo(3),
+		Components: []PricingPlanComponent{
+			{
+				ID:        401,
+				Name:      "With standard VAT",
+				Formula:   "($time_in_seconds / 60 / 60) * 0.2",
+				VATRateID: 1,
+			},
+			{
+				ID:        402,
+				Name:      "With zero VAT",
+				Formula:   "($time_in_seconds / 60 / 60) * 0.3",
+				VATRateID: 2,
+			},
+		},
+	},
 }
 
 // ORG1
@@ -100,6 +120,10 @@ var planFixtures = Plans{
 //     APP4                    START,START,STOP,START
 //   SPACE4
 //     SERVICE4                CREATED
+// ORG3
+//   SPACE5
+//     SERVICE5                CREATED               For testing different VAT rates
+
 var orgsFixtures = Orgs{
 	"00000001-0000-0000-0000-000000000000": Org{
 		"00000001-0001-0000-0000-000000000000": Space{
@@ -249,6 +273,18 @@ var orgsFixtures = Orgs{
 					AppGuid: "00000002-0003-0002-0000-000000000000",
 					State:   "STOPPED",
 					Time:    ago(1 * time.Hour),
+				},
+			},
+		},
+	},
+	"00000003-0000-0000-0000-000000000000": Org{
+		"00000003-0005-0000-0000-000000000000": Space{
+			ServiceEvents: []ServiceEvent{
+				{
+					ServiceInstanceGuid: "00000003-0005-0001-0000-000000000000",
+					State:               "CREATED",
+					ServicePlanGuid:     "00000000-0000-0000-0000-300000000000",
+					Time:                ago(24 * time.Hour),
 				},
 			},
 		},
