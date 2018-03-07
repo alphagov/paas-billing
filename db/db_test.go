@@ -556,6 +556,25 @@ var _ = Describe("Db", func() {
 		})
 
 	})
+
+	Context("vat_rates", func() {
+		It("should ensure I can insert a valid record", func() {
+			_, err := sqlClient.Conn.Exec(`insert into vat_rates (name, rate) values ('test', 0.25)`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ensure name is not empty", func() {
+			_, err := sqlClient.Conn.Exec(`insert into vat_rates (name, rate) values ('', 0.25)`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+
+		It("should ensure rate is non-negative", func() {
+			_, err := sqlClient.Conn.Exec(`insert into vat_rates (name, rate) values ('test', -0.1)`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+	})
 })
 
 // SelectUsageEvents returns with all the usage events stored in the database
