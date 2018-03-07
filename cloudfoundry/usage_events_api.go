@@ -18,6 +18,7 @@ const appType = "app"
 const serviceType = "service"
 
 // UsageEventsAPI is a common interface for the app and service usage event APIs
+//go:generate counterfeiter -o fakes/fake_usage_events_api.go . UsageEventsAPI
 type UsageEventsAPI interface {
 	Get(afterGUID string, count int, minAge time.Duration) (*UsageEventList, error)
 	Type() string

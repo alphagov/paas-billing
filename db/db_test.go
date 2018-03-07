@@ -8,6 +8,7 @@ import (
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	. "github.com/alphagov/paas-billing/db"
 	"github.com/alphagov/paas-billing/db/dbhelper"
+	composeapi "github.com/compose/gocomposeapi"
 	uuid "github.com/satori/go.uuid"
 
 	. "github.com/onsi/ginkgo"
@@ -140,6 +141,119 @@ var _ = Describe("Db", func() {
 			})
 		})
 	}
+
+	Describe("Compose audit events", func() {
+		var composeAuditEvents []composeapi.AuditEvent
+
+		t1, _ := time.Parse(time.RFC3339Nano, "2018-01-01T16:51:14.148Z")
+		t2, _ := time.Parse(time.RFC3339Nano, "2018-01-02T16:51:14.148Z")
+		BeforeEach(func() {
+			composeAuditEvents = []composeapi.AuditEvent{
+				composeapi.AuditEvent{
+					ID:           "a30a8030345702347b2ebc9b",
+					DeploymentID: "d1",
+					Event:        "e1",
+					CreatedAt:    t1,
+				},
+				composeapi.AuditEvent{
+					ID:           "0823a3089f13171fc0579715",
+					DeploymentID: "d2",
+					Event:        "e2",
+					CreatedAt:    t2,
+				},
+			}
+		})
+
+		Context("given no previous events table", func() {
+			It("returns an empty last event id", func() {
+				latestEventID, err := sqlClient.FetchComposeLatestEventID()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(latestEventID).To(BeNil())
+			})
+
+			It("returns an empty cursor", func() {
+				cursor, err := sqlClient.FetchComposeCursor()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cursor).To(BeNil())
+			})
+
+			It("can store and retrieve the last event id", func() {
+				eventID := "0f28d542e94dc76dc10b75ee"
+				err := sqlClient.InsertComposeLatestEventID(eventID)
+				Expect(err).ToNot(HaveOccurred())
+
+				res, err := sqlClient.FetchComposeLatestEventID()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(*res).To(Equal(eventID))
+			})
+
+			It("can store and retrieve the cursor", func() {
+				cursor := "0f28d542e94dc76dc10b75ee"
+				err := sqlClient.InsertComposeCursor(&cursor)
+				Expect(err).ToNot(HaveOccurred())
+
+				res, err := sqlClient.FetchComposeCursor()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(*res).To(Equal(cursor))
+			})
+
+			It("can set cursor to nil", func() {
+				err := sqlClient.InsertComposeCursor(nil)
+				Expect(err).ToNot(HaveOccurred())
+
+				res, err := sqlClient.FetchComposeCursor()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(res).To(BeNil())
+			})
+
+			It("can store events", func() {
+				By("inserting data")
+				err := sqlClient.InsertComposeAuditEvents(composeAuditEvents)
+				Expect(err).ToNot(HaveOccurred())
+
+				By("reading it back in the correct order")
+				auditEvents, err := selectComposeAuditEvents(sqlClient)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(auditEvents).To(Equal([]map[string]interface{}{
+					map[string]interface{}{
+						"id":          1,
+						"event_id":    "a30a8030345702347b2ebc9b",
+						"created_at":  "2018-01-01T16:51:14.148Z",
+						"raw_message": `{"id": "a30a8030345702347b2ebc9b", "ip": "", "data": null, "event": "e1", "_links": {"alerts": {"href": "", "templated": false}, "backups": {"href": "", "templated": false}, "cluster": {"href": "", "templated": false}, "scalings": {"href": "", "templated": false}, "portal_users": {"href": "", "templated": false}, "compose_web_ui": {"href": "", "templated": false}}, "user_id": "", "account_id": "", "created_at": "2018-01-01T16:51:14.148Z", "user_agent": "", "deployment_id": "d1"}`,
+					},
+					map[string]interface{}{
+						"id":          2,
+						"event_id":    "0823a3089f13171fc0579715",
+						"created_at":  "2018-01-02T16:51:14.148Z",
+						"raw_message": `{"id": "0823a3089f13171fc0579715", "ip": "", "data": null, "event": "e2", "_links": {"alerts": {"href": "", "templated": false}, "backups": {"href": "", "templated": false}, "cluster": {"href": "", "templated": false}, "scalings": {"href": "", "templated": false}, "portal_users": {"href": "", "templated": false}, "compose_web_ui": {"href": "", "templated": false}}, "user_id": "", "account_id": "", "created_at": "2018-01-02T16:51:14.148Z", "user_agent": "", "deployment_id": "d2"}`,
+					},
+				}))
+			})
+		})
+
+		Context("given previous audit events", func() {
+
+			BeforeEach(func() {
+				err := sqlClient.InsertComposeAuditEvents(composeAuditEvents)
+				Expect(err).ToNot(HaveOccurred())
+			})
+
+			Context("when event id already exist in the table", func() {
+				It("it will rollback insertions of data", func() {
+					// the unique id constraint
+					err := sqlClient.InsertComposeAuditEvents([]composeapi.AuditEvent{
+						composeapi.AuditEvent{ID: "a30a8030345702347b2ebc9b"},
+					})
+					Expect(err).To(HaveOccurred())
+					existingEvents, err := selectComposeAuditEvents(sqlClient)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(len(existingEvents)).To(Equal(2))
+				})
+			})
+
+		})
+
+	})
 
 	Describe("App usage events", func() {
 		TestUsageEvents(AppUsageTableName)
@@ -449,6 +563,29 @@ func selectUsageEvents(pc *PostgresClient, tableName string) (*cf.UsageEventList
 		return nil, err
 	}
 	return usageEvents, nil
+}
+
+func selectComposeAuditEvents(pc *PostgresClient) ([]map[string]interface{}, error) {
+	rows, queryErr := pc.Conn.Query("SELECT id, event_id, created_at, raw_message FROM compose_audit_events")
+	if queryErr != nil {
+		return nil, queryErr
+	}
+	res := make([]map[string]interface{}, 0)
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var eventId string
+		var createdAt string
+		var rawMessage json.RawMessage
+		if err := rows.Scan(&id, &eventId, &createdAt, &rawMessage); err != nil {
+			return nil, err
+		}
+		res = append(res, map[string]interface{}{"id": id, "event_id": eventId, "created_at": createdAt, "raw_message": string(rawMessage)})
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func decodePostgresTimestamp(timestamp string) time.Time {

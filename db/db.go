@@ -2,12 +2,14 @@ package db
 
 import (
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"strings"
 
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
+	composeapi "github.com/compose/gocomposeapi"
 	_ "github.com/lib/pq"
 )
 
@@ -22,7 +24,13 @@ const (
 	StateStopped = "STOPPED"
 )
 
+const (
+	composeLatestEventID = "latest_event_id"
+	composeCursor      = "cursor"
+)
+
 // SQLClient is a general interface for handling usage event queries
+//go:generate counterfeiter -o fakes/fake_sqlclient.go . SQLClient
 type SQLClient interface {
 	InitSchema() error
 	InsertUsageEventList(data *cf.UsageEventList, tableName string) error
@@ -35,6 +43,11 @@ type SQLClient interface {
 	BeginTx() (SQLClient, error)
 	Rollback() error
 	Commit() error
+	InsertComposeCursor(*string) error
+	FetchComposeCursor() (*string, error)
+	InsertComposeLatestEventID(string) error
+	FetchComposeLatestEventID() (*string, error)
+	InsertComposeAuditEvents([]composeapi.AuditEvent) error
 }
 
 type SQLConn interface {
@@ -202,4 +215,62 @@ func (pc *PostgresClient) doQueryJSON(many bool, q string, args ...interface{}) 
 		}
 	}()
 	return r
+}
+
+func (pc *PostgresClient) InsertComposeCursor(value *string) error {
+	return pc.insertComposeCursor(composeCursor, value)
+}
+
+func (pc *PostgresClient) InsertComposeLatestEventID(value string) error {
+	return pc.insertComposeCursor(composeLatestEventID, &value)
+}
+
+func (pc *PostgresClient) FetchComposeCursor() (*string, error) {
+	return pc.fetchComposeCursor(composeCursor)
+}
+
+func (pc *PostgresClient) FetchComposeLatestEventID() (*string, error) {
+	return pc.fetchComposeCursor(composeLatestEventID)
+}
+
+func (pc *PostgresClient) insertComposeCursor(name string, value *string) error {
+	_, err := pc.Conn.Exec("UPDATE compose_audit_events_cursor SET value = $1 WHERE name = $2", value, name)
+	return err
+}
+
+func (pc *PostgresClient) fetchComposeCursor(name string) (*string, error) {
+	var value *string
+	queryErr := pc.Conn.QueryRow(
+		"SELECT value FROM compose_audit_events_cursor WHERE name = $1", name,
+	).Scan(&value)
+
+	switch {
+	case queryErr == sql.ErrNoRows:
+		return nil, nil
+	case queryErr != nil:
+		return nil, queryErr
+	default:
+		return value, nil
+	}
+}
+
+func (pc *PostgresClient) InsertComposeAuditEvents(events []composeapi.AuditEvent) error {
+	valueStrings := make([]string, 0, len(events))
+	valueArgs := make([]interface{}, 0, len(events)*3)
+	i := 1
+	for _, event := range events {
+		eventJSON, err := json.Marshal(event)
+		if err != nil {
+			return fmt.Errorf("failed to convert Compose audit event to JSON: %s", err.Error())
+		}
+		p1, p2, p3 := i, i+1, i+2
+		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, $%d)", p1, p2, p3))
+		valueArgs = append(valueArgs, event.ID)
+		valueArgs = append(valueArgs, event.CreatedAt)
+		valueArgs = append(valueArgs, string(eventJSON))
+		i += 3
+	}
+	stmt := fmt.Sprintf("INSERT INTO compose_audit_events (event_id, created_at, raw_message) VALUES %s", strings.Join(valueStrings, ","))
+	_, err := pc.Conn.Exec(stmt, valueArgs...)
+	return err
 }
