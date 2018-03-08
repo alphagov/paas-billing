@@ -12,18 +12,34 @@ import (
 
 // InitSchema initialises the database tables and functions
 func (pc *PostgresClient) InitSchema() (err error) {
-	schemaDir := schemaDataDir()
-	files, err := filepath.Glob(filepath.Join(schemaDir, "*.sql"))
+	migrations, err := MigrationSequence()
 	if err != nil {
 		return err
 	}
-	if len(files) < 1 {
-		return fmt.Errorf("failed to initialize sql schema: no .sql files found in '%s'", schemaDir)
+	return pc.ApplyMigrations(migrations)
+}
+
+func MigrationSequence() ([]string, error) {
+	schemaDir := schemaDataDir()
+	filepaths, err := filepath.Glob(filepath.Join(schemaDir, "*.sql"))
+	if err != nil {
+		return nil, err
 	}
-	sort.Strings(files)
-	tx, txErr := pc.db.Begin()
-	if txErr != nil {
-		return txErr
+	if len(filepaths) < 1 {
+		return nil, fmt.Errorf("failed to initialize sql schema: no .sql files found in '%s'", schemaDir)
+	}
+	filenames := make([]string, len(filepaths))
+	for i, filepath_ := range filepaths {
+		filenames[i] = filepath.Base(filepath_)
+	}
+	sort.Strings(filenames)
+	return filenames, nil
+}
+
+func (pc *PostgresClient) ApplyMigrations(sortedMigrationFilenames []string) error {
+	tx, err := pc.db.Begin()
+	if err != nil {
+		return err
 	}
 	defer func() {
 		if err != nil {
@@ -33,10 +49,11 @@ func (pc *PostgresClient) InitSchema() (err error) {
 		err = tx.Commit()
 	}()
 
-	for _, filename := range files {
-		sql, err := ioutil.ReadFile(filename)
+	for _, migrationFilename := range sortedMigrationFilenames {
+		migrationFilepath := filepath.Join(schemaDataDir(), migrationFilename)
+		sql, err := ioutil.ReadFile(migrationFilepath)
 		if err != nil {
-			return err
+			return fmt.Errorf("Error reading %s from %s: %s", migrationFilename, migrationFilepath, err)
 		}
 
 		_, err = tx.Exec(string(sql))
@@ -51,7 +68,7 @@ func (pc *PostgresClient) InitSchema() (err error) {
 					msg += ": " + err.Where
 				}
 			}
-			return fmt.Errorf("Error applying %s: %s", filename, msg)
+			return fmt.Errorf("Error applying %s: %s", migrationFilename, msg)
 		}
 	}
 
