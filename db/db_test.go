@@ -50,10 +50,6 @@ var _ = Describe("Db", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Specify("schema application is idempotent", func() {
-		Expect(sqlClient.InitSchema()).To(Succeed())
-	})
-
 	TestUsageEvents := func(tableName string) {
 		var (
 			testData   *cf.UsageEventList
