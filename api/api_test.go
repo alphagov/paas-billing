@@ -35,18 +35,21 @@ var (
 var _ = Describe("API", func() {
 
 	type ResourceReport struct {
-		Name  string `json:"name"`
-		Price int64  `json:"price"`
+		Name        string `json:"name"`
+		PriceIncVAT int64  `json:"price_inc_vat"`
+		PriceExVAT  int64  `json:"price_ex_vat"`
 	}
 	type SpaceReport struct {
-		SpaceGuid string           `json:"space_guid"`
-		Price     int64            `json:"price"`
-		Resources []ResourceReport `json:"resources"`
+		SpaceGuid   string           `json:"space_guid"`
+		PriceIncVAT int64            `json:"price_inc_vat"`
+		PriceExVAT  int64            `json:"price_ex_vat"`
+		Resources   []ResourceReport `json:"resources"`
 	}
 	type OrgReport struct {
-		OrgGuid string        `json:"org_guid"`
-		Price   int64         `json:"price"`
-		Spaces  []SpaceReport `json:"spaces"`
+		OrgGuid     string        `json:"org_guid"`
+		PriceIncVAT int64         `json:"price_inc_vat"`
+		PriceExVAT  int64         `json:"price_ex_vat"`
+		Spaces      []SpaceReport `json:"spaces"`
 	}
 
 	var (
@@ -57,14 +60,16 @@ var _ = Describe("API", func() {
 			PlanGuid:  db.ComputePlanGuid,
 			Components: []fixtures.PricingPlanComponent{
 				{
-					ID:      11,
-					Name:    "x10-compute-plan/1",
-					Formula: "$time_in_seconds * 4",
+					ID:        11,
+					Name:      "x10-compute-plan/1",
+					Formula:   "$time_in_seconds * 4",
+					VATRateID: 1,
 				},
 				{
-					ID:      12,
-					Name:    "x10-compute-plan/2",
-					Formula: "$time_in_seconds * 6",
+					ID:        12,
+					Name:      "x10-compute-plan/2",
+					Formula:   "$time_in_seconds * 6",
+					VATRateID: 1,
 				},
 			},
 		}
@@ -75,14 +80,16 @@ var _ = Describe("API", func() {
 			PlanGuid:  db.ComputePlanGuid,
 			Components: []fixtures.PricingPlanComponent{
 				{
-					ID:      21,
-					Name:    "x4-compute-plan/1",
-					Formula: "$time_in_seconds * 1",
+					ID:        21,
+					Name:      "x4-compute-plan/1",
+					Formula:   "$time_in_seconds * 1",
+					VATRateID: 1,
 				},
 				{
-					ID:      22,
-					Name:    "x4-compute-plan/2",
-					Formula: "$time_in_seconds * 3",
+					ID:        22,
+					Name:      "x4-compute-plan/2",
+					Formula:   "$time_in_seconds * 3",
+					VATRateID: 1,
 				},
 			},
 		}
@@ -93,14 +100,16 @@ var _ = Describe("API", func() {
 			PlanGuid:  uuid.NewV4().String(),
 			Components: []fixtures.PricingPlanComponent{
 				{
-					ID:      31,
-					Name:    "x2-service-plan/1",
-					Formula: "$time_in_seconds * 0.5",
+					ID:        31,
+					Name:      "x2-service-plan/1",
+					Formula:   "$time_in_seconds * 0.5",
+					VATRateID: 1,
 				},
 				{
-					ID:      32,
-					Name:    "x2-service-plan/2",
-					Formula: "$time_in_seconds * 1.5",
+					ID:        32,
+					Name:      "x2-service-plan/2",
+					Formula:   "$time_in_seconds * 1.5",
+					VATRateID: 1,
 				},
 			},
 		}
@@ -148,7 +157,8 @@ var _ = Describe("API", func() {
 			MemoryInMb      int64     `json:"memory_in_mb"`
 			From            time.Time `json:"from"`
 			To              time.Time `json:"to"`
-			Price           int64     `json:"price"`
+			PriceIncVAT     int64     `json:"price_inc_vat"`
+			PriceExVAT      int64     `json:"price_ex_vat"`
 		}
 
 		cases := []struct {
@@ -198,7 +208,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					},
 				},
 			},
@@ -246,7 +257,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            monthsAgo(3),
 						To:              monthsAgo(1),
-						Price:           ThreeMonthsInHours * (60 * 60) * 10,
+						PriceExVAT:      ThreeMonthsInHours * (60 * 60) * 10,
+						PriceIncVAT:     int64(ThreeMonthsInHours * (60 * 60) * 10 * 1.2),
 					},
 					{
 						Guid:            "app",
@@ -258,7 +270,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            monthsAgo(1),
 						To:              now,
-						Price:           OneMonthInHours * (60 * 60) * 4,
+						PriceExVAT:      OneMonthInHours * (60 * 60) * 4,
+						PriceIncVAT:     int64(OneMonthInHours * (60 * 60) * 4 * 1.2),
 					},
 				},
 			},
@@ -302,7 +315,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					},
 					{
 						Guid:            "app",
@@ -314,7 +328,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					},
 				},
 			},
@@ -382,7 +397,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-60 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					}, {
 						Guid:            "app2",
 						OrgGuid:         "org_guid2",
@@ -393,7 +409,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      64,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           60 * 60 * 4,
+						PriceExVAT:      60 * 60 * 4,
+						PriceIncVAT:     int64(60 * 60 * 4 * 1.2),
 					}, {
 						Guid:            "app2",
 						OrgGuid:         "org_guid2",
@@ -404,7 +421,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      64,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           60 * 60 * 4,
+						PriceExVAT:      60 * 60 * 4,
+						PriceIncVAT:     int64(60 * 60 * 4 * 1.2),
 					},
 				},
 			},
@@ -460,7 +478,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-60 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					}, {
 						Guid:            "app1",
 						OrgGuid:         "org_guid1",
@@ -471,7 +490,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      1024,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					}, {
 						Guid:            "app1",
 						OrgGuid:         "org_guid1",
@@ -482,7 +502,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      1024,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           30 * 60 * 4,
+						PriceExVAT:      30 * 60 * 4,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
 					},
 				},
 			},
@@ -517,7 +538,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-10 * time.Minute),
 						To:              now,
-						Price:           10 * 60 * 4,
+						PriceExVAT:      10 * 60 * 4,
+						PriceIncVAT:     int64(10 * 60 * 4 * 1.2),
 					},
 				},
 			},
@@ -550,7 +572,8 @@ var _ = Describe("API", func() {
 						PricingPlanName: X2ServicePlan.Name,
 						From:            now.Add(-1 * time.Hour),
 						To:              now,
-						Price:           7200,
+						PriceExVAT:      7200,
+						PriceIncVAT:     int64(7200 * 1.2),
 					},
 				},
 			},
@@ -603,7 +626,8 @@ var _ = Describe("API", func() {
 						Name:            "db-service-1",
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-50 * time.Minute),
-						Price:           1200,
+						PriceExVAT:      1200,
+						PriceIncVAT:     int64(1200 * 1.2),
 					},
 					{
 						Guid:            "service_instance1",
@@ -614,7 +638,8 @@ var _ = Describe("API", func() {
 						Name:            "db-service-1",
 						From:            now.Add(-50 * time.Minute),
 						To:              now.Add(-40 * time.Minute),
-						Price:           1200,
+						PriceExVAT:      1200,
+						PriceIncVAT:     int64(1200 * 1.2),
 					},
 				},
 			}, {
@@ -656,7 +681,8 @@ var _ = Describe("API", func() {
 						Name:            "db-service-1",
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						Price:           60 * 30 * 2,
+						PriceExVAT:      60 * 30 * 2,
+						PriceIncVAT:     int64(60 * 30 * 2 * 1.2),
 					},
 				},
 			}, {
@@ -778,8 +804,8 @@ var _ = Describe("API", func() {
 						MemoryInMb:      512,
 						From:            now.Add(-60 * time.Minute), // start of selected range
 						To:              now.Add(-31 * time.Minute),
-						Price:           29 * 60 * 4,
-					},
+						PriceExVAT:      29 * 60 * 4,
+						PriceIncVAT:     int64(29 * 60 * 4 * 1.2)},
 					{
 						Guid:            "service_instance1",
 						OrgGuid:         "org_guid1",
@@ -789,7 +815,8 @@ var _ = Describe("API", func() {
 						Name:            "db-service-1",
 						From:            now.Add(-41 * time.Minute),
 						To:              now.Add(-31 * time.Minute),
-						Price:           10 * 60 * 2,
+						PriceExVAT:      10 * 60 * 2,
+						PriceIncVAT:     int64(10 * 60 * 2 * 1.2),
 					},
 				},
 			},
@@ -900,20 +927,24 @@ var _ = Describe("API", func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
 
 			expectedOutput := OrgReport{
-				OrgGuid: "simulated-org",
-				Price:   51840000,
+				OrgGuid:     "simulated-org",
+				PriceExVAT:  51840000,
+				PriceIncVAT: int64(51840000 * 1.2),
 				Spaces: []SpaceReport{
 					{
-						SpaceGuid: "o1s1",
-						Price:     51840000,
+						SpaceGuid:   "o1s1",
+						PriceExVAT:  51840000,
+						PriceIncVAT: int64(51840000 * 1.2),
 						Resources: []ResourceReport{
 							{
-								Name:  "o1s1-app1",
-								Price: 34560000,
+								Name:        "o1s1-app1",
+								PriceExVAT:  34560000,
+								PriceIncVAT: int64(34560000 * 1.2),
 							},
 							{
-								Name:  "o1s1-db1",
-								Price: 17280000,
+								Name:        "o1s1-db1",
+								PriceExVAT:  17280000,
+								PriceIncVAT: int64(17280000 * 1.2),
 							},
 						},
 					},
@@ -1097,20 +1128,24 @@ var _ = Describe("API", func() {
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to unmarshal json: %s\nbody: %s", err, string(body)))
 
 			expectedOutput := OrgReport{
-				OrgGuid: "o1",
-				Price:   3240000,
+				OrgGuid:     "o1",
+				PriceExVAT:  3240000,
+				PriceIncVAT: int64(3240000 * 1.2),
 				Spaces: []SpaceReport{
 					{
-						SpaceGuid: "o1s1",
-						Price:     3240000,
+						SpaceGuid:   "o1s1",
+						PriceExVAT:  3240000,
+						PriceIncVAT: int64(3240000 * 1.2),
 						Resources: []ResourceReport{
 							{
-								Name:  "o1s1-app1",
-								Price: 2880000,
+								Name:        "o1s1-app1",
+								PriceExVAT:  2880000,
+								PriceIncVAT: int64(2880000 * 1.2),
 							},
 							{
-								Name:  "o1s1-db1",
-								Price: 360000,
+								Name:        "o1s1-db1",
+								PriceExVAT:  360000,
+								PriceIncVAT: int64(360000 * 1.2),
 							},
 						},
 					},

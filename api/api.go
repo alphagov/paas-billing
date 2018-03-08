@@ -111,7 +111,8 @@ func ListOrgUsage(db db.SQLClient) echo.HandlerFunc {
 		return withAuthorizedResources(Many, billableViewName, c, db, `
 			select
 				org_guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			group by
@@ -131,7 +132,8 @@ func GetOrgUsage(db db.SQLClient) echo.HandlerFunc {
 		return withAuthorizedResources(Single, billableViewName, c, db, `
 			select
 				org_guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
@@ -153,7 +155,8 @@ func ListSpacesUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
@@ -172,7 +175,8 @@ func ListSpacesUsage(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			group by
@@ -193,7 +197,8 @@ func GetSpaceUsage(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
@@ -216,7 +221,8 @@ func ListResourceUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 				org_guid,
 				space_guid,
 				guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
@@ -241,7 +247,8 @@ func ListResourceUsageForSpace(db db.SQLClient) echo.HandlerFunc {
 				org_guid,
 				space_guid,
 				guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
@@ -261,7 +268,8 @@ func ListResourceUsage(db db.SQLClient) echo.HandlerFunc {
 				org_guid,
 				space_guid,
 				guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			group by
@@ -283,7 +291,8 @@ func GetResourceUsage(db db.SQLClient) echo.HandlerFunc {
 				org_guid,
 				space_guid,
 				guid,
-				(sum(price) * 100)::bigint as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
@@ -311,7 +320,8 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_name,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
-				sum((price * 100)::bigint) as price_in_pence
+				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
+				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources mr
 			where
@@ -337,7 +347,8 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				memory_in_mb,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
-				sum(price::bigint) as price
+				sum(price_inc_vat::bigint) as price_inc_vat,
+				sum(price_ex_vat::bigint) as price_ex_vat
 			from
 				monetized_resources
 			group by
@@ -433,7 +444,16 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
 					),
 					ppc.formula
-				) as price
+				) as price_ex_vat,
+				eval_formula(
+					b.memory_in_mb,
+					tstzrange(
+						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
+						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
+					),
+					ppc.formula
+				) * (1 + vr.rate) as price_inc_vat,
+				vr.name as vat_rate_name
 			from
 				authorized_resources b
 			inner join
@@ -445,6 +465,10 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				pricing_plan_components ppc
 			on
 				ppc.pricing_plan_id = vpp.id
+			inner join
+				vat_rates vr
+			on
+				ppc.vat_rate_id = vr.id
 			where
 				b.duration &&  tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
 	  ),
@@ -504,7 +528,8 @@ func generateReport(orgGUID string, billableTableName string, c echo.Context, db
 				pricing_plan_id,
 				pricing_plan_name,
 				sum(to_seconds(duration)) as duration,
-				sum(price * 100)::bigint as price
+				sum(price_ex_vat * 100)::bigint as price_ex_vat,
+				sum(price_inc_vat * 100)::bigint as price_inc_vat
 			from
 				monetized_resources
 			where
@@ -517,7 +542,8 @@ func generateReport(orgGUID string, billableTableName string, c echo.Context, db
 		space_resources as (
 			select
 				t.space_guid,
-				sum(t.price) as price,
+				sum(t.price_ex_vat) as price_ex_vat,
+				sum(t.price_inc_vat) as price_inc_vat,
 				json_agg(row_to_json(t.*)) as resources
 			from
 				resources t
@@ -528,7 +554,8 @@ func generateReport(orgGUID string, billableTableName string, c echo.Context, db
 		)
 		select
 			$1 org_guid,
-			sum(t.price) as price,
+			sum(t.price_ex_vat) as price_ex_vat,
+			sum(t.price_inc_vat) as price_inc_vat,
 			json_agg(row_to_json(t.*)) as spaces
 		from
 			space_resources t

@@ -3,7 +3,6 @@ package api
 import (
 	"errors"
 	"fmt"
-	"strconv"
 
 	"github.com/alphagov/paas-billing/db"
 	"github.com/labstack/echo"
@@ -13,6 +12,7 @@ type PricingPlanComponent struct {
 	PricingPlanID int    `json:"pricing_plan_id" form:"pricing_plan_id"`
 	Name          string `json:"name" form:"name"`
 	Formula       string `json:"formula" form:"formula"`
+	VATRateID     int    `json:"vat_rate_id" form:"vat_rate_id"`
 }
 
 func NewPricingPlanComponentFromContext(c echo.Context) (*PricingPlanComponent, error) {
@@ -36,19 +36,10 @@ func (p *PricingPlanComponent) Validate() error {
 	if p.Formula == "" {
 		return errors.New("formula is required")
 	}
+	if p.VATRateID == 0 {
+		return errors.New("vat_rate_id is required")
+	}
 	return nil
-}
-
-func parseIntParam(c echo.Context, name string) (int, error) {
-	valueStr := c.Param(name)
-	if valueStr == "" {
-		return 0, fmt.Errorf("%s is missing", name)
-	}
-	value, err := strconv.Atoi(valueStr)
-	if err != nil {
-		return 0, fmt.Errorf("%s is invalid, it must be a numeric value", name)
-	}
-	return value, nil
 }
 
 func ListPricingPlanComponents(db db.SQLClient) echo.HandlerFunc {
@@ -58,7 +49,8 @@ func ListPricingPlanComponents(db db.SQLClient) echo.HandlerFunc {
 				id,
 				pricing_plan_id,
 				name,
-				formula
+				formula,
+				vat_rate_id
 			from
 				pricing_plan_components
 			order by
@@ -78,7 +70,8 @@ func ListPricingPlanComponentsByPlan(db db.SQLClient) echo.HandlerFunc {
 				id,
 				pricing_plan_id,
 				name,
-				formula
+				formula,
+				vat_rate_id
 			from
 				pricing_plan_components
 			where
@@ -101,7 +94,8 @@ func GetPricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				id,
 				pricing_plan_id,
 				name,
-				formula
+				formula,
+				vat_rate_id
 			from
 				pricing_plan_components
 			where
@@ -121,17 +115,20 @@ func CreatePricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 			insert into pricing_plan_components (
 				pricing_plan_id,
 				name,
-				formula
+				formula,
+				vat_rate_id
 			) values (
 				$1,
 				$2,
-				$3
+				$3,
+				$4
 			) returning
 				id,
 				pricing_plan_id,
 				name,
-				formula
-		`, ppc.PricingPlanID, ppc.Name, ppc.Formula)
+				formula,
+				vat_rate_id
+		`, ppc.PricingPlanID, ppc.Name, ppc.Formula, ppc.VATRateID)
 		if err != nil {
 			return err
 		}
@@ -156,15 +153,17 @@ func UpdatePricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 			update pricing_plan_components set
 				pricing_plan_id = $2::numeric,
 				name = $3,
-				formula = $4
+				formula = $4,
+				vat_rate_id = $5
 			where
 				id = $1
 			returning
 				id,
 				pricing_plan_id,
 				name,
-				formula
-		`, id, ppc.PricingPlanID, ppc.Name, ppc.Formula)
+				formula,
+				vat_rate_id
+		`, id, ppc.PricingPlanID, ppc.Name, ppc.Formula, ppc.VATRateID)
 		if err != nil {
 			return err
 		}
@@ -189,7 +188,8 @@ func DestroyPricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				id,
 				pricing_plan_id,
 				name,
-				formula
+				formula,
+				vat_rate_id
 		`, id)
 		if err != nil {
 			return err

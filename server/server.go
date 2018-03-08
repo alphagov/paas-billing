@@ -69,6 +69,11 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	adminGroup.POST("/pricing_plan_components", api.CreatePricingPlanComponent(db))
 	adminGroup.PUT("/pricing_plan_components/:id", api.UpdatePricingPlanComponent(db))
 	adminGroup.DELETE("/pricing_plan_components/:id", api.DestroyPricingPlanComponent(db))
+	authGroup.GET("/vat_rates", api.ListVATRates(db))
+	authGroup.GET("/vat_rates/:id", api.GetVATRate(db))
+	adminGroup.POST("/vat_rates", api.CreateVATRate(db))
+	adminGroup.PUT("/vat_rates/:id", api.UpdateVATRate(db))
+	adminGroup.DELETE("/vat_rates/:id", api.DestroyVATRate(db))
 
 	e.GET("/", listRoutes)
 
