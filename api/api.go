@@ -21,10 +21,11 @@ type SimulatedEvents struct {
 }
 
 type SimulatedEvent struct {
-	Name       string `json:"name"`
-	SpaceGUID  string `json:"space_guid"`
-	PlanGUID   string `json:"plan_guid"`
-	MemoryInMB int    `json:"memory_in_mb"`
+	Name        string `json:"name"`
+	SpaceGUID   string `json:"space_guid"`
+	PlanGUID    string `json:"plan_guid"`
+	MemoryInMB  uint   `json:"memory_in_mb"`
+	StorageInMB uint   `json:"storage_in_mb"`
 }
 
 func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
@@ -56,6 +57,7 @@ func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 				space_guid text,
 				plan_guid text,
 				memory_in_mb numeric,
+				storage_in_mb numeric,
 				duration tstzrange
 			)`,
 		)
@@ -69,9 +71,10 @@ func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 			space_guid,
 			plan_guid,
 			memory_in_mb,
+			storage_in_mb,
 			duration
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, tstzrange($7, $8)
+			$1, $2, $3, $4, $5, $6, $7, tstzrange($8, $9)
 		)`)
 		if err != nil {
 			return err
@@ -84,6 +87,7 @@ func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 				event.SpaceGUID,
 				event.PlanGUID,
 				event.MemoryInMB,
+				event.StorageInMB,
 				rng.From,
 				rng.To,
 			)
@@ -345,6 +349,7 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_name,
 				name,
 				memory_in_mb,
+				storage_in_mb,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
 				sum(price_inc_vat::bigint) as price_inc_vat,
@@ -353,7 +358,7 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				monetized_resources
 			group by
 				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid,
-				name, memory_in_mb, duration
+				name, memory_in_mb, storage_in_mb, duration
 			order by
 				guid, id, pricing_plan_id
 		`)
@@ -454,7 +459,8 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				b.name,
 				b.org_guid,
 				b.space_guid,
-				b.memory_in_mb,
+				coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric as memory_in_mb,
+				coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric as storage_in_mb,
 				r.request_range * vpp.valid_for * vcr.valid_for * b.duration as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
@@ -462,12 +468,12 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				ppc.name AS pricing_plan_component_name,
 				ppc.formula,
 				eval_formula(
-					b.memory_in_mb,
+					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
 				) * vcr.rate as price_ex_vat,
 				eval_formula(
-					b.memory_in_mb,
+					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
 				) * vcr.rate * (1 + vr.rate) as price_inc_vat,

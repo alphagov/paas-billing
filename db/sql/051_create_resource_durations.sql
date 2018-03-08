@@ -17,6 +17,7 @@ events as (
 			'default-compute'::text as plan_name,                      -- fake plan name for compute plans
 			coalesce(raw_message->>'instance_count', '0')::numeric as inst_count,
 			coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
+			'0'::numeric as storage_in_mb,
 			raw_message->>'state' as state
 		from
 			app_usage_events
@@ -34,7 +35,8 @@ events as (
 			(raw_message->>'service_plan_guid') as plan_guid,
 			(raw_message->>'service_plan_name') as plan_name,
 			'1'::numeric as inst_count,
-			'0'::numeric as memory_in_mb,
+			NULL::numeric as memory_in_mb,
+			NULL::numeric as storage_in_mb,
 			case
 				when (raw_message->>'state') = 'CREATED' then 'STARTED'
 				when (raw_message->>'state') = 'DELETED' then 'STOPPED'
@@ -60,6 +62,7 @@ event_ranges as (
 		plan_name,
 		inst_count,
 		memory_in_mb,
+		storage_in_mb,
 		tstzrange(created_at, lead(created_at, 1, now()) over resource_states) as duration,
 		state
 	from
@@ -80,6 +83,7 @@ select
 	t.space_guid,
 	t.plan_guid,
 	t.memory_in_mb,
+	t.storage_in_mb,
 	t.duration,
 	t.state
 from
