@@ -7,9 +7,18 @@ CREATE TABLE IF NOT EXISTS vat_rates (
 	CHECK (rate >= 0)
 );
 
-INSERT INTO
-	vat_rates (name, rate)
-VALUES
-	('Standard', 0.2),
-	('Zero rate', 0)
-ON CONFLICT (id) DO NOTHING;
+-- FIXME: Remove after deployed in prod and duplicates have been removed
+DELETE FROM vat_rates a USING vat_rates b
+WHERE a.id > b.id
+AND a.name = b.name
+AND a.rate = b.rate;
+
+DO $$
+BEGIN
+    IF nextval('vat_rates_id_seq') = 1 THEN
+        INSERT INTO vat_rates (name, rate) VALUES
+        ('Standard', 0.2),
+        ('Zero rate', 0);
+    END IF;
+END;
+$$;

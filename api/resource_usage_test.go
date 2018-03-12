@@ -283,7 +283,7 @@ var _ = Describe("API", func() {
 				path = "/organisations"
 			)
 
-			It("should return pricing totals for each org", func() {
+			FIt("should return pricing totals for each org", func() {
 				var out interface{}
 				from := monthsAgo(1)
 				to := now
