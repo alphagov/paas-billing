@@ -311,11 +311,12 @@ var _ = Describe("Db", func() {
 			}
 
 			return sqlClient.Conn.QueryRow(`
-				insert into pricing_plan_components(pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components(pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					1,
 					'FormulaTestPlan/1',
 					$1,
-					1
+					1,
+					'GBP'
 				) returning eval_formula(64, tstzrange(now(), now() + '60 seconds'), formula) as result
 			`, formula).Scan(out)
 		}
@@ -478,11 +479,12 @@ var _ = Describe("Db", func() {
 
 		It("should ensure I can insert a valid record", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "1+1", 1)
 			Expect(err).ToNot(HaveOccurred())
@@ -490,11 +492,12 @@ var _ = Describe("Db", func() {
 
 		It("should ensure the pricing_plan_id belongs to an existing plan", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 2, "PlanB 1", "1+1", 1)
 			Expect(err).To(HaveOccurred())
@@ -503,24 +506,40 @@ var _ = Describe("Db", func() {
 
 		It("should ensure the vat_rate_id belongs to an existing vat_rate", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "1+1", 999)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
 		})
 
-		It("should ensure name is not empty", func() {
+		It("should ensure the currency belongs to a valid currency code", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'ISK'
+				)
+			`, 1, "PlanA 1", "1+1", 999)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+
+		It("should ensure name is not empty", func() {
+			_, err := sqlClient.Conn.Exec(`
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
+					$1,
+					$2,
+					$3,
+					$4,
+					'GBP'
 				)
 			`, 1, "", "1+1", 1)
 			Expect(err).To(HaveOccurred())
@@ -529,11 +548,12 @@ var _ = Describe("Db", func() {
 
 		It("should ensure formula is not empty", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "", 1)
 			Expect(err).To(HaveOccurred())
@@ -542,11 +562,12 @@ var _ = Describe("Db", func() {
 
 		It("should ensure formula is valid", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "1 + foo", 1)
 			Expect(err).To(HaveOccurred())
@@ -555,21 +576,23 @@ var _ = Describe("Db", func() {
 
 		It("should ensure unique pricing_plan_id + name", func() {
 			_, err := sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "1+1", 1)
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "1+2", 1)
 			Expect(err).To(HaveOccurred())
@@ -608,11 +631,12 @@ var _ = Describe("Db", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			_, err = sqlClient.Conn.Exec(`
-				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id) values (
+				insert into pricing_plan_components (pricing_plan_id, name, formula, vat_rate_id, currency) values (
 					$1,
 					$2,
 					$3,
-					$4
+					$4,
+					'GBP'
 				)
 			`, 1, "PlanA 1", "1+1", 1)
 			Expect(err).ToNot(HaveOccurred())
@@ -620,6 +644,34 @@ var _ = Describe("Db", func() {
 			_, err = sqlClient.Conn.Exec(`delete from vat_rates WHERE id = 1`)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("violates foreign key constraint"))
+		})
+	})
+
+	Context("currency_rates", func() {
+		It("should ensure I can insert a valid currencies", func() {
+			var err error
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('GBP', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('USD', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('EUR', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should ensure code is not an invalid currency", func() {
+			var err error
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('ISK', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
+		})
+
+		It("should ensure rate is non-negative", func() {
+			_, err := sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('USD', '2000-01-01T00:00:00', -0.25)`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates check constraint"))
 		})
 	})
 })

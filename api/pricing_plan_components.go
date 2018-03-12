@@ -116,12 +116,14 @@ func CreatePricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 			) values (
 				$1,
 				$2,
 				$3,
-				$4
+				$4,
+				'GBP'
 			) returning
 				id,
 				pricing_plan_id,
