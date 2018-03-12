@@ -420,6 +420,9 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 			from {{ .TableName }}
 			{{ .Condition }}
 		),
+		request_range as (
+			select tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} ) as request_range
+		),
 		monetized_resources as (
 			select
 				b.id,
@@ -428,10 +431,7 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				b.org_guid,
 				b.space_guid,
 				b.memory_in_mb,
-				tstzrange(
-					greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
-					least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
-				) as duration,
+				r.request_range * vpp.valid_for * b.duration as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
 				ppc.id AS pricing_plan_component_id,
@@ -439,28 +439,24 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				ppc.formula,
 				eval_formula(
 					b.memory_in_mb,
-					tstzrange(
-						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
-						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
-					),
+					r.request_range * vpp.valid_for * b.duration,
 					ppc.formula
 				) as price_ex_vat,
 				eval_formula(
 					b.memory_in_mb,
-					tstzrange(
-						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
-						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
-					),
+					r.request_range * vpp.valid_for * b.duration,
 					ppc.formula
 				) * (1 + vr.rate) as price_inc_vat,
 				vr.name as vat_rate_name
 			from
 				authorized_resources b
+			cross join
+				request_range r
 			inner join
 				valid_pricing_plans vpp
 			on b.plan_guid = vpp.plan_guid
 				 and vpp.valid_for && b.duration
-				 and vpp.valid_for && tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
+				 and vpp.valid_for && r.request_range
 			inner join
 				pricing_plan_components ppc
 			on
@@ -470,7 +466,7 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 			on
 				ppc.vat_rate_id = vr.id
 			where
-				b.duration &&  tstzrange( {{ .RangeFromPlaceholder }}, {{ .RangeToPlaceholder }} )
+				b.duration && r.request_range
 	  ),
 		q as (
 			{{ .SQL }}
