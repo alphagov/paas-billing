@@ -415,6 +415,15 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 			window
 				plans as (partition by plan_guid order by valid_from rows between current row and 1 following)
 		),
+		valid_currency_rates as (
+			select
+				cr.*,
+				tstzrange(valid_from, lead(valid_from, 1, 'infinity') over currencies) as valid_for
+			from
+				currency_rates cr
+			window
+				currencies as (partition by code order by valid_from rows between current row and 1 following)
+		),
 		authorized_resources as (
 			select *
 			from {{ .TableName }}
@@ -431,7 +440,7 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				b.org_guid,
 				b.space_guid,
 				b.memory_in_mb,
-				r.request_range * vpp.valid_for * b.duration as duration,
+				r.request_range * vpp.valid_for * vcr.valid_for * b.duration as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
 				ppc.id AS pricing_plan_component_id,
@@ -439,14 +448,14 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				ppc.formula,
 				eval_formula(
 					b.memory_in_mb,
-					r.request_range * vpp.valid_for * b.duration,
+					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
-				) as price_ex_vat,
+				) * vcr.rate as price_ex_vat,
 				eval_formula(
 					b.memory_in_mb,
-					r.request_range * vpp.valid_for * b.duration,
+					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
-				) * (1 + vr.rate) as price_inc_vat,
+				) * vcr.rate * (1 + vr.rate) as price_inc_vat,
 				vr.name as vat_rate_name
 			from
 				authorized_resources b
@@ -454,20 +463,28 @@ func monetizedResourcesFilter(filterCondition string, billableTableName string, 
 				request_range r
 			inner join
 				valid_pricing_plans vpp
-			on b.plan_guid = vpp.plan_guid
-				 and vpp.valid_for && b.duration
-				 and vpp.valid_for && r.request_range
+			on
+				b.plan_guid = vpp.plan_guid
+				and vpp.valid_for && b.duration
+			  and vpp.valid_for && r.request_range
+		  inner join
+				valid_currency_rates vcr
+			on
+				vcr.valid_for && vpp.valid_for
+				and vcr.valid_for && b.duration
+			  and vcr.valid_for && r.request_range
 			inner join
 				pricing_plan_components ppc
 			on
 				ppc.pricing_plan_id = vpp.id
+				and ppc.currency = vcr.code
 			inner join
 				vat_rates vr
 			on
 				ppc.vat_rate_id = vr.id
 			where
 				b.duration && r.request_range
-	  ),
+		),
 		q as (
 			{{ .SQL }}
 		)

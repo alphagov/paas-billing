@@ -188,13 +188,15 @@ func CreateMissingPricingPlans(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 			) (
 				select
 					id,
 					name||'/1',
 					'0'::text,
-					1
+					1,
+					'GBP'
 				from
 					pricing_plans
 				where

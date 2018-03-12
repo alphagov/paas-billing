@@ -64,12 +64,14 @@ var _ = Describe("API", func() {
 					Name:      "x10-compute-plan/1",
 					Formula:   "$time_in_seconds * 4",
 					VATRateID: 1,
+					Currency:  "GBP",
 				},
 				{
 					ID:        12,
 					Name:      "x10-compute-plan/2",
 					Formula:   "$time_in_seconds * 6",
 					VATRateID: 1,
+					Currency:  "GBP",
 				},
 			},
 		}
@@ -84,12 +86,14 @@ var _ = Describe("API", func() {
 					Name:      "x4-compute-plan/1",
 					Formula:   "$time_in_seconds * 1",
 					VATRateID: 1,
+					Currency:  "GBP",
 				},
 				{
 					ID:        22,
 					Name:      "x4-compute-plan/2",
 					Formula:   "$time_in_seconds * 3",
 					VATRateID: 1,
+					Currency:  "GBP",
 				},
 			},
 		}
@@ -104,12 +108,14 @@ var _ = Describe("API", func() {
 					Name:      "x2-service-plan/1",
 					Formula:   "$time_in_seconds * 0.5",
 					VATRateID: 1,
+					Currency:  "GBP",
 				},
 				{
 					ID:        32,
 					Name:      "x2-service-plan/2",
 					Formula:   "$time_in_seconds * 1.5",
 					VATRateID: 1,
+					Currency:  "GBP",
 				},
 			},
 		}
