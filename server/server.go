@@ -103,6 +103,7 @@ func errorHandler(err error, c echo.Context) {
 		}
 	}
 
+	c.Logger().Error(err)
 	if err := c.JSON(code, resp); err != nil {
 		c.Logger().Error(err)
 	}
