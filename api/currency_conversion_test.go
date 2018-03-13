@@ -99,6 +99,17 @@ var _ = Describe("Currency Conversion", func() {
 			Time: eventTime,
 		})
 		fixture.AppEvents = newAppEvents
+
+		// FIXME: Remove when fixed sql syntax error bug if there are
+		// not service events.
+		newServiceEvents := append(fixture.ServiceEvents, fixtures.ServiceEvent{
+			ServiceInstanceGuid: uuid.NewV4().String(),
+			State:               "SPAM",
+			ServicePlanGuid:     "00000000-0000-0000-0000-100000000000",
+			Time:                eventTime,
+		})
+		fixture.ServiceEvents = newServiceEvents
+
 		return fixture
 	}
 
