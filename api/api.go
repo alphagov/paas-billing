@@ -469,11 +469,13 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				ppc.formula,
 				eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
+					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
 				) * vcr.rate as price_ex_vat,
 				eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
+					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
 				) * vcr.rate * (1 + vr.rate) as price_inc_vat,
