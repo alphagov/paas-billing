@@ -1,9 +1,79 @@
 DROP MATERIALIZED VIEW IF EXISTS resource_durations;
 CREATE MATERIALIZED VIEW IF NOT EXISTS resource_durations AS with
 
+-- Transform deployment name to just a GUID, and human-readable size values in megabytes
+compose_events_transformed as (
+	select
+			id,
+			created_at,
+			substring(raw_message->'data'->>'deployment' from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$') as guid,
+			pg_size_bytes(raw_message->'data'->>'memory') / 1024 / 1024 as memory_in_mb,
+			pg_size_bytes(raw_message->'data'->>'storage') / 1024 / 1024 as storage_in_mb,
+			raw_message
+	from
+			compose_audit_events
+	order by id
+),
+
+-- Enhance Compose event data by adding org, space, and plan data from the 'CREATED' event for that service instance
+compose_events_enhanced as (
+	select
+		cet.id,
+		cet.created_at,
+		cet.guid,
+		sue.raw_message->>'service_instance_name' as name,
+		sue.raw_message->>'org_guid' as org_guid,
+		sue.raw_message->>'space_guid' as space_guid,
+		sue.raw_message->>'service_plan_guid' as plan_guid,
+		sue.raw_message->>'service_plan_name' as org_guid,
+		'1'::numeric as inst_count,
+		cet.memory_in_mb,
+		cet.storage_in_mb,
+		'STARTED' as state
+	from
+		compose_events_transformed cet
+	left join
+		service_usage_events sue
+	on
+		cet.guid = sue.raw_message->>'service_instance_guid'
+	where
+		sue.raw_message->>'state' = 'CREATED'
+	order by
+		cet.id
+),
+
+-- Combine Compose events with CloudFoundry service usage events
+-- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
+combined_service_events as (
+	(
+		select * from compose_events_enhanced
+	) union all (
+		select
+			id,
+			created_at,
+			(raw_message->>'service_instance_guid') as guid,
+			(raw_message->>'service_instance_name') as name,
+			(raw_message->>'org_guid') as org_guid,
+			(raw_message->>'space_guid') as space_guid,
+			(raw_message->>'service_plan_guid') as plan_guid,
+			(raw_message->>'service_plan_name') as plan_name,
+			'1'::numeric as inst_count,
+			NULL::numeric as memory_in_mb,
+			NULL::numeric as storage_in_mb,
+			case
+				when (raw_message->>'state') = 'CREATED' then 'STARTED'
+				when (raw_message->>'state') = 'DELETED' then 'STOPPED'
+				when (raw_message->>'state') = 'UPDATED' then 'STARTED'
+			end as state
+		from
+			service_usage_events
+		where
+			raw_message->>'service_instance_type' = 'managed_service_instance'
+	)
+),
+
 -- extract useful stuff from usage events
 -- we treat both apps and services as "resources" so normalize the fields
--- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
 events as (
 	(
 		select
@@ -25,27 +95,7 @@ events as (
 			raw_message->>'state' = 'STARTED'
 			or raw_message->>'state' = 'STOPPED'
 	) union all (
-		select
-			id,
-			created_at::timestamptz as created_at,
-			(raw_message->>'service_instance_guid') as guid,
-			(raw_message->>'service_instance_name') as name,
-			(raw_message->>'org_guid') as org_guid,
-			(raw_message->>'space_guid') as space_guid,
-			(raw_message->>'service_plan_guid') as plan_guid,
-			(raw_message->>'service_plan_name') as plan_name,
-			'1'::numeric as inst_count,
-			NULL::numeric as memory_in_mb,
-			NULL::numeric as storage_in_mb,
-			case
-				when (raw_message->>'state') = 'CREATED' then 'STARTED'
-				when (raw_message->>'state') = 'DELETED' then 'STOPPED'
-				when (raw_message->>'state') = 'UPDATED' then 'STARTED'
-			end as state
-		from
-			service_usage_events
-		where
-			raw_message->>'service_instance_type' = 'managed_service_instance'
+		select * from combined_service_events
 	)
 ),
 
