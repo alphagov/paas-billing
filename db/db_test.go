@@ -312,7 +312,7 @@ var _ = Describe("Db", func() {
 					'FormulaTestPlan/1',
 					$1,
 					1
-				) returning eval_formula(64, tstzrange(now(), now() + '60 seconds'), formula) as result
+				) returning eval_formula(64, 128, tstzrange(now(), now() + '60 seconds'), formula) as result
 			`, formula).Scan(out)
 		}
 
@@ -363,6 +363,20 @@ var _ = Describe("Db", func() {
 			err := insert("$memory_in_mb / 1024 * 2", &out)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(Equal(64 / 1024.0 * 2))
+		})
+
+		It("Should allow $storage_in_mb variable", func() {
+			var out int
+			err := insert("$storage_in_mb * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(128 * 2))
+		})
+
+		It("Should not truncate the result of a division of $storage_in_mb", func() {
+			var out float64
+			err := insert("$storage_in_mb / 1024 * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(128 / 1024.0 * 2))
 		})
 
 		It("Should allow power of operator", func() {

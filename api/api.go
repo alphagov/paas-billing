@@ -445,6 +445,7 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				ppc.formula,
 				eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
+					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
 					tstzrange(
 						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
 						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
@@ -453,6 +454,7 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				) as price_ex_vat,
 				eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
+					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
 					tstzrange(
 						greatest({{ .RangeFromPlaceholder }}, lower(vpp.valid_for), lower(b.duration)),
 						least({{ .RangeToPlaceholder }}, upper(vpp.valid_for), upper(b.duration))
