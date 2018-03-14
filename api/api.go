@@ -360,6 +360,21 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 	}
 }
 
+func ListEventUsageRaw(db db.SQLClient) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return withAuthorizedResources(Many, billableViewName, c, db, `
+			select
+				*,
+				(price_inc_vat * 100)::bigint as price_in_pence_inc_vat,
+				(price_ex_vat * 100)::bigint as price_in_pence_ex_vat
+			from
+				monetized_resources
+			order by
+				guid, id, pricing_plan_id, pricing_plan_component_id, lower(duration)
+		`)
+	}
+}
+
 type resourceType int
 
 const (
