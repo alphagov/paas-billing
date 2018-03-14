@@ -15,7 +15,6 @@ import (
 	"github.com/alphagov/paas-billing/fixtures"
 	"github.com/alphagov/paas-billing/server"
 	"github.com/labstack/echo"
-	uuid "github.com/satori/go.uuid"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,16 +27,18 @@ var _ = Describe("Currency Conversion", func() {
 		authenticator = AuthenticatedNonAdmin
 	)
 
-	ExpectJSON := func(actual interface{}, expected interface{}) {
-		b1, err := json.Marshal(actual)
-		Expect(err).ToNot(HaveOccurred(), "ExpectJSON failed for expected value")
-		b2, err := json.Marshal(expected)
-		Expect(err).ToNot(HaveOccurred(), "ExpectJSON failed for actual value")
-		Expect(string(b1)).To(MatchJSON(string(b2)))
-	}
-
 	costOfUsage := func(days float64, currencyRate float64, fixedFee float64) float64 {
 		return (days*24.0*3600.0 + fixedFee) * currencyRate * 100
+	}
+
+	expectEventsWithPrices := func(out interface{}, prices ...float64) {
+		Expect(len(out.([]interface{}))).To(Equal(len(prices)))
+		for i, price := range prices {
+			res, ok := out.([]interface{})[i].(map[string]interface{})
+			Expect(ok).To(BeTrue())
+			Expect(res["price_in_pence_ex_vat"]).To(Equal(price))
+			Expect(res["price_in_pence_inc_vat"]).To(Equal(price * 1.2))
+		}
 	}
 
 	doRequest := func(path string, v interface{}, params map[string]string) {
@@ -90,9 +91,9 @@ var _ = Describe("Currency Conversion", func() {
 		return gbpOrgsFixtures
 	}
 
-	addEvent := func(fixture fixtures.Space, eventTime time.Time) fixtures.Space {
+	addEvent := func(index int, fixture fixtures.Space, eventTime time.Time) fixtures.Space {
 		newAppEvents := append(fixture.AppEvents, fixtures.AppEvent{
-			AppGuid:               uuid.NewV4().String(),
+			AppGuid:               fmt.Sprintf("00000001-0000-0000-0000-00000000000%d", index),
 			State:                 "STARTED",
 			InstanceCount:         1,
 			MemoryInMBPerInstance: 100,
@@ -103,7 +104,7 @@ var _ = Describe("Currency Conversion", func() {
 		// FIXME: Remove when fixed sql syntax error bug if there are
 		// not service events.
 		newServiceEvents := append(fixture.ServiceEvents, fixtures.ServiceEvent{
-			ServiceInstanceGuid: uuid.NewV4().String(),
+			ServiceInstanceGuid: fmt.Sprintf("00000002-0000-0000-0000-00000000000%d", index),
 			State:               "SPAM",
 			ServicePlanGuid:     "00000000-0000-0000-0000-100000000000",
 			Time:                eventTime,
@@ -147,8 +148,8 @@ var _ = Describe("Currency Conversion", func() {
 		componentFormulas [][]string,
 	) {
 		gbpOrgsFixtures := emptyOrgsFixture(guid, spaceGUID)
-		for _, delta := range appEventDeltas {
-			gbpOrgsFixtures[guid][spaceGUID] = addEvent(gbpOrgsFixtures[guid][spaceGUID], startTime.Add(delta))
+		for i, delta := range appEventDeltas {
+			gbpOrgsFixtures[guid][spaceGUID] = addEvent(i, gbpOrgsFixtures[guid][spaceGUID], startTime.Add(delta))
 		}
 
 		gbpPlans := fixtures.Plans{}
@@ -201,22 +202,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now,
 			now.Add(2*24*time.Hour),
 			&out,
 		)
 
-		expectedPrice := costOfUsage(2, 1.0, 1000)
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(2, 1.0, 1000))
 	})
 
 	It("does a conversion to GBP for resources billed in USD", func() {
@@ -239,22 +231,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now,
 			now.Add(2*24*time.Hour),
 			&out,
 		)
 
-		expectedPrice := costOfUsage(2, 0.5, 1000)
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(2, 0.5, 1000))
 	})
 
 	It("copes with multiple currency entries with same rate", func() {
@@ -278,24 +261,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now,
 			now.Add(2*24*time.Hour),
 			&out,
 		)
 
-		expectedPrice :=
-			costOfUsage(1, 1.0, 1000) +
-				costOfUsage(1, 2.0, 1000)
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(1, 1.0, 1000), costOfUsage(1, 2.0, 1000))
 	})
 
 	It("copes with multiple currency entries across multiple events", func() {
@@ -322,25 +294,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now,
 			now.Add(5*24*time.Hour),
 			&out,
 		)
 
-		expectedPrice :=
-			costOfUsage(2, 1.0, 1000) +
-				costOfUsage(3, 0.5, 1000) +
-				costOfUsage(1, 0.5, 1000)
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(2, 1.0, 1000), costOfUsage(3, 0.5, 1000), costOfUsage(1, 0.5, 1000))
 	})
 
 	It("copes with multiple currency entries across multiple plans", func() {
@@ -367,25 +327,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now,
 			now.Add(60*24*time.Hour),
 			&out,
 		)
 
-		expectedPrice :=
-			costOfUsage(2, 1.0, 1000) +
-				costOfUsage(29, 0.5, 1000) +
-				costOfUsage(29, 0.5, 1000)
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(2, 1.0, 1000), costOfUsage(29, 0.5, 1000), costOfUsage(29, 0.5, 1000))
 	})
 
 	It("applies only the currencies in the requested range", func() {
@@ -409,22 +357,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now.Add(3*24*time.Hour),
 			now.Add(4*24*time.Hour),
 			&out,
 		)
 
-		expectedPrice := costOfUsage(1, 0.5, 1000)
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(1, 0.5, 1000))
 	})
 
 	It("applies different currencies for different components", func() {
@@ -449,26 +388,13 @@ var _ = Describe("Currency Conversion", func() {
 		var out interface{}
 
 		request(
-			"/organisations/"+guid+"/spaces",
+			"/events/raw",
 			now,
 			now.Add(3*24*time.Hour),
 			&out,
 		)
 
-		expectedPriceFirstComponent := costOfUsage(3, 1, 1000)
-		expectedPriceSecondComponent :=
-			costOfUsage(1, 2, 2000) +
-				costOfUsage(2, 4, 2000)
-
-		expectedPrice := expectedPriceFirstComponent + expectedPriceSecondComponent
-
-		ExpectJSON(out, []map[string]interface{}{
-			{
-				"org_guid":               guid,
-				"space_guid":             spaceGUID,
-				"price_in_pence_ex_vat":  expectedPrice,
-				"price_in_pence_inc_vat": expectedPrice * 1.20,
-			},
-		})
+		expectEventsWithPrices(out, costOfUsage(3, 1, 1000), costOfUsage(1, 2, 2000), costOfUsage(2, 4, 2000))
 	})
+
 })
