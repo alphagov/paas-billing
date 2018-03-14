@@ -149,6 +149,7 @@ var _ = Describe("API", func() {
 		doRequest(path, &out, map[string]string{})
 		ExpectJSON(out, []map[string]interface{}{
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
 				"id":              101,
 				"name":            "ComputePlanA/1",
@@ -156,6 +157,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
 				"id":              102,
 				"name":            "ComputePlanA/2",
@@ -163,6 +165,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
 				"id":              111,
 				"name":            "ComputePlanB/1",
@@ -170,6 +173,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * 0.2",
 				"id":              201,
 				"name":            "ServicePlanA/1",
@@ -177,6 +181,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * 0.3",
 				"id":              202,
 				"name":            "ServicePlanA/2",
@@ -184,6 +189,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * 1",
 				"id":              301,
 				"name":            "ServicePlanB/1",
@@ -191,6 +197,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * 0.2",
 				"id":              401,
 				"name":            "With standard VAT",
@@ -198,6 +205,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * 0.3",
 				"id":              402,
 				"name":            "With zero VAT",
@@ -213,6 +221,7 @@ var _ = Describe("API", func() {
 		doRequest(path, &out, map[string]string{})
 		ExpectJSON(out, []map[string]interface{}{
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
 				"id":              101,
 				"name":            "ComputePlanA/1",
@@ -220,6 +229,7 @@ var _ = Describe("API", func() {
 				"vat_rate_id":     1,
 			},
 			{
+				"currency":        "GBP",
 				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
 				"id":              102,
 				"name":            "ComputePlanA/2",
@@ -234,6 +244,7 @@ var _ = Describe("API", func() {
 		var out interface{}
 		doRequest(path, &out, map[string]string{})
 		ExpectJSON(out, map[string]interface{}{
+			"currency":        "GBP",
 			"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
 			"id":              101,
 			"name":            "ComputePlanA/1",
@@ -1276,15 +1287,32 @@ var _ = Describe("API", func() {
 				form.Add("pricing_plan_id", "10")
 				form.Add("formula", "$memory_in_mb * 1")
 				form.Add("vat_rate_id", "2")
+				form.Add("currency", "GBP")
 				status, out := post(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
+					"currency":        "GBP",
 					"id":              1,
 					"pricing_plan_id": 10,
 					"name":            "NewPlanComp",
 					"formula":         "$memory_in_mb * 1",
 					"vat_rate_id":     2,
 				})
+			})
+
+			It("should fail creaing a pricing plan component wit an invalid currency (form POST)", func() {
+				form := url.Values{}
+				form.Add("name", "NewPlanComp")
+				form.Add("pricing_plan_id", "10")
+				form.Add("formula", "$memory_in_mb * 1")
+				form.Add("vat_rate_id", "2")
+				form.Add("currency", "ISK")
+				status, out := post(path, strings.NewReader(form.Encode()))
+				Expect(status).To(Equal(http.StatusBadRequest))
+				Expect(out).To(Equal(map[string]interface{}{
+					"error":      "constraint violation",
+					"constraint": "currency_valid",
+				}))
 			})
 		})
 
@@ -1301,9 +1329,11 @@ var _ = Describe("API", func() {
 				form.Add("pricing_plan_id", "20")
 				form.Add("formula", "10*10")
 				form.Add("vat_rate_id", "2")
+				form.Add("currency", "GBP")
 				status, out := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
+					"currency":        "GBP",
 					"formula":         "10*10",
 					"id":              101,
 					"name":            "UpdatedPlan",
@@ -1319,6 +1349,7 @@ var _ = Describe("API", func() {
 				form.Add("pricing_plan_id", "20")
 				form.Add("formula", "10*10")
 				form.Add("vat_rate_id", "2")
+				form.Add("currency", "GBP")
 				status, out := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusNotFound))
 				Expect(out).To(Equal(map[string]interface{}{
@@ -1341,6 +1372,7 @@ var _ = Describe("API", func() {
 				status, out := del(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
+					"currency":        "GBP",
 					"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
 					"id":              101,
 					"name":            "ComputePlanA/1",

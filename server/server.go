@@ -54,6 +54,7 @@ func New(db db.SQLClient, authority auth.Authenticator, cf cloudfoundry.Client) 
 	authGroup.GET("/resources", api.ListResourceUsage(db))
 	authGroup.GET("/resources/:resource_guid", api.GetResourceUsage(db))
 	authGroup.GET("/events", api.ListEventUsage(db))
+	authGroup.GET("/events/raw", api.ListEventUsageRaw(db)) // TODO: this is a temporary endpoint
 	authGroup.GET("/resources/:resource_guid/events", api.ListEventUsageForResource(db))
 
 	// Pricing data API
@@ -103,6 +104,7 @@ func errorHandler(err error, c echo.Context) {
 		}
 	}
 
+	c.Logger().Error(err)
 	if err := c.JSON(code, resp); err != nil {
 		c.Logger().Error(err)
 	}

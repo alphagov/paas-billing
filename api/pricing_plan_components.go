@@ -13,6 +13,7 @@ type PricingPlanComponent struct {
 	Name          string `json:"name" form:"name"`
 	Formula       string `json:"formula" form:"formula"`
 	VATRateID     int    `json:"vat_rate_id" form:"vat_rate_id"`
+	Currency      string `json:"currency" form:"currency"`
 }
 
 func NewPricingPlanComponentFromContext(c echo.Context) (*PricingPlanComponent, error) {
@@ -39,6 +40,9 @@ func (p *PricingPlanComponent) Validate() error {
 	if p.VATRateID == 0 {
 		return errors.New("vat_rate_id is required")
 	}
+	if p.Currency == "" {
+		return errors.New("currency is required")
+	}
 	return nil
 }
 
@@ -50,7 +54,8 @@ func ListPricingPlanComponents(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 			from
 				pricing_plan_components
 			order by
@@ -71,7 +76,8 @@ func ListPricingPlanComponentsByPlan(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 			from
 				pricing_plan_components
 			where
@@ -95,7 +101,8 @@ func GetPricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 			from
 				pricing_plan_components
 			where
@@ -116,19 +123,22 @@ func CreatePricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 			) values (
 				$1,
 				$2,
 				$3,
-				$4
+				$4,
+				$5
 			) returning
 				id,
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
-		`, ppc.PricingPlanID, ppc.Name, ppc.Formula, ppc.VATRateID)
+				vat_rate_id,
+				currency
+		`, ppc.PricingPlanID, ppc.Name, ppc.Formula, ppc.VATRateID, ppc.Currency)
 		if err != nil {
 			return err
 		}
@@ -154,7 +164,8 @@ func UpdatePricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id = $2::numeric,
 				name = $3,
 				formula = $4,
-				vat_rate_id = $5
+				vat_rate_id = $5,
+				currency = $6
 			where
 				id = $1
 			returning
@@ -162,8 +173,9 @@ func UpdatePricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
-		`, id, ppc.PricingPlanID, ppc.Name, ppc.Formula, ppc.VATRateID)
+				vat_rate_id,
+				currency
+		`, id, ppc.PricingPlanID, ppc.Name, ppc.Formula, ppc.VATRateID, ppc.Currency)
 		if err != nil {
 			return err
 		}
@@ -189,7 +201,8 @@ func DestroyPricingPlanComponent(db db.SQLClient) echo.HandlerFunc {
 				pricing_plan_id,
 				name,
 				formula,
-				vat_rate_id
+				vat_rate_id,
+				currency
 		`, id)
 		if err != nil {
 			return err
