@@ -98,10 +98,12 @@ var _ = Describe("API", func() {
 			},
 		}
 		X2ServicePlan = fixtures.Plan{
-			ID:        3,
-			Name:      "x2-service-plan",
-			ValidFrom: time.Unix(0, 0),
-			PlanGuid:  uuid.NewV4().String(),
+			ID:          3,
+			Name:        "x2-service-plan",
+			ValidFrom:   time.Unix(0, 0),
+			PlanGuid:    uuid.NewV4().String(),
+			MemoryInMb:  10240,
+			StorageInMb: 102400,
 			Components: []fixtures.PricingPlanComponent{
 				{
 					ID:        31,
@@ -160,7 +162,8 @@ var _ = Describe("API", func() {
 			Name            string    `json:"name"`
 			PricingPlanId   int       `json:"pricing_plan_id"`
 			PricingPlanName string    `json:"pricing_plan_name"`
-			MemoryInMb      int64     `json:"memory_in_mb"`
+			MemoryInMb      uint      `json:"memory_in_mb"`
+			StorageInMb     uint      `json:"storage_in_mb"`
 			From            time.Time `json:"from"`
 			To              time.Time `json:"to"`
 			PriceIncVAT     int64     `json:"price_inc_vat"`
@@ -576,6 +579,8 @@ var _ = Describe("API", func() {
 						Name:            "db-service-1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
+						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						StorageInMb:     X2ServicePlan.StorageInMb,
 						From:            now.Add(-1 * time.Hour),
 						To:              now,
 						PriceExVAT:      7200,
@@ -629,6 +634,8 @@ var _ = Describe("API", func() {
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
+						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						StorageInMb:     X2ServicePlan.StorageInMb,
 						Name:            "db-service-1",
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-50 * time.Minute),
@@ -641,6 +648,8 @@ var _ = Describe("API", func() {
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
+						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						StorageInMb:     X2ServicePlan.StorageInMb,
 						Name:            "db-service-1",
 						From:            now.Add(-50 * time.Minute),
 						To:              now.Add(-40 * time.Minute),
@@ -684,6 +693,8 @@ var _ = Describe("API", func() {
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
+						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						StorageInMb:     X2ServicePlan.StorageInMb,
 						Name:            "db-service-1",
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
@@ -818,6 +829,8 @@ var _ = Describe("API", func() {
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
+						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						StorageInMb:     X2ServicePlan.StorageInMb,
 						Name:            "db-service-1",
 						From:            now.Add(-41 * time.Minute),
 						To:              now.Add(-31 * time.Minute),

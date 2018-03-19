@@ -26,7 +26,7 @@ const (
 
 const (
 	composeLatestEventID = "latest_event_id"
-	composeCursor      = "cursor"
+	composeCursor        = "cursor"
 )
 
 // SQLClient is a general interface for handling usage event queries
@@ -159,7 +159,7 @@ func (pc *PostgresClient) FetchLastGUID(tableName string) (string, error) {
 
 // UpdateViews updates the indexed materialized views used to generate reports
 func (pc *PostgresClient) UpdateViews() error {
-	_, err := pc.Conn.Exec("REFRESH MATERIALIZED VIEW CONCURRENTLY billable")
+	_, err := pc.Conn.Exec("REFRESH MATERIALIZED VIEW CONCURRENTLY resource_durations")
 	return err
 }
 

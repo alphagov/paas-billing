@@ -4,117 +4,135 @@
     "pricing_plan_id": 1,
     "name": "ComputePlanAlpha",
     "formula": "($time_in_seconds/3600)*($memory_in_mb/1024)*0.01",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 2,
     "pricing_plan_id": 2,
     "name": "Postgres db.m4.2xlarge (L-HA-enc-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*1.612",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 3,
     "pricing_plan_id": 3,
     "name": "Compose Elasticsearch (tiny)",
     "formula": "($time_in_seconds/2678400)*45.00",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 4,
     "pricing_plan_id": 4,
     "name": "Postgres db.t2.micro (Free)",
     "formula": "($time_in_seconds/3600)*0.02",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 5,
     "pricing_plan_id": 5,
     "name": "MySQL db.t2.micro (Free)",
     "formula": "($time_in_seconds/3600)*0.018",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 6,
     "pricing_plan_id": 6,
     "name": "Postgres db.t2.small (S-HA-enc-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.078",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 7,
     "pricing_plan_id": 7,
     "name": "Postgres db.m4.large (M-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.201",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 8,
     "pricing_plan_id": 8,
     "name": "Postgres db.m4.large (M-HA-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.402",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 9,
     "pricing_plan_id": 9,
     "name": "Elasticahe Redis cache.t2.micro (tiny)",
     "formula": "($time_in_seconds/3600)*0.018",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 10,
     "pricing_plan_id": 10,
     "name": "Mongo (tiny)",
     "formula": "($time_in_seconds/2678400)*31.00",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 11,
     "pricing_plan_id": 11,
     "name": "Cloudfront CDN (custom domain)",
-    "formula": "0"
+    "formula": "0",
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 12,
     "pricing_plan_id": 12,
     "name": "Postgres db.t2.small (S-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.039",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 13,
     "pricing_plan_id": 13,
     "name": "Compose Redis (tiny)",
     "formula": "($time_in_seconds/2678400)*6.64",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 14,
     "pricing_plan_id": 14,
     "name": "Postgres db.m4.large (M-HA-enc-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.402",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 15,
     "pricing_plan_id": 15,
     "name": "Postgres db.m4.2xlarge (L-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.806",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 16,
     "pricing_plan_id": 16,
     "name": "Postgres db.t2.small (S-HA-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*0.078",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   },
   {
     "id": 17,
     "pricing_plan_id": 17,
     "name": "Postgres db.m4.2xlarge (L-HA-dedicated-9.5)",
     "formula": "($time_in_seconds/3600)*1.612",
-    "vat_rate_id": 1
+    "vat_rate_id": 1,
+    "currency": "GBP"
   }
 ]
