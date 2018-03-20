@@ -1407,7 +1407,8 @@ var _ = Describe("API", func() {
 		Context("POST /vat_rates", func() {
 
 			const (
-				path = "/vat_rates"
+				path                 = "/vat_rates"
+				firstAutoIncrementId = 101
 			)
 
 			It("should create a VAT rate (form POST)", func() {
@@ -1417,7 +1418,7 @@ var _ = Describe("API", func() {
 				status, out := post(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
-					"id":   3,
+					"id":   firstAutoIncrementId,
 					"name": "New rate",
 					"rate": 0.25,
 				})
@@ -1427,7 +1428,7 @@ var _ = Describe("API", func() {
 		Context("/vat_rates/:id", func() {
 
 			var (
-				id   = 2
+				id   = 2 // built in initial vat rate id
 				path = "/vat_rates/" + strconv.Itoa(id)
 			)
 
@@ -1438,7 +1439,7 @@ var _ = Describe("API", func() {
 				status, out := put(path, strings.NewReader(form.Encode()))
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
-					"id":   2,
+					"id":   id,
 					"name": "Updated rate",
 					"rate": 0.25,
 				})
@@ -1467,7 +1468,7 @@ var _ = Describe("API", func() {
 			)
 
 			BeforeEach(func() {
-				_, err := sqlClient.Exec("INSERT INTO vat_rates (name, rate) VALUES ('delete me', 0.5)")
+				_, err := sqlClient.Exec("INSERT INTO vat_rates (id, name, rate) VALUES ($1, 'delete me', 0.5)", id)
 				Expect(err).ToNot(HaveOccurred())
 			})
 
