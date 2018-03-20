@@ -10,6 +10,7 @@ run-dev: ## Runs the application with local credentials
 	$(eval export CF_CLIENT_ID=paas-billing)
 	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
 	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
+	$(eval export COMPOSE_API_KEY=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/compose-secrets.yml - | awk '/compose_api_key/ {print $$2}'))
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
 	$(eval export DATABASE_SCHEMA_DIR=${DATABASE_SCHEMA_DIR})
