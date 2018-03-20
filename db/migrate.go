@@ -36,7 +36,7 @@ func MigrationSequence() ([]string, error) {
 	return filenames, nil
 }
 
-func (pc *PostgresClient) ApplyMigrations(sortedMigrationFilenames []string) error {
+func (pc *PostgresClient) ApplyMigrations(sortedMigrationFilenames []string) (err error) {
 	tx, err := pc.db.Begin()
 	if err != nil {
 		return err
