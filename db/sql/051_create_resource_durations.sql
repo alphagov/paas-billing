@@ -1,4 +1,9 @@
 DROP MATERIALIZED VIEW IF EXISTS resource_durations;
+
+-- fix timestamp fields to ensure they use UTC
+alter table app_usage_events alter column created_at type timestamp with time zone USING created_at at time zone 'UTC';
+alter table service_usage_events alter column created_at type timestamp with time zone USING created_at at time zone 'UTC';
+
 CREATE MATERIALIZED VIEW IF NOT EXISTS resource_durations AS with
 
 -- extract useful stuff from usage events
