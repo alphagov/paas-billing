@@ -61,6 +61,9 @@ func (pc *PostgresClient) ApplyMigrations(sortedMigrationFilenames []string) (er
 			msg := err.Error()
 			if err, ok := err.(*pq.Error); ok {
 				msg = err.Message
+				if err.Detail != "" {
+					msg += ": " + err.Detail
+				}
 				if err.Hint != "" {
 					msg += ": " + err.Hint
 				}
