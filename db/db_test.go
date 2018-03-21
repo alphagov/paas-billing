@@ -313,7 +313,7 @@ var _ = Describe("Db", func() {
 					$1,
 					1,
 					'GBP'
-				) returning eval_formula(64, 128, tstzrange(now(), now() + '60 seconds'), formula) as result
+				) returning eval_formula(64, 128, 2, tstzrange(now(), now() + '60 seconds'), formula) as result
 			`, formula).Scan(out)
 		}
 
@@ -378,6 +378,13 @@ var _ = Describe("Db", func() {
 			err := insert("$storage_in_mb / 1024 * 2", &out)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(out).To(Equal(128 / 1024.0 * 2))
+		})
+
+		It("Should allow $number_of_nodes variable", func() {
+			var out int
+			err := insert("$number_of_nodes * 2", &out)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(out).To(Equal(2 * 2))
 		})
 
 		It("Should allow power of operator", func() {

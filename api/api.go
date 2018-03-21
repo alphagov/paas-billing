@@ -14,18 +14,19 @@ import (
 	"github.com/labstack/echo"
 )
 
-const resourceDurationsViewName = "resource_durations"
+const resourceDurationsViewName = "resource_usage"
 
 type SimulatedEvents struct {
 	Events []SimulatedEvent `json:"events"`
 }
 
 type SimulatedEvent struct {
-	Name        string `json:"name"`
-	SpaceGUID   string `json:"space_guid"`
-	PlanGUID    string `json:"plan_guid"`
-	MemoryInMB  uint   `json:"memory_in_mb"`
-	StorageInMB uint   `json:"storage_in_mb"`
+	ResourceName  string `json:"resource_name"`
+	SpaceGUID     string `json:"space_guid"`
+	PlanGUID      string `json:"plan_guid"`
+	MemoryInMB    uint   `json:"memory_in_mb"`
+	StorageInMB   uint   `json:"storage_in_mb"`
+	NumberOfNodes uint   `json:"number_of_nodes"`
 }
 
 func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
@@ -48,16 +49,17 @@ func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 		}
 		defer dbTx.Rollback()
 
-		tempTableName := "temp_resource_durations"
+		tempTableName := "temp_resource_usage"
 		_, err = dbTx.Exec(`CREATE TEMPORARY TABLE ` + tempTableName + ` (
-				id serial,
-				guid text,
-				name text,
+				event_guid serial,
+				resource_guid text,
+				resource_name text,
 				org_guid text,
 				space_guid text,
 				plan_guid text,
 				memory_in_mb numeric,
 				storage_in_mb numeric,
+				number_of_nodes integer,
 				duration tstzrange
 			)`,
 		)
@@ -65,29 +67,31 @@ func NewSimulatedReportHandler(db db.SQLClient) echo.HandlerFunc {
 			return err
 		}
 		stmt, err := dbTx.Prepare(`INSERT INTO ` + tempTableName + ` (
-			guid,
-			name,
+			resource_guid,
+			resource_name,
 			org_guid,
 			space_guid,
 			plan_guid,
 			memory_in_mb,
 			storage_in_mb,
+			number_of_nodes,
 			duration
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, tstzrange($8, $9)
+			$1, $2, $3, $4, $5, $6, $7, $8, tstzrange($9, $10)
 		)`)
 		if err != nil {
 			return err
 		}
 		for _, event := range events.Events {
 			_, err = stmt.Exec(
-				event.Name+"-guid",
-				event.Name,
+				event.ResourceName+"-guid",
+				event.ResourceName,
 				orgGUID,
 				event.SpaceGUID,
 				event.PlanGUID,
 				event.MemoryInMB,
 				event.StorageInMB,
+				event.NumberOfNodes,
 				rng.From,
 				rng.To,
 			)
@@ -224,7 +228,7 @@ func ListResourceUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				guid,
+				resource_guid,
 				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
 				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
@@ -232,9 +236,9 @@ func ListResourceUsageForOrg(db db.SQLClient) echo.HandlerFunc {
 			where
 				org_guid = $1
 			group by
-				org_guid, space_guid, guid
+				org_guid, space_guid, resource_guid
 			order by
-				guid
+				resource_guid
 		`, orgGUID)
 	}
 }
@@ -250,7 +254,7 @@ func ListResourceUsageForSpace(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				guid,
+				resource_guid,
 				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
 				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
@@ -258,9 +262,9 @@ func ListResourceUsageForSpace(db db.SQLClient) echo.HandlerFunc {
 			where
 				space_guid = $1
 			group by
-				org_guid, space_guid, guid
+				org_guid, space_guid, resource_guid
 			order by
-				guid
+				resource_guid
 		`, spaceGUID)
 	}
 }
@@ -271,15 +275,15 @@ func ListResourceUsage(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				guid,
+				resource_guid,
 				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
 				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			group by
-				space_guid, org_guid, guid
+				space_guid, org_guid, resource_guid
 			order by
-				guid
+				resource_guid
 		`)
 	}
 }
@@ -294,17 +298,17 @@ func GetResourceUsage(db db.SQLClient) echo.HandlerFunc {
 			select
 				org_guid,
 				space_guid,
-				guid,
+				resource_guid,
 				(sum(price_inc_vat) * 100)::bigint as price_in_pence_inc_vat,
 				(sum(price_ex_vat) * 100)::bigint as price_in_pence_ex_vat
 			from
 				monetized_resources
 			where
-				guid = $1
+				resource_guid = $1
 			group by
-				org_guid, space_guid, guid
+				org_guid, space_guid, resource_guid
 			order by
-				guid
+				resource_guid
 		`, resourceGUID)
 	}
 }
@@ -317,7 +321,7 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 		}
 		return withAuthorizedResources(Many, resourceDurationsViewName, c, db, `
 			select
-				guid,
+				resource_guid,
 				org_guid,
 				space_guid,
 				pricing_plan_id,
@@ -329,11 +333,11 @@ func ListEventUsageForResource(db db.SQLClient) echo.HandlerFunc {
 			from
 				monetized_resources mr
 			where
-				guid = $1
+				resource_guid = $1
 			group by
-				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid, duration
+				resource_guid, event_guid, pricing_plan_id, pricing_plan_name, org_guid, space_guid, duration
 			order by
-				guid, id, pricing_plan_id
+				resource_guid, event_guid, pricing_plan_id
 		`, resourceGUID)
 	}
 }
@@ -342,14 +346,15 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return withAuthorizedResources(Many, resourceDurationsViewName, c, db, `
 			select
-				guid,
+				resource_guid,
 				org_guid,
 				space_guid,
 				pricing_plan_id,
 				pricing_plan_name,
-				name,
+				resource_name,
 				memory_in_mb,
 				storage_in_mb,
+				number_of_nodes,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
 				sum(price_inc_vat::bigint) as price_inc_vat,
@@ -357,10 +362,10 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 			from
 				monetized_resources
 			group by
-				guid, id, pricing_plan_id, pricing_plan_name, org_guid, space_guid,
-				name, memory_in_mb, storage_in_mb, duration
+				resource_guid, event_guid, pricing_plan_id, pricing_plan_name, org_guid, space_guid,
+				resource_name, memory_in_mb, storage_in_mb, number_of_nodes, duration
 			order by
-				guid, id, pricing_plan_id
+				resource_guid, event_guid, pricing_plan_id
 		`)
 	}
 }
@@ -375,7 +380,7 @@ func ListEventUsageRaw(db db.SQLClient) echo.HandlerFunc {
 			from
 				monetized_resources
 			order by
-				guid, id, pricing_plan_id, pricing_plan_component_id, lower(duration)
+				resource_guid, event_guid, pricing_plan_id, pricing_plan_component_id, lower(duration)
 		`)
 	}
 }
@@ -454,13 +459,14 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 		),
 		monetized_resources as (
 			select
-				b.id,
-				b.guid,
-				b.name,
+				b.event_guid,
+				b.resource_guid,
+				b.resource_name,
 				b.org_guid,
 				b.space_guid,
 				coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric as memory_in_mb,
 				coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric as storage_in_mb,
+				coalesce(b.number_of_nodes, vpp.number_of_nodes)::integer as number_of_nodes,
 				r.request_range * vpp.valid_for * vcr.valid_for * b.duration as duration,
 				vpp.id AS pricing_plan_id,
 				vpp.name AS pricing_plan_name,
@@ -470,12 +476,14 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
 					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
+					coalesce(b.number_of_nodes, vpp.number_of_nodes)::integer,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
 				) * vcr.rate as price_ex_vat,
 				eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
 					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
+					coalesce(b.number_of_nodes, vpp.number_of_nodes)::integer,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
 				) * vcr.rate * (1 + vr.rate) as price_inc_vat,
@@ -559,7 +567,7 @@ func generateReport(orgGUID string, resourceDurationsViewName string, c echo.Con
 		with
 		resources as (
 			select
-				name,
+				resource_name,
 				space_guid,
 				pricing_plan_id,
 				pricing_plan_name,
@@ -571,9 +579,9 @@ func generateReport(orgGUID string, resourceDurationsViewName string, c echo.Con
 			where
 				org_guid = $1
 			group by
-				name, space_guid, pricing_plan_id, pricing_plan_name
+				resource_name, space_guid, pricing_plan_id, pricing_plan_name
 			order by
-				name, space_guid, pricing_plan_id
+				resource_name, space_guid, pricing_plan_id
 		),
 		space_resources as (
 			select

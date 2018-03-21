@@ -159,7 +159,7 @@ func (pc *PostgresClient) FetchLastGUID(tableName string) (string, error) {
 
 // UpdateViews updates the indexed materialized views used to generate reports
 func (pc *PostgresClient) UpdateViews() error {
-	_, err := pc.Conn.Exec("REFRESH MATERIALIZED VIEW CONCURRENTLY resource_durations")
+	_, err := pc.Conn.Exec("REFRESH MATERIALIZED VIEW CONCURRENTLY resource_usage")
 	return err
 }
 

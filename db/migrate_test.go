@@ -119,13 +119,13 @@ var _ = Describe("Migration", func() {
 			})
 		})
 
-		Describe("051_create_resource_durations", func() {
+		Describe("051_create_resource_usage", func() {
 			var (
 				appGuid, serviceInstanceGuid, planGuid string
 			)
 
 			BeforeEach(func() {
-				migrationName = "051_create_resource_durations.sql"
+				migrationName = "051_create_resource_usage.sql"
 				appGuid = "000007d7-8a78-4cc0-9be3-b41f89460ae8"
 				serviceInstanceGuid = "eb3eb3ae-0fb6-475e-af93-975e80f6361a"
 				planGuid = "FB0E63F6-E97A-446B-A200-323FC9B562E9"
@@ -140,9 +140,9 @@ var _ = Describe("Migration", func() {
 				JustBeforeEach(func() {
 					_, err := sqlClient.Conn.Exec(`
 						INSERT INTO
-							pricing_plans (name, valid_from, plan_guid, memory_in_mb, storage_in_mb)
+							pricing_plans (name, valid_from, plan_guid, memory_in_mb, storage_in_mb, number_of_nodes)
 						VALUES
-							('medium', '1970-01-01', $1, 10240, 102400)
+							('medium', '1970-01-01', $1, 10240, 102400, 1)
 					`, planGuid)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -151,7 +151,8 @@ var _ = Describe("Migration", func() {
 						INSERT INTO
 							app_usage_events (created_at, guid, raw_message)
 						VALUES
-							('2018-01-01 00:00:00', 'a', '{"state": "STARTED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STOPPED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),('2018-01-01 00:00:00', 'b', '{"state": "STOPPED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STARTED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb)
+							('2018-01-01 00:00:00', 'a', '{"state": "STARTED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STOPPED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),
+							('2018-01-01 01:00:00', 'b', '{"state": "STOPPED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STARTED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb)
 					`)
 					Expect(err).NotTo(HaveOccurred())
 
@@ -160,7 +161,8 @@ var _ = Describe("Migration", func() {
 						INSERT INTO
 							service_usage_events (created_at, guid, raw_message)
 						VALUES
-							('2018-01-01 00:00:00', '1', '{"state": "CREATED", "org_guid": "org_guid", "space_guid": "space_guid", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "` + planGuid + `", "service_plan_name": "Free", "service_instance_guid": "` + serviceInstanceGuid + `", "service_instance_name": "ja-rails-postgres", "service_instance_type": "managed_service_instance"}'::jsonb),('2018-01-01 01:00:00', '2', '{"state": "DELETED", "org_guid": "org_guid", "space_guid": "space_guid", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "` + planGuid + `", "service_plan_name": "Free", "service_instance_guid": "` + serviceInstanceGuid + `", "service_instance_name": "ja-rails-postgres", "service_instance_type": "managed_service_instance"}'::jsonb)
+							('2018-01-01 00:00:00', '1', '{"state": "CREATED", "org_guid": "org_guid", "space_guid": "space_guid", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "` + planGuid + `", "service_plan_name": "Free", "service_instance_guid": "` + serviceInstanceGuid + `", "service_instance_name": "ja-rails-postgres", "service_instance_type": "managed_service_instance"}'::jsonb),
+							('2018-01-01 01:00:00', '2', '{"state": "DELETED", "org_guid": "org_guid", "space_guid": "space_guid", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "` + planGuid + `", "service_plan_name": "Free", "service_instance_guid": "` + serviceInstanceGuid + `", "service_instance_name": "ja-rails-postgres", "service_instance_type": "managed_service_instance"}'::jsonb)
 					`)
 					Expect(err).NotTo(HaveOccurred())
 				})
@@ -169,30 +171,31 @@ var _ = Describe("Migration", func() {
 					err := sqlClient.ApplyMigrations([]string{migrationName})
 					Expect(err).NotTo(HaveOccurred())
 
-					var count string
+					var count int
 					err = sqlClient.Conn.QueryRow(`
-						SELECT COUNT(*) FROM resource_durations
+						SELECT COUNT(*) FROM resource_usage
 					`).Scan(&count)
 					Expect(err).NotTo(HaveOccurred())
-					Expect(count).To(Equal("2"))
+					Expect(count).To(Equal(2))
 				})
 
-				It("pulls memory usage from app events and sets their storage to zero", func() {
+				It("extracts memory, storage & instance count from events and sets default values", func() {
 					err := sqlClient.ApplyMigrations([]string{migrationName})
 					Expect(err).NotTo(HaveOccurred())
 
-					var memory_in_mb, storage_in_mb string
+					var memory_in_mb, storage_in_mb, number_of_nodes string
 					err = sqlClient.Conn.QueryRow(`
 						SELECT
-							memory_in_mb, storage_in_mb
+							memory_in_mb, storage_in_mb, number_of_nodes
 						FROM
-							resource_durations
+							resource_usage
 						WHERE
-							guid = $1
-					`, appGuid).Scan(&memory_in_mb, &storage_in_mb)
+							resource_guid = $1
+					`, appGuid).Scan(&memory_in_mb, &storage_in_mb, &number_of_nodes)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(memory_in_mb).To(Equal("1024"))
 					Expect(storage_in_mb).To(Equal("0"))
+					Expect(number_of_nodes).To(Equal("1"))
 				})
 
 				It("sets memory and storage to NULL for service resource durations", func() {
@@ -204,9 +207,9 @@ var _ = Describe("Migration", func() {
 						SELECT
 							memory_in_mb, storage_in_mb
 						FROM
-							resource_durations
+							resource_usage
 						WHERE
-							guid = $1
+							resource_guid = $1
 					`, serviceInstanceGuid).Scan(&memory_in_mb, &storage_in_mb)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(memory_in_mb.Valid).To(BeFalse())

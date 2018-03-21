@@ -15,6 +15,7 @@ BEGIN
 	invalid_formula := (select regexp_replace(invalid_formula, '\$memory_in_mb', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\$storage_in_mb', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\$time_in_seconds', '#', 'g'));
+	invalid_formula := (select regexp_replace(invalid_formula, '\$number_of_nodes', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, 'ceil', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\(|\)', '#', 'g'));
 	invalid_formula := (select regexp_replace(invalid_formula, '\*', '#', 'g'));
@@ -29,9 +30,9 @@ BEGIN
 		RAISE EXCEPTION 'illegal token in formula: %', illegal_token;
 	END IF;
 	-- attempt to use the formula to ensure it works with common edge case inputs
-	dummy_price := (select eval_formula(0, 0,tstzrange(now(), now()), NEW.formula));
-	dummy_price := (select eval_formula(1, 1,tstzrange(now(), now() + '1 second'), NEW.formula));
-	dummy_price := (select eval_formula(null, null,null, NEW.formula));
+	dummy_price := (select eval_formula(0, 0, 0, tstzrange(now(), now()), NEW.formula));
+	dummy_price := (select eval_formula(1, 1, 1, tstzrange(now(), now() + '1 second'), NEW.formula));
+	dummy_price := (select eval_formula(null, null, null, null, NEW.formula));
 	RETURN NEW;
 END;
 $$ language plpgsql;

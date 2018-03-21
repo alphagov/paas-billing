@@ -17,27 +17,29 @@ type PricingPlanComponent struct {
 type Plans []Plan
 
 type Plan struct {
-	ID          int
-	Name        string
-	PlanGuid    string
-	ValidFrom   time.Time
-	Components  []PricingPlanComponent
-	MemoryInMb  uint
-	StorageInMb uint
+	ID            int
+	Name          string
+	PlanGuid      string
+	ValidFrom     time.Time
+	Components    []PricingPlanComponent
+	MemoryInMb    uint
+	StorageInMb   uint
+	NumberOfNodes uint
 }
 
 func (plans Plans) Insert(sqlClient *db.PostgresClient) error {
 	for _, plan := range plans {
 		_, err := sqlClient.Conn.Exec(`
-            INSERT INTO pricing_plans(id, name, valid_from, plan_guid, memory_in_mb, storage_in_mb) VALUES (
+            INSERT INTO pricing_plans(id, name, valid_from, plan_guid, memory_in_mb, storage_in_mb, number_of_nodes) VALUES (
                 $1,
                 $2,
                 $3,
                 $4,
                 $5,
-                $6
+                $6,
+		$7
             );
-        `, plan.ID, plan.Name, plan.ValidFrom, plan.PlanGuid, plan.MemoryInMb, plan.StorageInMb)
+        `, plan.ID, plan.Name, plan.ValidFrom, plan.PlanGuid, plan.MemoryInMb, plan.StorageInMb, plan.NumberOfNodes)
 		if err != nil {
 			return err
 		}

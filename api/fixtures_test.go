@@ -25,14 +25,14 @@ var planFixtures = Plans{
 			{
 				ID:        101,
 				Name:      "ComputePlanA/1",
-				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7 * $number_of_nodes",
 				VATRateID: 1,
 				Currency:  "GBP",
 			},
 			{
 				ID:        102,
 				Name:      "ComputePlanA/2",
-				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3 * $number_of_nodes",
 				VATRateID: 1,
 				Currency:  "GBP",
 			},
@@ -47,7 +47,7 @@ var planFixtures = Plans{
 			{
 				ID:        111,
 				Name:      "ComputePlanB/1",
-				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+				Formula:   "($time_in_seconds / 60 / 60) * $memory_in_mb * 2 * $number_of_nodes",
 				VATRateID: 1,
 				Currency:  "GBP",
 			},

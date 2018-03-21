@@ -150,7 +150,7 @@ var _ = Describe("API", func() {
 		ExpectJSON(out, []map[string]interface{}{
 			{
 				"currency":        "GBP",
-				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7 * $number_of_nodes",
 				"id":              101,
 				"name":            "ComputePlanA/1",
 				"pricing_plan_id": 10,
@@ -158,7 +158,7 @@ var _ = Describe("API", func() {
 			},
 			{
 				"currency":        "GBP",
-				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3 * $number_of_nodes",
 				"id":              102,
 				"name":            "ComputePlanA/2",
 				"pricing_plan_id": 10,
@@ -166,7 +166,7 @@ var _ = Describe("API", func() {
 			},
 			{
 				"currency":        "GBP",
-				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 2",
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 2 * $number_of_nodes",
 				"id":              111,
 				"name":            "ComputePlanB/1",
 				"pricing_plan_id": 11,
@@ -222,7 +222,7 @@ var _ = Describe("API", func() {
 		ExpectJSON(out, []map[string]interface{}{
 			{
 				"currency":        "GBP",
-				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7 * $number_of_nodes",
 				"id":              101,
 				"name":            "ComputePlanA/1",
 				"pricing_plan_id": 10,
@@ -230,7 +230,7 @@ var _ = Describe("API", func() {
 			},
 			{
 				"currency":        "GBP",
-				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3",
+				"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.3 * $number_of_nodes",
 				"id":              102,
 				"name":            "ComputePlanA/2",
 				"pricing_plan_id": 10,
@@ -245,7 +245,7 @@ var _ = Describe("API", func() {
 		doRequest(path, &out, map[string]string{})
 		ExpectJSON(out, map[string]interface{}{
 			"currency":        "GBP",
-			"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+			"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7 * $number_of_nodes",
 			"id":              101,
 			"name":            "ComputePlanA/1",
 			"pricing_plan_id": 10,
@@ -417,21 +417,21 @@ var _ = Describe("API", func() {
 				requestRanged(path, from, to, &out)
 				ExpectJSON(out, []map[string]interface{}{
 					{
-						"guid":                   "00000001-0001-0001-0000-000000000000",
+						"resource_guid":          "00000001-0001-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  9216000,
 						"price_in_pence_inc_vat": 9216000 * 1.2,
 						"space_guid":             "00000001-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000001-0002-0001-0000-000000000000",
+						"resource_guid":          "00000001-0002-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  716800,
 						"price_in_pence_inc_vat": 716800 * 1.2,
 						"space_guid":             "00000001-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000001-0002-0002-0000-000000000000",
+						"resource_guid":          "00000001-0002-0002-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  50,
 						"price_in_pence_inc_vat": 50 * 1.2,
@@ -540,7 +540,7 @@ var _ = Describe("API", func() {
 				requestRanged(path, from, to, &out)
 				ExpectJSON(out, []map[string]interface{}{
 					{
-						"guid":                   "00000001-0001-0001-0000-000000000000",
+						"resource_guid":          "00000001-0001-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  9216000,
 						"price_in_pence_inc_vat": 9216000 * 1.2,
@@ -597,63 +597,63 @@ var _ = Describe("API", func() {
 				requestRanged(path, from, to, &out)
 				ExpectJSON(out, []map[string]interface{}{
 					{
-						"guid":                   "00000001-0001-0001-0000-000000000000",
+						"resource_guid":          "00000001-0001-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  9216000,
 						"price_in_pence_inc_vat": 9216000 * 1.2,
 						"space_guid":             "00000001-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000001-0002-0001-0000-000000000000",
+						"resource_guid":          "00000001-0002-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  716800,
 						"price_in_pence_inc_vat": 716800 * 1.2,
 						"space_guid":             "00000001-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000001-0002-0002-0000-000000000000",
+						"resource_guid":          "00000001-0002-0002-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  50,
 						"price_in_pence_inc_vat": 50 * 1.2,
 						"space_guid":             "00000001-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0001-0001-0000-000000000000",
+						"resource_guid":          "00000002-0001-0001-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  38400,
 						"price_in_pence_inc_vat": 38400 * 1.2,
 						"space_guid":             "00000002-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0001-0002-0000-000000000000",
+						"resource_guid":          "00000002-0001-0002-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  256000,
 						"price_in_pence_inc_vat": 256000 * 1.2,
 						"space_guid":             "00000002-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0001-0003-0000-000000000000",
+						"resource_guid":          "00000002-0001-0003-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  100,
 						"price_in_pence_inc_vat": 100 * 1.2,
 						"space_guid":             "00000002-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0001-0004-0000-000000000000",
+						"resource_guid":          "00000002-0001-0004-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  200,
 						"price_in_pence_inc_vat": 200 * 1.2,
 						"space_guid":             "00000002-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0002-0001-0000-000000000000",
+						"resource_guid":          "00000002-0002-0001-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  50,
 						"price_in_pence_inc_vat": 50 * 1.2,
 						"space_guid":             "00000002-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000003-0005-0001-0000-000000000000",
+						"resource_guid":          "00000003-0005-0001-0000-000000000000",
 						"org_guid":               "00000003-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  (24*0.2 + 24*0.3) * 100,
 						"price_in_pence_inc_vat": (24*0.2*1.2 + 24*0.3) * 100,
@@ -667,42 +667,42 @@ var _ = Describe("API", func() {
 				requestRanged(path, ago(1*time.Hour), now, &out)
 				ExpectJSON(out, []map[string]interface{}{
 					{
-						"guid":                   "00000001-0001-0001-0000-000000000000",
+						"resource_guid":          "00000001-0001-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  12800,
 						"price_in_pence_inc_vat": 12800 * 1.2,
 						"space_guid":             "00000001-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000001-0002-0001-0000-000000000000",
+						"resource_guid":          "00000001-0002-0001-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  409600,
 						"price_in_pence_inc_vat": 409600 * 1.2,
 						"space_guid":             "00000001-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000001-0002-0002-0000-000000000000",
+						"resource_guid":          "00000001-0002-0002-0000-000000000000",
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  50,
 						"price_in_pence_inc_vat": 50 * 1.2,
 						"space_guid":             "00000001-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0001-0002-0000-000000000000",
+						"resource_guid":          "00000002-0001-0002-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  76800,
 						"price_in_pence_inc_vat": 76800 * 1.2,
 						"space_guid":             "00000002-0001-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000002-0002-0001-0000-000000000000",
+						"resource_guid":          "00000002-0002-0001-0000-000000000000",
 						"org_guid":               "00000002-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  50,
 						"price_in_pence_inc_vat": 50 * 1.2,
 						"space_guid":             "00000002-0002-0000-0000-000000000000",
 					},
 					{
-						"guid":                   "00000003-0005-0001-0000-000000000000",
+						"resource_guid":          "00000003-0005-0001-0000-000000000000",
 						"org_guid":               "00000003-0000-0000-0000-000000000000",
 						"price_in_pence_ex_vat":  (1*0.2 + 1*0.3) * 100,
 						"price_in_pence_inc_vat": (1*0.2*1.2 + 1*0.3) * 100,
@@ -726,7 +726,7 @@ var _ = Describe("API", func() {
 				to := now
 				requestRanged(path, from, to, &out)
 				ExpectJSON(out, map[string]interface{}{
-					"guid":                   guid,
+					"resource_guid":          guid,
 					"org_guid":               "00000002-0000-0000-0000-000000000000",
 					"price_in_pence_ex_vat":  256000,
 					"price_in_pence_inc_vat": 256000 * 1.2,
@@ -738,7 +738,7 @@ var _ = Describe("API", func() {
 				var out interface{}
 				requestRanged(path, ago(1*time.Hour), now, &out)
 				ExpectJSON(out, map[string]interface{}{
-					"guid":                   guid,
+					"resource_guid":          guid,
 					"org_guid":               "00000002-0000-0000-0000-000000000000",
 					"price_in_pence_ex_vat":  76800,
 					"price_in_pence_inc_vat": 76800 * 1.2,
@@ -770,8 +770,8 @@ var _ = Describe("API", func() {
 						"to":                computePlanBoundry.Format(time.RFC3339),
 						"price_in_pence_ex_vat":  int(computePlanBoundry.Sub(from).Hours()) * 64 * 1 * 100,
 						"price_in_pence_inc_vat": float64(int(computePlanBoundry.Sub(from).Hours())*64*1*100) * 1.2,
-						"guid":     guid,
-						"org_guid": "00000001-0000-0000-0000-000000000000",
+						"resource_guid":          guid,
+						"org_guid":               "00000001-0000-0000-0000-000000000000",
 					},
 					{
 						"space_guid":        "00000001-0001-0000-0000-000000000000",
@@ -781,8 +781,8 @@ var _ = Describe("API", func() {
 						"to":                to.Format(time.RFC3339),
 						"price_in_pence_ex_vat":  int(to.Sub(computePlanBoundry).Hours()) * 64 * 2 * 100,
 						"price_in_pence_inc_vat": float64(int(to.Sub(computePlanBoundry).Hours())*64*2*100) * 1.2,
-						"guid":     guid,
-						"org_guid": "00000001-0000-0000-0000-000000000000",
+						"resource_guid":          guid,
+						"org_guid":               "00000001-0000-0000-0000-000000000000",
 					},
 				})
 			})
@@ -801,7 +801,7 @@ var _ = Describe("API", func() {
 						"price_in_pence_inc_vat": 1 * 64 * 1 * 100 * 1.2,
 						"pricing_plan_id":        10,
 						"pricing_plan_name":      "ComputePlanA",
-						"guid":                   guid,
+						"resource_guid":          guid,
 						"org_guid":               "00000001-0000-0000-0000-000000000000",
 					},
 				})
@@ -823,8 +823,8 @@ var _ = Describe("API", func() {
 						"to":                to.Format(time.RFC3339),
 						"price_in_pence_ex_vat":  (24*0.2 + 24*0.3) * 100,
 						"price_in_pence_inc_vat": (24*0.2*1.2 + 24*0.3) * 100,
-						"guid":     guid,
-						"org_guid": "00000003-0000-0000-0000-000000000000",
+						"resource_guid":          guid,
+						"org_guid":               "00000003-0000-0000-0000-000000000000",
 					},
 				})
 			})
@@ -1373,7 +1373,7 @@ var _ = Describe("API", func() {
 				Expect(status).To(Equal(http.StatusOK))
 				ExpectJSON(out, map[string]interface{}{
 					"currency":        "GBP",
-					"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7",
+					"formula":         "($time_in_seconds / 60 / 60) * $memory_in_mb * 0.7 * $number_of_nodes",
 					"id":              101,
 					"name":            "ComputePlanA/1",
 					"pricing_plan_id": 10,

@@ -35,9 +35,9 @@ var (
 var _ = Describe("API", func() {
 
 	type ResourceReport struct {
-		Name        string `json:"name"`
-		PriceIncVAT int64  `json:"price_inc_vat"`
-		PriceExVAT  int64  `json:"price_ex_vat"`
+		ResourceName string `json:"resource_name"`
+		PriceIncVAT  int64  `json:"price_inc_vat"`
+		PriceExVAT   int64  `json:"price_ex_vat"`
 	}
 	type SpaceReport struct {
 		SpaceGuid   string           `json:"space_guid"`
@@ -62,14 +62,14 @@ var _ = Describe("API", func() {
 				{
 					ID:        11,
 					Name:      "x10-compute-plan/1",
-					Formula:   "$time_in_seconds * 4",
+					Formula:   "$time_in_seconds * $number_of_nodes * 4",
 					VATRateID: 1,
 					Currency:  "GBP",
 				},
 				{
 					ID:        12,
 					Name:      "x10-compute-plan/2",
-					Formula:   "$time_in_seconds * 6",
+					Formula:   "$time_in_seconds * $number_of_nodes * 6",
 					VATRateID: 1,
 					Currency:  "GBP",
 				},
@@ -84,14 +84,14 @@ var _ = Describe("API", func() {
 				{
 					ID:        21,
 					Name:      "x4-compute-plan/1",
-					Formula:   "$time_in_seconds * 1",
+					Formula:   "$time_in_seconds * $number_of_nodes * 1",
 					VATRateID: 1,
 					Currency:  "GBP",
 				},
 				{
 					ID:        22,
 					Name:      "x4-compute-plan/2",
-					Formula:   "$time_in_seconds * 3",
+					Formula:   "$time_in_seconds * $number_of_nodes * 3",
 					VATRateID: 1,
 					Currency:  "GBP",
 				},
@@ -104,6 +104,7 @@ var _ = Describe("API", func() {
 			PlanGuid:    uuid.NewV4().String(),
 			MemoryInMb:  10240,
 			StorageInMb: 102400,
+			NumberOfNodes: 1,
 			Components: []fixtures.PricingPlanComponent{
 				{
 					ID:        31,
@@ -156,14 +157,15 @@ var _ = Describe("API", func() {
 	Context("Resource Usage Queries", func() {
 
 		type UsageEntry struct {
-			Guid            string    `json:"guid"`
+			ResourceGuid    string    `json:"resource_guid"`
 			OrgGuid         string    `json:"org_guid"`
 			SpaceGuid       string    `json:"space_guid"`
-			Name            string    `json:"name"`
+			ResourceName    string    `json:"resource_name"`
 			PricingPlanId   int       `json:"pricing_plan_id"`
 			PricingPlanName string    `json:"pricing_plan_name"`
 			MemoryInMb      uint      `json:"memory_in_mb"`
 			StorageInMb     uint      `json:"storage_in_mb"`
+			NumberOfNodes   uint      `json:"number_of_nodes"`
 			From            time.Time `json:"from"`
 			To              time.Time `json:"to"`
 			PriceIncVAT     int64     `json:"price_inc_vat"`
@@ -208,13 +210,14 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "app",
+						ResourceGuid:    "app",
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name",
+						ResourceName:    "app_name",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
 						PriceExVAT:      30 * 60 * 4,
@@ -257,26 +260,28 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "app",
+						ResourceGuid:    "app",
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X10ComputePlan.Name,
 						PricingPlanId:   X10ComputePlan.ID,
-						Name:            "app_name",
+						ResourceName:    "app_name",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            monthsAgo(3),
 						To:              monthsAgo(1),
 						PriceExVAT:      ThreeMonthsInHours * (60 * 60) * 10,
 						PriceIncVAT:     int64(ThreeMonthsInHours * (60 * 60) * 10 * 1.2),
 					},
 					{
-						Guid:            "app",
+						ResourceGuid:    "app",
 						OrgGuid:         "org_guid",
 						SpaceGuid:       "space_guid",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name",
+						ResourceName:    "app_name",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            monthsAgo(1),
 						To:              now,
 						PriceExVAT:      OneMonthInHours * (60 * 60) * 4,
@@ -285,65 +290,7 @@ var _ = Describe("API", func() {
 				},
 			},
 			{
-				Name: "should return 2 compute usage row for a pair of STARTED / STOPPED app events (2x instance)",
-				AppEvents: []cf.UsageEvent{
-					{
-						MetaData: cf.MetaData{CreatedAt: now.Add(-60 * time.Minute)},
-						EntityRaw: json.RawMessage(`{
-							"state": "STARTED",
-							"app_guid": "app",
-							"app_name": "app_name",
-							"org_guid": "org_guid",
-							"space_guid": "space_guid",
-							"instance_count": 2,
-							"memory_in_mb_per_instance": 512,
-							"previous_state": "STOPPED"
-						}`),
-					}, {
-						MetaData: cf.MetaData{CreatedAt: now.Add(-30 * time.Minute)},
-						EntityRaw: json.RawMessage(`{
-							"state": "STOPPED",
-							"app_guid": "app",
-							"app_name": "app_name",
-							"org_guid": "org_guid",
-							"space_guid": "space_guid",
-							"instance_count": 2,
-							"memory_in_mb_per_instance": 512,
-							"previous_state": "STARTED"
-						}`),
-					},
-				},
-				ExpectedOutput: []UsageEntry{
-					{
-						Guid:            "app",
-						OrgGuid:         "org_guid",
-						SpaceGuid:       "space_guid",
-						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name",
-						MemoryInMb:      512,
-						From:            now.Add(-60 * time.Minute),
-						To:              now.Add(-30 * time.Minute),
-						PriceExVAT:      30 * 60 * 4,
-						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
-					},
-					{
-						Guid:            "app",
-						OrgGuid:         "org_guid",
-						SpaceGuid:       "space_guid",
-						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name",
-						MemoryInMb:      512,
-						From:            now.Add(-60 * time.Minute),
-						To:              now.Add(-30 * time.Minute),
-						PriceExVAT:      30 * 60 * 4,
-						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
-					},
-				},
-			},
-			{
-				Name: "should return 3 resource usage rows for two pairs of STARTED/STOPPED app usage events (app1 * 1inst) + (app2 * 2inst)",
+				Name: "should return 2 resource rows for two pairs of STARTED/STOPPED app usage events (app1 * 1inst) + (app2 * 2inst)",
 				AppEvents: []cf.UsageEvent{
 					{
 						MetaData: cf.MetaData{CreatedAt: now.Add(-90 * time.Minute)},
@@ -397,46 +344,36 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "app1",
+						ResourceGuid:    "app1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name1",
+						ResourceName:    "app_name1",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-60 * time.Minute),
-						PriceExVAT:      30 * 60 * 4,
-						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
+						PriceExVAT:      30 * 60 * 4 * 1,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1 * 1.2),
 					}, {
-						Guid:            "app2",
+						ResourceGuid:    "app2",
 						OrgGuid:         "org_guid2",
 						SpaceGuid:       "space_guid2",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name2",
+						ResourceName:    "app_name2",
 						MemoryInMb:      64,
+						NumberOfNodes:   2,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						PriceExVAT:      60 * 60 * 4,
-						PriceIncVAT:     int64(60 * 60 * 4 * 1.2),
-					}, {
-						Guid:            "app2",
-						OrgGuid:         "org_guid2",
-						SpaceGuid:       "space_guid2",
-						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name2",
-						MemoryInMb:      64,
-						From:            now.Add(-90 * time.Minute),
-						To:              now.Add(-30 * time.Minute),
-						PriceExVAT:      60 * 60 * 4,
-						PriceIncVAT:     int64(60 * 60 * 4 * 1.2),
+						PriceExVAT:      60 * 60 * 4 * 2,
+						PriceIncVAT:     int64(60 * 60 * 4 * 2 * 1.2),
 					},
 				},
 			},
 			{
-				Name: "should return 3 resource usage rows when an app is updated (scale from 1x to 2x instances)",
+				Name: "should return 2 resource usage rows when an app is updated (scale from 1x to 2x instances)",
 				AppEvents: []cf.UsageEvent{
 					{
 						MetaData: cf.MetaData{CreatedAt: now.Add(-90 * time.Minute)},
@@ -478,41 +415,31 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "app1",
+						ResourceGuid:    "app1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name1",
+						ResourceName:    "app_name1",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            now.Add(-90 * time.Minute),
 						To:              now.Add(-60 * time.Minute),
-						PriceExVAT:      30 * 60 * 4,
-						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
+						PriceExVAT:      30 * 60 * 4 * 1,
+						PriceIncVAT:     int64(30 * 60 * 4 * 1 * 1.2),
 					}, {
-						Guid:            "app1",
+						ResourceGuid:    "app1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name1",
+						ResourceName:    "app_name1",
 						MemoryInMb:      1024,
+						NumberOfNodes:   2,
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
-						PriceExVAT:      30 * 60 * 4,
-						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
-					}, {
-						Guid:            "app1",
-						OrgGuid:         "org_guid1",
-						SpaceGuid:       "space_guid1",
-						PricingPlanName: X4ComputePlan.Name,
-						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name1",
-						MemoryInMb:      1024,
-						From:            now.Add(-60 * time.Minute),
-						To:              now.Add(-30 * time.Minute),
-						PriceExVAT:      30 * 60 * 4,
-						PriceIncVAT:     int64(30 * 60 * 4 * 1.2),
+						PriceExVAT:      30 * 60 * 4 * 2,
+						PriceIncVAT:     int64(30 * 60 * 4 * 2 * 1.2),
 					},
 				},
 			},
@@ -538,13 +465,14 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "app1",
+						ResourceGuid:    "app1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanName: X4ComputePlan.Name,
 						PricingPlanId:   X4ComputePlan.ID,
-						Name:            "app_name1",
+						ResourceName:    "app_name1",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            now.Add(-10 * time.Minute),
 						To:              now,
 						PriceExVAT:      10 * 60 * 4,
@@ -573,13 +501,14 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "service_instance1",
+						ResourceGuid:    "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
-						Name:            "db-service-1",
+						ResourceName:    "db-service-1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						NumberOfNodes:   1,
 						StorageInMb:     X2ServicePlan.StorageInMb,
 						From:            now.Add(-1 * time.Hour),
 						To:              now,
@@ -629,28 +558,30 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "service_instance1",
+						ResourceGuid:    "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						NumberOfNodes:   1,
 						StorageInMb:     X2ServicePlan.StorageInMb,
-						Name:            "db-service-1",
+						ResourceName:    "db-service-1",
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-50 * time.Minute),
 						PriceExVAT:      1200,
 						PriceIncVAT:     int64(1200 * 1.2),
 					},
 					{
-						Guid:            "service_instance1",
+						ResourceGuid:    "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						NumberOfNodes:   1,
 						StorageInMb:     X2ServicePlan.StorageInMb,
-						Name:            "db-service-1",
+						ResourceName:    "db-service-1",
 						From:            now.Add(-50 * time.Minute),
 						To:              now.Add(-40 * time.Minute),
 						PriceExVAT:      1200,
@@ -688,14 +619,15 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "service_instance1",
+						ResourceGuid:    "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						NumberOfNodes:   1,
 						StorageInMb:     X2ServicePlan.StorageInMb,
-						Name:            "db-service-1",
+						ResourceName:    "db-service-1",
 						From:            now.Add(-60 * time.Minute),
 						To:              now.Add(-30 * time.Minute),
 						PriceExVAT:      60 * 30 * 2,
@@ -812,26 +744,28 @@ var _ = Describe("API", func() {
 				},
 				ExpectedOutput: []UsageEntry{
 					{
-						Guid:            "app2",
+						ResourceGuid:    "app2",
 						OrgGuid:         "org_guid2",
 						SpaceGuid:       "space_guid2",
 						PricingPlanId:   X4ComputePlan.ID,
 						PricingPlanName: X4ComputePlan.Name,
-						Name:            "app_name2",
+						ResourceName:    "app_name2",
 						MemoryInMb:      512,
+						NumberOfNodes:   1,
 						From:            now.Add(-60 * time.Minute), // start of selected range
 						To:              now.Add(-31 * time.Minute),
 						PriceExVAT:      29 * 60 * 4,
 						PriceIncVAT:     int64(29 * 60 * 4 * 1.2)},
 					{
-						Guid:            "service_instance1",
+						ResourceGuid:    "service_instance1",
 						OrgGuid:         "org_guid1",
 						SpaceGuid:       "space_guid1",
 						PricingPlanId:   X2ServicePlan.ID,
 						PricingPlanName: X2ServicePlan.Name,
 						MemoryInMb:      X2ServicePlan.MemoryInMb,
+						NumberOfNodes:   1,
 						StorageInMb:     X2ServicePlan.StorageInMb,
-						Name:            "db-service-1",
+						ResourceName:    "db-service-1",
 						From:            now.Add(-41 * time.Minute),
 						To:              now.Add(-31 * time.Minute),
 						PriceExVAT:      10 * 60 * 2,
@@ -911,13 +845,14 @@ var _ = Describe("API", func() {
 			reqBody := bytes.NewBufferString(`{
 				"events": [
 					{
-						"name": "o1s1-app1",
+						"resource_name": "o1s1-app1",
 						"space_guid": "o1s1",
 						"plan_guid": "` + X4ComputePlan.PlanGuid + `",
-						"memory_in_mb": 1
+						"memory_in_mb": 1,
+						"number_of_nodes": 1
 					},
 					{
-						"name": "o1s1-db1",
+						"resource_name": "o1s1-db1",
 						"space_guid": "o1s1",
 						"plan_guid": "` + X2ServicePlan.PlanGuid + `"
 					}
@@ -956,14 +891,14 @@ var _ = Describe("API", func() {
 						PriceIncVAT: int64(51840000 * 1.2),
 						Resources: []ResourceReport{
 							{
-								Name:        "o1s1-app1",
-								PriceExVAT:  34560000,
-								PriceIncVAT: int64(34560000 * 1.2),
+								ResourceName: "o1s1-app1",
+								PriceExVAT:   34560000,
+								PriceIncVAT:  int64(34560000 * 1.2),
 							},
 							{
-								Name:        "o1s1-db1",
-								PriceExVAT:  17280000,
-								PriceIncVAT: int64(17280000 * 1.2),
+								ResourceName: "o1s1-db1",
+								PriceExVAT:   17280000,
+								PriceIncVAT:  int64(17280000 * 1.2),
 							},
 						},
 					},
@@ -1157,14 +1092,14 @@ var _ = Describe("API", func() {
 						PriceIncVAT: int64(3240000 * 1.2),
 						Resources: []ResourceReport{
 							{
-								Name:        "o1s1-app1",
-								PriceExVAT:  2880000,
-								PriceIncVAT: int64(2880000 * 1.2),
+								ResourceName: "o1s1-app1",
+								PriceExVAT:   2880000,
+								PriceIncVAT:  int64(2880000 * 1.2),
 							},
 							{
-								Name:        "o1s1-db1",
-								PriceExVAT:  360000,
-								PriceIncVAT: int64(360000 * 1.2),
+								ResourceName: "o1s1-db1",
+								PriceExVAT:   360000,
+								PriceIncVAT:  int64(360000 * 1.2),
 							},
 						},
 					},
