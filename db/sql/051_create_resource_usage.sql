@@ -73,7 +73,7 @@ event_ranges as (
 )
 
 -- keep only the STARTED rows
--- discard empty durations (these ocur due to the low 1s precision of the cf event timestamps)
+-- discard empty durations due to low precision of event timestamps (1s)
 select
 	event_guid,
 	resource_guid,
@@ -90,8 +90,7 @@ select
 from
 	event_ranges
 where
-	state = 'STARTED'
-	and not isempty(duration)
+	state = 'STARTED' and not isempty(duration)
 ;
 
 CREATE UNIQUE INDEX resource_usage_uniq ON resource_usage (event_guid);

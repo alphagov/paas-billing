@@ -216,6 +216,38 @@ var _ = Describe("Migration", func() {
 					Expect(storage_in_mb.Valid).To(BeFalse())
 				})
 			})
+
+			Context("usage rows with no durations are discarded", func() {
+				JustBeforeEach(func() {
+
+					// Insert an a single app STARTED and STOPPED event
+					// Insert a series of STARTED events and a STOPPED event all with the same created_at
+					_, err := sqlClient.Conn.Exec(`
+						INSERT INTO
+							app_usage_events (created_at, guid, raw_message)
+						VALUES
+							('2018-01-01 00:00:00', 'a', '{"state": "STARTED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STOPPED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),
+							('2018-01-01 01:00:00', 'b', '{"state": "STOPPED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STARTED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),
+							('2018-01-01 10:00:00', 'c', '{"state": "STARTED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STOPPED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),
+							('2018-01-01 10:00:00', 'd', '{"state": "STARTED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STOPPED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),
+							('2018-01-01 10:00:00', 'e', '{"state": "STARTED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STOPPED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb),
+							('2018-01-01 10:00:00', 'f', '{"state": "STOPPED", "app_guid": "` + appGuid + `", "app_name": "app1", "org_guid": "org_guid", "task_guid": null, "task_name": null, "space_guid": "space_guid", "space_name": "space1", "process_type": "web", "package_state": "PENDING", "buildpack_guid": null, "buildpack_name": null, "instance_count": 1, "previous_state": "STARTED", "parent_app_guid": "parent_app_guid", "parent_app_name": "app_parent", "previous_package_state": "UNKNOWN", "previous_instance_count": 1, "memory_in_mb_per_instance": 1024, "previous_memory_in_mb_per_instance": 1024}'::jsonb)
+					`)
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				It("only outputs a single resource row because the others have zero duration", func() {
+					err := sqlClient.ApplyMigrations([]string{migrationName})
+					Expect(err).NotTo(HaveOccurred())
+
+					var count int
+					err = sqlClient.Conn.QueryRow(`
+						SELECT COUNT(*) FROM resource_usage
+					`).Scan(&count)
+					Expect(err).NotTo(HaveOccurred())
+					Expect(count).To(Equal(1))
+				})
+			})
 		})
 	})
 })
