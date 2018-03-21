@@ -357,8 +357,8 @@ func ListEventUsage(db db.SQLClient) echo.HandlerFunc {
 				number_of_nodes,
 				iso8601(lower(duration)) as from,
 				iso8601(upper(duration)) as to,
-				sum(price_inc_vat::bigint) as price_inc_vat,
-				sum(price_ex_vat::bigint) as price_ex_vat
+				sum(price_inc_vat * 100)::bigint as price_inc_vat,
+				sum(price_ex_vat * 100)::bigint as price_ex_vat
 			from
 				monetized_resources
 			group by
@@ -473,20 +473,20 @@ func monetizedResourcesFilter(filterCondition string, resourceDurationsViewName 
 				ppc.id AS pricing_plan_component_id,
 				ppc.name AS pricing_plan_component_name,
 				ppc.formula,
-				eval_formula(
+				greatest(0.01, eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
 					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
 					coalesce(b.number_of_nodes, vpp.number_of_nodes)::integer,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
-				) * vcr.rate as price_ex_vat,
-				eval_formula(
+				) * vcr.rate) as price_ex_vat,
+				greatest(0.01, eval_formula(
 					coalesce(b.memory_in_mb, vpp.memory_in_mb)::numeric,
 					coalesce(b.storage_in_mb, vpp.storage_in_mb)::numeric,
 					coalesce(b.number_of_nodes, vpp.number_of_nodes)::integer,
 					r.request_range * vpp.valid_for * vcr.valid_for * b.duration,
 					ppc.formula
-				) * vcr.rate * (1 + vr.rate) as price_inc_vat,
+				) * vcr.rate) * (1 + vr.rate) as price_inc_vat,
 				vr.name as vat_rate_name
 			from
 				authorized_resources b
