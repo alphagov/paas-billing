@@ -675,6 +675,15 @@ var _ = Describe("Db", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should ensure I can not insert duplicate currencies", func() {
+			var err error
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('GBP', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).ToNot(HaveOccurred())
+			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('GBP', '2000-01-01T00:00:00', 0.25)`)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("violates unique constraint"))
+		})
+
 		It("should ensure code is not an invalid currency", func() {
 			var err error
 			_, err = sqlClient.Conn.Exec(`insert into currency_rates (code, valid_from, rate) values ('ISK', '2000-01-01T00:00:00', 0.25)`)
