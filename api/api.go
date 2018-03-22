@@ -619,36 +619,21 @@ func render(rt resourceType, c echo.Context, db db.SQLClient, sql string, args .
 		}
 		r = bytes.NewReader(nil)
 	}
-	acceptHeader := c.Request().Header.Get(echo.HeaderAccept)
-	accepts := strings.Split(acceptHeader, ",")
-	overrideAccept := c.QueryParam("Accept")
-	if overrideAccept != "" {
-		accepts = []string{overrideAccept}
+	c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
+	if rt == Empty {
+		c.Response().Write([]byte(`{"success":true}`))
+		return nil
 	}
-	for _, accept := range accepts {
-		if accept == echo.MIMEApplicationJSON || accept == echo.MIMEApplicationJSONCharsetUTF8 {
-			c.Response().Writer.Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
-			if rt == Empty {
-				c.Response().Write([]byte(`{"success":true}`))
-				return nil
-			}
 
-			written, err := io.Copy(c.Response(), r)
-			if err != nil {
-				return err
-			}
-
-			if rt == Single && written == 0 {
-				c.Response().WriteHeader(http.StatusNotFound)
-				c.Response().Write([]byte(`{"error":{"message":"not found"}}`))
-			}
-
-			return nil
-		} else if accept == echo.MIMETextHTML || accept == echo.MIMETextHTMLCharsetUTF8 {
-			c.Response().Header().Set(echo.HeaderContentType, echo.MIMETextHTMLCharsetUTF8)
-			c.Response().WriteHeader(http.StatusOK)
-			return Render(c, r, int(rt))
-		}
+	written, err := io.Copy(c.Response(), r)
+	if err != nil {
+		return err
 	}
-	return c.HTML(http.StatusNotAcceptable, "unacceptable")
+
+	if rt == Single && written == 0 {
+		c.Response().WriteHeader(http.StatusNotFound)
+		c.Response().Write([]byte(`{"error":{"message":"not found"}}`))
+	}
+
+	return nil
 }
