@@ -18,17 +18,13 @@ run-dev:
 	go run main.go
 
 .PHONY: test
-test: cloudfoundry/mocks/cloudfoundry.go cloudfoundry/mocks/io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
-	## Run all tests with race detector and coverage
-	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
-	$(eval export DATABASE_SCHEMA_DIR=${DATABASE_SCHEMA_DIR})
-	./test.sh
-
-.PHONY: quick-test
-quick-test: cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
-	## Run all the tests in parallel with fail-fast enabled
+test:
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	ginkgo -succinct -nodes=4 -failFast ./...
+
+.PHONY: test
+generate-mocks: cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
+	echo "regenerating mocks"
 
 cloudfoundry/fakes/mock_usage_events_api.go: cloudfoundry/usage_events_api.go
 	mkdir -p cloudfoundry/fakes
