@@ -1,10 +1,128 @@
 package cfclient
 
+const listEventsPage1Payload = `{
+  "total_results": 4,
+  "total_pages": 2,
+  "prev_url": null,
+  "next_url": "/v2/events-2?page=2",
+  "resources": [
+    {
+      "metadata": {
+        "guid": "b8ede8e1-afc8-40a1-baae-236a0a77b27b",
+        "url": "/v2/events/b8ede8e1-afc8-40a1-baae-236a0a77b27b",
+        "created_at": "2016-06-08T16:41:23Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "type": "name-167",
+        "actor": "guid-008640fc-d316-4602-9251-c8d09bbdc750",
+        "actor_type": "name-168",
+        "actor_name": "name-169",
+        "actee": "guid-e7790fa4-be2b-4a0f-aa82-c124342b0bb4",
+        "actee_type": "name-170",
+        "actee_name": "name-171",
+        "timestamp": "2016-06-08T16:41:23Z",
+        "metadata": {
+
+        },
+        "space_guid": "3a1368e7-e3b7-46af-a98d-57b9c71445e7",
+        "organization_guid": "86aa12ee-8c4f-4b26-b391-2be6c1730dbc"
+      }
+    },
+    {
+      "metadata": {
+        "guid": "2ccf53a8-d0eb-4807-9bb9-7dd844e65267",
+        "url": "/v2/events/2ccf53a8-d0eb-4807-9bb9-7dd844e65267",
+        "created_at": "2016-06-08T16:41:23Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "type": "name-175",
+        "actor": "guid-52cb38f4-d52d-4201-87e3-8e5650efc8c1",
+        "actor_type": "name-176",
+        "actor_name": "name-177",
+        "actee": "guid-5c4214a1-f295-42ae-bd92-38e7cb8be538",
+        "actee_type": "name-178",
+        "actee_name": "name-179",
+        "timestamp": "2016-06-08T16:41:23Z",
+        "metadata": {
+
+        },
+        "space_guid": "10f0fd9d-dd68-428e-8e93-c00bb8eff0a6",
+        "organization_guid": "aa3fdaaa-42c8-4141-bc22-9792c37aa62f"
+      }
+    },
+    {
+      "metadata": {
+        "guid": "4f9b1fef-2ce4-4877-85e1-0da9114a92cb",
+        "url": "/v2/events/4f9b1fef-2ce4-4877-85e1-0da9114a92cb",
+        "created_at": "2016-06-08T16:41:23Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "type": "name-183",
+        "actor": "guid-d3be7ed1-1c08-43f6-a20d-5cd9287492e1",
+        "actor_type": "name-184",
+        "actor_name": "name-185",
+        "actee": "guid-9844795f-943d-47ed-a997-2c04ee611f5a",
+        "actee_type": "name-186",
+        "actee_name": "name-187",
+        "timestamp": "2016-06-08T16:41:23Z",
+        "metadata": {
+
+        },
+        "space_guid": "f9ef235c-25df-4aa1-bcb4-15eec6f92146",
+        "organization_guid": "24a920db-f551-46af-bf73-e1db972f652a"
+      }
+    }
+  ]
+}`
+
+const listEventsPage2Payload = `{
+  "total_results": 4,
+  "total_pages": 2,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "4f9b1fef-2ce4-4877-85e1-0da9114a92cb",
+        "url": "/v2/events/4f9b1fef-2ce4-4877-85e1-0da9114a92cb",
+        "created_at": "2016-06-08T16:41:23Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "type": "name-183",
+        "actor": "guid-d3be7ed1-1c08-43f6-a20d-5cd9287492e1",
+        "actor_type": "name-184",
+        "actor_name": "name-185",
+        "actee": "guid-9844795f-943d-47ed-a997-2c04ee611f5a",
+        "actee_type": "name-186",
+        "actee_name": "name-187",
+        "timestamp": "2016-06-08T16:41:23Z",
+        "metadata": {
+
+        },
+        "space_guid": "f9ef235c-25df-4aa1-bcb4-15eec6f92146",
+        "organization_guid": "24a920db-f551-46af-bf73-e1db972f652a"
+      }
+    }
+  ]
+}`
+
+const totalEventsPayload = `{
+  "total_results": 4,
+  "total_pages": 1,
+  "prev_url": null,
+  "next_url": null,
+  "resources": []
+}`
+
 const listOrgsPayload = `{
 "total_results": 6,
-"total_pages": 1,
+"total_pages": 2,
 "prev_url": null,
-"next_url": "/v2/orgsPage2",
+"next_url": "/v2/orgsPage2?results-per-page=2",
 "resources": [
   {
      "metadata": {
@@ -59,7 +177,7 @@ const listOrgsPayload = `{
 
 const listOrgsPayloadPage2 = `{
 "total_results": 6,
-"total_pages": 1,
+"total_pages": 2,
 "prev_url": null,
 "next_url": null,
 "resources": [
@@ -113,6 +231,59 @@ const listOrgsPayloadPage2 = `{
   }
 ]
 }`
+
+const listOrgPeoplePayload = `
+{
+  "total_results": 2,
+  "total_pages": 1,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "uaa-id-231",
+        "url": "/v2/users/uaa-id-231",
+        "created_at": "2016-06-08T16:41:34Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "admin": false,
+        "active": false,
+        "default_space_guid": null,
+        "username": "user1",
+        "spaces_url": "/v2/users/uaa-id-231/spaces",
+        "organizations_url": "/v2/users/uaa-id-231/organizations",
+        "managed_organizations_url": "/v2/users/uaa-id-231/managed_organizations",
+        "billing_managed_organizations_url": "/v2/users/uaa-id-231/billing_managed_organizations",
+        "audited_organizations_url": "/v2/users/uaa-id-231/audited_organizations",
+        "managed_spaces_url": "/v2/users/uaa-id-231/managed_spaces",
+        "audited_spaces_url": "/v2/users/uaa-id-231/audited_spaces"
+      }
+    },
+    {
+      "metadata": {
+        "guid": "uaa-id-232",
+        "url": "/v2/users/uaa-id-232",
+        "created_at": "2016-06-08T16:41:34Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "admin": false,
+        "active": false,
+        "default_space_guid": null,
+        "username": "user2",
+        "spaces_url": "/v2/users/uaa-id-232/spaces",
+        "organizations_url": "/v2/users/uaa-id-232/organizations",
+        "managed_organizations_url": "/v2/users/uaa-id-232/managed_organizations",
+        "billing_managed_organizations_url": "/v2/users/uaa-id-232/billing_managed_organizations",
+        "audited_organizations_url": "/v2/users/uaa-id-232/audited_organizations",
+        "managed_spaces_url": "/v2/users/uaa-id-232/managed_spaces",
+        "audited_spaces_url": "/v2/users/uaa-id-232/audited_spaces"
+      }
+    }
+  ]
+}
+`
 
 const orgByGuidPayload = `{
   "metadata": {
@@ -234,56 +405,6 @@ const orgQuotaPayload = `{
       "total_service_keys": 80,
       "total_reserved_route_ports": 90
    }
-}`
-
-const associateOrgManagerPayload = `{
-  "metadata": {
-    "guid": "bc7b4caf-f4b8-4d85-b126-0729b9351e56",
-    "url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56",
-    "created_at": "2016-06-08T16:41:34Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "name-1735",
-    "billing_enabled": false,
-    "quota_definition_guid": "84eed1c7-cc2d-4823-a578-081fef03ba7d",
-    "status": "active",
-    "quota_definition_url": "/v2/quota_definitions/84eed1c7-cc2d-4823-a578-081fef03ba7d",
-    "spaces_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/spaces",
-    "domains_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/domains",
-    "private_domains_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/private_domains",
-    "users_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/users",
-    "managers_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/managers",
-    "billing_managers_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/billing_managers",
-    "auditors_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/auditors",
-    "app_events_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/app_events",
-    "space_quota_definitions_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/space_quota_definitions"
-  }
-}`
-
-const associateOrgAuditorPayload = `{
-  "metadata": {
-    "guid": "bc7b4caf-f4b8-4d85-b126-0729b9351e56",
-    "url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56",
-    "created_at": "2016-06-08T16:41:34Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "name-1735",
-    "billing_enabled": false,
-    "quota_definition_guid": "84eed1c7-cc2d-4823-a578-081fef03ba7d",
-    "status": "active",
-    "quota_definition_url": "/v2/quota_definitions/84eed1c7-cc2d-4823-a578-081fef03ba7d",
-    "spaces_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/spaces",
-    "domains_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/domains",
-    "private_domains_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/private_domains",
-    "users_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/users",
-    "managers_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/managers",
-    "billing_managers_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/billing_managers",
-    "auditors_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/auditors",
-    "app_events_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/app_events",
-    "space_quota_definitions_url": "/v2/organizations/bc7b4caf-f4b8-4d85-b126-0729b9351e56/space_quota_definitions"
-  }
 }`
 
 const associateOrgUserPayload = `{
@@ -495,6 +616,57 @@ const listSpacesPayloadPage2 = `{
    ]
 }`
 
+const listSpacePeoplePayload = `{
+  "total_results": 2,
+  "total_pages": 1,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "uaa-id-411",
+        "url": "/v2/users/uaa-id-411",
+        "created_at": "2016-06-08T16:41:42Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "admin": false,
+        "active": false,
+        "default_space_guid": null,
+        "username": "user1",
+        "spaces_url": "/v2/users/uaa-id-411/spaces",
+        "organizations_url": "/v2/users/uaa-id-411/organizations",
+        "managed_organizations_url": "/v2/users/uaa-id-411/managed_organizations",
+        "billing_managed_organizations_url": "/v2/users/uaa-id-411/billing_managed_organizations",
+        "audited_organizations_url": "/v2/users/uaa-id-411/audited_organizations",
+        "managed_spaces_url": "/v2/users/uaa-id-411/managed_spaces",
+        "audited_spaces_url": "/v2/users/uaa-id-411/audited_spaces"
+      }
+    },
+    {
+      "metadata": {
+        "guid": "uaa-id-412",
+        "url": "/v2/users/uaa-id-412",
+        "created_at": "2016-06-08T16:41:42Z",
+        "updated_at": "2016-06-08T16:41:26Z"
+      },
+      "entity": {
+        "admin": false,
+        "active": false,
+        "default_space_guid": null,
+        "username": "user2",
+        "spaces_url": "/v2/users/uaa-id-412/spaces",
+        "organizations_url": "/v2/users/uaa-id-412/organizations",
+        "managed_organizations_url": "/v2/users/uaa-id-412/managed_organizations",
+        "billing_managed_organizations_url": "/v2/users/uaa-id-412/billing_managed_organizations",
+        "audited_organizations_url": "/v2/users/uaa-id-412/audited_organizations",
+        "managed_spaces_url": "/v2/users/uaa-id-412/managed_spaces",
+        "audited_spaces_url": "/v2/users/uaa-id-412/audited_spaces"
+      }
+    }
+  ]
+}`
+
 const spaceByGuidPayload = `{
   "metadata": {
     "guid": "8efd7c5c-d83c-4786-b399-b7bd548839e1",
@@ -520,33 +692,7 @@ const spaceByGuidPayload = `{
   }
 }`
 
-const associateSpaceAuditorPayload = `{
-  "metadata": {
-    "guid": "bc7b4caf-f4b8-4d85-b126-0729b9351e56",
-    "url": "/v2/spaces/bc7b4caf-f4b8-4d85-b126-0729b9351e56",
-    "created_at": "2016-06-08T16:41:34Z",
-    "updated_at": "2016-06-08T16:41:26Z"
-  },
-  "entity": {
-    "name": "name-1735",
-    "organization_guid": "227161e2-667b-483f-9821-77257a38997f",
-    "space_quota_definition_guid": null,
-    "allow_ssh": true,
-    "organization_url": "/v2/organizations/227161e2-667b-483f-9821-77257a38997f",
-    "developers_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/developers",
-    "managers_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/managers",
-    "auditors_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/auditors",
-    "apps_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/apps",
-    "routes_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/routes",
-    "domains_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/domains",
-    "service_instances_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/service_instances",
-    "app_events_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/app_events",
-    "events_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/events",
-    "security_groups_url": "/v2/spaces/20e7a265-f50d-4c14-ac7e-42c52f9d9cd7/security_groups"
-   }
-}`
-
-const associateSpaceDeveloperPayload = `{
+const associateSpaceUserPayload = `{
   "metadata": {
     "guid": "bc7b4caf-f4b8-4d85-b126-0729b9351e56",
     "url": "/v2/spaces/bc7b4caf-f4b8-4d85-b126-0729b9351e56",
@@ -1115,7 +1261,7 @@ const appEnvPayload = `{
   }
 }`
 
-const appPayloadWithEnvironment_json = `{
+const appPayloadWithEnvironment = `{
    "metadata": {
    },
    "entity": {
@@ -1304,6 +1450,46 @@ const spacePayload = `{
       "events_url": "/v2/spaces/a72fa1e8-c694-47b3-85f2-55f61fd00d73/events",
       "security_groups_url": "/v2/spaces/a72fa1e8-c694-47b3-85f2-55f61fd00d73/security_groups"
    }
+}`
+
+const spaceServiceOfferingsPayload = `{
+  "total_results": 1,
+  "total_pages": 1,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "6ec97e21-e879-4f72-9a80-8ec550ffec30",
+        "url": "/v2/services/6ec97e21-e879-4f72-9a80-8ec550ffec30",
+        "created_at": "2017-10-03T23:47:16Z",
+        "updated_at": "2017-10-10T20:53:28Z"
+      },
+      "entity": {
+        "label": "cool-service",
+        "provider": null,
+        "url": null,
+        "description": "Cool service for CF",
+        "long_description": null,
+        "version": null,
+        "info_url": null,
+        "active": 1,
+        "bindable": 1,
+        "unique_id": "beb05948-0fa8-48bf-bfb2-7b09e6687d37",
+        "extra": "{\"displayName\":\"Super cool service\",\"longDescription\":\"Very cool service.\",\"documentationUrl\":\"https://readthedocs.org\"}",
+        "tags": [
+          "cool"
+        ],
+        "requires": [
+
+        ],
+        "documentation_url": null,
+        "service_broker_guid": "6b3da2f0-c530-4f2b-8fd2-7cd68a21e907",
+        "plan_updateable": 1,
+        "service_plans_url": "/v2/services/6ec97e21-e879-4f72-9a80-8ec550ffec30/service_plans"
+      }
+    }
+  ]
 }`
 
 const orgPayload = `{
@@ -2170,7 +2356,7 @@ const postDomainPayload = `{
   }
 }`
 
-const ListBuildpacksPayload = `{
+const listBuildpacksPayload = `{
   "total_results": 3,
   "total_pages": 1,
   "prev_url": null,
@@ -2224,7 +2410,7 @@ const ListBuildpacksPayload = `{
   ]
 }`
 
-const ListBuildpacksPayload2 = `{
+const listBuildpacksPayload2 = `{
   "total_results": 3,
   "total_pages": 1,
   "prev_url": "/v2/buildpacks",
@@ -2276,6 +2462,44 @@ const ListBuildpacksPayload2 = `{
       }
     }
   ]
+}`
+
+const buildpackPayload = `{
+  "metadata": {
+    "guid": "c92b6f5f-d2a4-413a-b515-647d059723aa",
+    "url": "/v2/buildpacks/c92b6f5f-d2a4-413a-b515-647d059723aa",
+    "created_at": "2016-06-08T16:41:31Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "name_1",
+    "position": 1,
+    "enabled": true,
+    "locked": false,
+    "filename": "name-1616"
+  }
+}`
+
+const userByGUIDPayload = `{
+  "metadata": {
+    "guid": "72ccf759-43aa-4954-903f-7d892c268e80",
+    "url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80",
+    "created_at": "2017-11-03T01:33:31Z",
+    "updated_at": "2017-11-03T01:33:31Z"
+  },
+  "entity": {
+    "admin": false,
+    "active": false,
+    "default_space_guid": null,
+    "username": "user@example.com",
+    "spaces_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/spaces",
+    "organizations_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/organizations",
+    "managed_organizations_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/managed_organizations",
+    "billing_managed_organizations_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/billing_managed_organizations",
+    "audited_organizations_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/audited_organizations",
+    "managed_spaces_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/managed_spaces",
+    "audited_spaces_url": "/v2/users/72ccf759-43aa-4954-903f-7d892c268e80/audited_spaces"
+  }
 }`
 
 const listUsersPayload = `{
@@ -2540,24 +2764,6 @@ const listIsolationSegmentsPayload = `{
    ]
 }`
 
-const addOrgToIsolationSegmentPayload = `{
-   "guid": "033b4c58-12bb-499a-b05d-4b6fc9e2993b",
-   "name": "shared",
-   "created_at": "2016-10-19T20:25:04Z",
-   "updated_at": "2016-11-08T16:41:26Z",
-   "links": {
-      "self": {
-         "href": "https://api.example.org/v3/isolation_segments/033b4c58-12bb-499a-b05d-4b6fc9e2993b"
-      },
-      "spaces": {
-         "href": "https://api.example.org/v3/isolation_segments/033b4c58-12bb-499a-b05d-4b6fc9e2993b/relationships/spaces"
-      },
-      "organizations": {
-         "href": "https://api.example.org/v3/isolation_segments/033b4c58-12bb-499a-b05d-4b6fc9e2993b/relationships/organizations"
-      }
-   }
-}`
-
 const listServiceKeysPayload = `{
    "total_results": 2,
    "total_pages": 1,
@@ -2637,7 +2843,7 @@ const getServiceKeyPayload = `{
                "amqp": "amqp://100.100.100.100:9008",
                "nhp": "nhp://100.100.100.100:9009",
                "mqtt": "tcp://100.100.100.100:9008",
-               "name": "fcf26687-e176-4784-b181-b3c942fecb62",
+               "name": "ecf26687-e176-4784-b181-b3c942fecb62",
                "nsp": "nsp://100.100.100.100:9008",
                "userid": "cfu-9be3911b-c621-4467-8866-f8b924aaee57",
                "uri": "nhp://100.100.100.100:9008",
@@ -2648,8 +2854,557 @@ const getServiceKeyPayload = `{
                   }
                ]
             },
-            "service_instance_url": "/v2/service_instances/fcf26687-e176-4784-b181-b3c942fecb62"
+            "service_instance_url": "/v2/service_instances/ecf26687-e176-4784-b181-b3c942fecb62"
         }
     }
   ]
+}`
+
+const getServiceKeysPayload = `{
+  "total_results": 2,
+  "total_pages": 1,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+      {
+          "metadata": {
+              "guid": "8be3911b-c621-4467-8866-f8b924aaee57",
+              "url": "/v2/service_keys/8be3911b-c621-4467-8866-f8b924aaee57",
+              "created_at": "2017-05-16T12:14:46Z",
+              "updated_at": "2017-05-16T12:14:46Z"
+          },
+          "entity": {
+              "name": "test01_key",
+              "service_instance_guid": "ecf26687-e176-4784-b181-b3c942fecb62",
+              "credentials": {
+                  "jms": "nhp://100.100.100.100:9008",
+                  "js_uri": "http://100.100.100.100:9008",
+                  "amqp": "amqp://100.100.100.100:9008",
+                  "nhp": "nhp://100.100.100.100:9009",
+                  "mqtt": "tcp://100.100.100.100:9008",
+                  "name": "ecf26687-e176-4784-b181-b3c942fecb62",
+                  "nsp": "nsp://100.100.100.100:9008",
+                  "userid": "cfu-9be3911b-c621-4467-8866-f8b924aaee57",
+                  "uri": "nhp://100.100.100.100:9008",
+                  "uriInfos": [
+                      {
+                          "host": "100.100.100.100",
+                          "port": 9008
+                      }
+                  ]
+              },
+              "service_instance_url": "/v2/service_instances/ecf26687-e176-4784-b181-b3c942fecb62"
+          }
+      },
+      {
+          "metadata": {
+              "guid": "9361b5dc-9262-4a83-8969-9b3469211884",
+              "url": "/v2/service_keys/9361b5dc-9262-4a83-8969-9b3469211884",
+              "created_at": "2017-10-24T17:00:46Z",
+              "updated_at": "2017-10-24T17:00:46Z"
+          },
+          "entity": {
+              "name": "test02_key",
+              "service_instance_guid": "ecf26687-e176-4784-b181-b3c942fecb62",
+              "credentials": {
+                  "jms": "nhp://100.100.47.11:9008",
+                  "js_uri": "http://100.100.47.11:9008",
+                  "amqp": "amqp://100.100.47.11:9008",
+                  "nhp": "nhp://100.100.47.11:9009",
+                  "mqtt": "tcp://100.100.47.11.100:9008",
+                  "name": "ecf26687-e176-4784-b181-b3c942fecb62",
+                  "nsp": "nsp://100.100.47.11:9008",
+                  "userid": "cfu-7fb486c4-4d9e-49cb-b121-3241ece5dc10",
+                  "uri": "nhp://100.100.47.11:9008",
+                  "uriInfos": [
+                      {
+                          "host": "100.100.47.11",
+                          "port": 9008
+                      }
+                  ]
+              },
+              "service_instance_url": "/v2/service_instances/ecf26687-e176-4784-b181-b3c942fecb62"
+          }
+      }
+
+  ]
+}`
+
+const postServiceKeysPayload = `{
+  "metadata": {
+    "guid": "9361b5dc-9262-4a83-8969-9b3469211884",
+    "url": "/v2/service_keys/9361b5dc-9262-4a83-8969-9b3469211884",
+    "created_at": "2017-10-25T17:31:23Z",
+    "updated_at": "2017-10-25T17:31:23Z"
+  },
+  "entity": {
+    "name": "key1",
+    "service_instance_guid": "ecf26687-e176-4784-b181-b3c942fecb62",
+    "credentials": {
+      "jms": "nhp://100.100.47.11:9008",
+      "js_uri": "http://100.100.47.11:9008",
+      "amqp": "amqp://100.100.47.11:9008",
+      "nhp": "nhp://100.100.47.11:9009",
+      "mqtt": "tcp://100.100.47.11.100:9008",
+      "name": "ecf26687-e176-4784-b181-b3c942fecb62",
+      "nsp": "nsp://100.100.47.11:9008",
+      "userid": "cfu-7fb486c4-4d9e-49cb-b121-3241ece5dc10",
+      "uri": "nhp://100.100.47.11:9008",
+      "uriInfos": [
+        {
+          "host": "100.100.47.11",
+          "port": 9008
+        }
+      ]
+    },
+    "service_instance_url": "/v2/service_instances/ecf26687-e176-4784-b181-b3c942fecb62"
+  }
+}`
+
+const postServiceKeysDuplicatePayload = `{
+    "description": "The service key name is taken: key1",
+    "error_code": "CF-ServiceKeyNameTaken",
+    "code": 360001
+}`
+
+const postServiceKeysBadPayload = `{
+  "description": "The service key name is taken: key1",
+  "error_code": "CF-ServiceKeyNameTaken",
+  "code": 360001
+`
+
+const listServiceBrokersPayload = `
+{
+  "total_results": 3,
+  "total_pages": 1,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "90a413fd-a636-4133-8bfb-a94b07839e96",
+        "url": "/v2/service_brokers/90a413fd-a636-4133-8bfb-a94b07839e96",
+        "created_at": "2016-06-08T16:41:22Z",
+        "updated_at": "2016-06-08T16:41:22Z"
+      },
+      "entity": {
+        "name": "name-85",
+        "broker_url": "https://foo.com/url-2",
+        "auth_username": "auth_username-2",
+        "space_guid": "1d43e64d-ed64-43dd-9046-11f422bd407b"
+      }
+    }
+  ]
+}
+`
+
+const getServiceByGuidPayload = `
+{
+  "metadata": {
+    "guid": "53f52780-e93c-4af7-a96c-6958311c40e5",
+    "url": "/v2/services/53f52780-e93c-4af7-a96c-6958311c40e5",
+    "created_at": "2016-06-08T16:41:32Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "label": "label-58",
+    "provider": null,
+    "url": null,
+    "description": "desc-135",
+    "long_description": null,
+    "version": null,
+    "info_url": null,
+    "active": true,
+    "bindable": true,
+    "unique_id": "c181996b-f233-43d1-8901-3a43eafcaacf",
+    "extra": null,
+    "tags": [
+
+    ],
+    "requires": [
+
+    ],
+    "documentation_url": null,
+    "service_broker_guid": "0e7250aa-364f-42c2-8fd2-808b0224376f",
+    "plan_updateable": false,
+    "service_plans_url": "/v2/services/53f52780-e93c-4af7-a96c-6958311c40e5/service_plans"
+  }
+}
+`
+
+const buildpackUploadPayload = `{ "metadata":{ "guid": "my-job-guid" } }`
+
+const buildpackUpdatePayload = `
+{
+  "metadata": {
+    "guid": "c92b6f5f-d2a4-413a-b515-647d059723aa",
+    "url": "/v2/buildpacks/c92b6f5f-d2a4-413a-b515-647d059723aa",
+    "created_at": "2016-06-08T16:41:31Z",
+    "updated_at": "2016-06-08T16:41:31Z"
+  },
+  "entity": {
+    "name": "renamed-buildpack",
+    "position": 2,
+    "enabled": true,
+    "locked": true,
+    "filename": "my-file"
+  }
+}`
+const buildpackCreatePayload = `
+{
+  "metadata": {
+    "guid": "c92b6f5f-d2a4-413a-b515-647d059723aa",
+    "url": "/v2/buildpacks/c92b6f5f-d2a4-413a-b515-647d059723aa",
+    "created_at": "2016-06-08T16:41:31Z",
+    "updated_at": "2016-06-08T16:41:31Z"
+  },
+  "entity": {
+    "name": "test-buildpack",
+    "position": 10,
+    "enabled": true,
+    "locked": false,
+    "filename": null
+  }
+}`
+
+const listAppUsageEventsPayload = `
+{
+  "total_results": 2,
+  "total_pages": 2,
+  "prev_url": null,
+  "next_url": "/v2/app_usage_eventsPage2?results-per-page=2&page=2",
+  "resources": [
+    {
+      "metadata": {
+        "guid": "b32241a5-5508-4d42-893c-360e42a300b6",
+        "url": "/v2/app_usage_events/b32241a5-5508-4d42-893c-360e42a300b6",
+        "created_at": "2016-06-08T16:41:33Z"
+      },
+      "entity": {
+        "state": "STARTED",
+        "previous_state": null,
+        "memory_in_mb_per_instance": 564,
+        "previous_memory_in_mb_per_instance": null,
+        "instance_count": 1,
+        "previous_instance_count": null,
+        "app_guid": "guid-d9fbb7f8-cba5-44a2-b720-c24f1fe5e1c4",
+        "app_name": "name-1663",
+        "space_guid": "guid-5e28f12f-9d80-473e-b826-537b148eb338",
+        "space_name": "name-1664",
+        "org_guid": "guid-036444f4-f2f5-4ea8-a353-e73330ca0f0a",
+        "buildpack_guid": "guid-df37754c-819b-4697-a523-4b457d3c83dd",
+        "buildpack_name": "name-1665",
+        "package_state": "STAGED",
+        "previous_package_state": null,
+        "parent_app_guid": null,
+        "parent_app_name": null,
+        "process_type": "web",
+        "task_name": null,
+        "task_guid": null
+      }
+    },
+    {
+      "metadata": {
+        "guid": "b32241a5-5508-4d42-893c-360e42a300a8",
+        "url": "/v2/app_usage_events/b32241a5-5508-4d42-893c-360e42a300a8",
+        "created_at": "2016-06-08T16:41:33Z"
+      },
+      "entity": {
+        "state": "STARTED",
+        "previous_state": null,
+        "memory_in_mb_per_instance": 564,
+        "previous_memory_in_mb_per_instance": null,
+        "instance_count": 1,
+        "previous_instance_count": null,
+        "app_guid": "guid-d9fbb7f8-cba5-44a2-b720-c24f1fe5e1c4",
+        "app_name": "name-1663",
+        "space_guid": "guid-5e28f12f-9d80-473e-b826-537b148eb338",
+        "space_name": "name-1664",
+        "org_guid": "guid-036444f4-f2f5-4ea8-a353-e73330ca0f0a",
+        "buildpack_guid": "guid-df37754c-819b-4697-a523-4b457d3c83dd",
+        "buildpack_name": "name-1665",
+        "package_state": "STARTED",
+        "previous_package_state": null,
+        "parent_app_guid": null,
+        "parent_app_name": null,
+        "process_type": "web",
+        "task_name": null,
+        "task_guid": null
+      }
+    }
+  ]
+}`
+
+const listAppUsageEventsPayloadPage2 = `
+{
+  "total_results": 2,
+  "total_pages": 2,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "b32241a5-5508-4d42-893c-360e42a300b6",
+        "url": "/v2/app_usage_events/b32241a5-5508-4d42-893c-360e42a300b6",
+        "created_at": "2016-06-08T16:41:33Z"
+      },
+      "entity": {
+        "state": "STOPPED",
+        "previous_state": null,
+        "memory_in_mb_per_instance": 564,
+        "previous_memory_in_mb_per_instance": null,
+        "instance_count": 1,
+        "previous_instance_count": null,
+        "app_guid": "guid-d9fbb7f8-cba5-44a2-b720-c24f1fe5e1c4",
+        "app_name": "name-1663",
+        "space_guid": "guid-5e28f12f-9d80-473e-b826-537b148eb338",
+        "space_name": "name-1664",
+        "org_guid": "guid-036444f4-f2f5-4ea8-a353-e73330ca0f0a",
+        "buildpack_guid": "guid-df37754c-819b-4697-a523-4b457d3c83dd",
+        "buildpack_name": "name-1665",
+        "package_state": "STAGED",
+        "previous_package_state": null,
+        "parent_app_guid": null,
+        "parent_app_name": null,
+        "process_type": "web",
+        "task_name": null,
+        "task_guid": null
+      }
+    },
+    {
+      "metadata": {
+        "guid": "b32241a5-5508-4d42-893c-360e42a300a8",
+        "url": "/v2/app_usage_events/b32241a5-5508-4d42-893c-360e42a300a8",
+        "created_at": "2016-06-08T16:41:33Z"
+      },
+      "entity": {
+        "state": "CRASHED",
+        "previous_state": null,
+        "memory_in_mb_per_instance": 564,
+        "previous_memory_in_mb_per_instance": null,
+        "instance_count": 1,
+        "previous_instance_count": null,
+        "app_guid": "guid-d9fbb7f8-cba5-44a2-b720-c24f1fe5e1c4",
+        "app_name": "name-1663",
+        "space_guid": "guid-5e28f12f-9d80-473e-b826-537b148eb338",
+        "space_name": "name-1664",
+        "org_guid": "guid-036444f4-f2f5-4ea8-a353-e73330ca0f0a",
+        "buildpack_guid": "guid-df37754c-819b-4697-a523-4b457d3c83dd",
+        "buildpack_name": "name-1665",
+        "package_state": "STARTED",
+        "previous_package_state": null,
+        "parent_app_guid": null,
+        "parent_app_name": null,
+        "process_type": "web",
+        "task_name": null,
+        "task_guid": null
+      }
+    }
+  ]
+}`
+
+const listServiceUsageEventsPayload = `
+{
+  "total_results": 2,
+  "total_pages": 2,
+  "prev_url": null,
+  "next_url": "/v2/service_usage_eventsPage2?results-per-page=2&page=2",
+  "resources": [
+    {
+      "metadata": {
+        "guid": "985c09c5-bf5a-44eb-a260-41c532dc0f1d",
+        "url": "/v2/service_usage_events/985c09c5-bf5a-44eb-a260-41c532dc0f1d",
+        "created_at": "2016-06-08T16:41:39Z"
+      },
+      "entity": {
+        "state": "CREATED",
+        "org_guid": "guid-396a8cb9-5524-4a2b-8e9e-2bfc70edb58d",
+        "space_guid": "guid-be1f6fe3-e63a-41a3-b196-3fc084022823",
+        "space_name": "name-1981",
+        "service_instance_guid": "guid-f93250f7-7ef5-4b02-8d33-353919ce8358",
+        "service_instance_name": "name-1982",
+        "service_instance_type": "type-5",
+        "service_plan_guid": "guid-e9d2d5a0-69a6-46ef-bac5-43f3ed177614",
+        "service_plan_name": "name-1983",
+        "service_guid": "guid-34916716-31d7-40c1-9afd-f312996c9654",
+        "service_label": "label-64"
+      }
+    },
+    {
+      "metadata": {
+        "guid": "985c09c5-bf5a-44eb-a260-41c532dc0f2a",
+        "url": "/v2/service_usage_events/985c09c5-bf5a-44eb-a260-41c532dc0f1d",
+        "created_at": "2016-06-08T16:41:39Z"
+      },
+      "entity": {
+        "state": "DELETED",
+        "org_guid": "guid-396a8cb9-5524-4a2b-8e9e-2bfc70edb58d",
+        "space_guid": "guid-be1f6fe3-e63a-41a3-b196-3fc084022823",
+        "space_name": "name-1981",
+        "service_instance_guid": "guid-f93250f7-7ef5-4b02-8d33-353919ce8358",
+        "service_instance_name": "name-1983",
+        "service_instance_type": "type-5",
+        "service_plan_guid": "guid-e9d2d5a0-69a6-46ef-bac5-43f3ed177614",
+        "service_plan_name": "name-1984",
+        "service_guid": "guid-34916716-31d7-40c1-9afd-f312996c9655",
+        "service_label": "label-65"
+      }
+    }
+  ]
+}`
+
+const listServiceUsageEventsPayloadPage2 = `
+{
+  "total_results": 2,
+  "total_pages": 2,
+  "prev_url": null,
+  "next_url": null,
+  "resources": [
+    {
+      "metadata": {
+        "guid": "985c09c5-bf5a-44eb-a260-41c532dc0f3f",
+        "url": "/v2/service_usage_events/985c09c5-bf5a-44eb-a260-41c532dc0f1d",
+        "created_at": "2016-06-08T16:41:39Z"
+      },
+      "entity": {
+        "state": "CREATED",
+        "org_guid": "guid-396a8cb9-5524-4a2b-8e9e-2bfc70edb58d",
+        "space_guid": "guid-be1f6fe3-e63a-41a3-b196-3fc084022823",
+        "space_name": "name-1988",
+        "service_instance_guid": "guid-f93250f7-7ef5-4b02-8d33-353919ce8358",
+        "service_instance_name": "name-1988",
+        "service_instance_type": "type-5",
+        "service_plan_guid": "guid-e9d2d5a0-69a6-46ef-bac5-43f3ed177614",
+        "service_plan_name": "name-1988",
+        "service_guid": "guid-34916716-31d7-40c1-9afd-f312996c9654",
+        "service_label": "label-64"
+      }
+    },
+    {
+      "metadata": {
+        "guid": "985c09c5-bf5a-44eb-a260-41c532dc0f6d",
+        "url": "/v2/service_usage_events/985c09c5-bf5a-44eb-a260-41c532dc0f1d",
+        "created_at": "2016-06-08T16:41:39Z"
+      },
+      "entity": {
+        "state": "UPDATED",
+        "org_guid": "guid-396a8cb9-5524-4a2b-8e9e-2bfc70edb58d",
+        "space_guid": "guid-be1f6fe3-e63a-41a3-b196-3fc084022823",
+        "space_name": "name-1985",
+        "service_instance_guid": "guid-f93250f7-7ef5-4b02-8d33-353919ce8358",
+        "service_instance_name": "name-1985",
+        "service_instance_type": "type-5",
+        "service_plan_guid": "guid-e9d2d5a0-69a6-46ef-bac5-43f3ed177614",
+        "service_plan_name": "name-1985",
+        "service_guid": "guid-34916716-31d7-40c1-9afd-f312996c9655",
+        "service_label": "label-65"
+      }
+    }
+  ]
+}`
+
+const sharePrivateDomainPayload = `{
+  "metadata": {
+    "guid": "3b6f763f-aae1-4177-9b93-f2de6f2a48f2",
+    "url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2",
+    "created_at": "2016-06-08T16:41:35Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "name": "name-1777",
+    "billing_enabled": false,
+    "quota_definition_guid": "8737180b-8587-4244-a37d-a12bffcc24b5",
+    "status": "active",
+    "quota_definition_url": "/v2/quota_definitions/8737180b-8587-4244-a37d-a12bffcc24b5",
+    "spaces_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/spaces",
+    "domains_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/domains",
+    "private_domains_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/private_domains",
+    "users_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/users",
+    "managers_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/managers",
+    "billing_managers_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/billing_managers",
+    "auditors_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/auditors",
+    "app_events_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/app_events",
+    "space_quota_definitions_url": "/v2/organizations/3b6f763f-aae1-4177-9b93-f2de6f2a48f2/space_quota_definitions"
+  }
+}
+`
+const AppUpdatePayload = `
+{
+  "metadata": {
+    "guid": "97f7e56b-addf-4d26-be82-998a06600011",
+    "url": "/v2/apps/97f7e56b-addf-4d26-be82-998a06600011",
+    "created_at": "2018-03-04T16:05:36Z",
+    "updated_at": "2018-03-06T20:46:26Z"
+  },
+  "entity": {
+    "name": "NewName",
+    "production": false,
+    "space_guid": "d17d98b9-5f88-44c6-8dbc-6036c9607ce0",
+    "stack_guid": "46ff2259-d51b-48a3-ac7e-72a86c51d85c",
+    "buildpack": "go_buildpack",
+    "detected_buildpack": "",
+    "detected_buildpack_guid": "d42d6cd9-7c1f-4a01-9251-178b51d1ed47",
+    "environment_json": {
+      "GOPACKAGENAME": "MichaelIsMetal"
+    },
+    "memory": 65,
+    "instances": 1,
+    "disk_quota": 1024,
+    "state": "STOPPED",
+    "version": "ac75afb9-bfa6-426e-b0f6-96866e295f2c",
+    "command": "MichaelIsMetal",
+    "console": false,
+    "debug": "",
+    "staging_task_id": "6379fc80-a71b-4848-812f-520faec910a5",
+    "package_state": "STAGED",
+    "health_check_http_endpoint": "",
+    "health_check_type": "port",
+    "health_check_timeout": 0,
+    "staging_failed_reason": "",
+    "staging_failed_description": "",
+    "diego": true,
+    "docker_image": "",
+    "docker_credentials": {
+      "username": "",
+      "password": ""
+    },
+    "package_updated_at": "2018-03-04T21:31:10Z",
+    "detected_start_command": "./bin/MichaelIsMetal",
+    "enable_ssh": true,
+    "ports": [
+      8080
+    ],
+    "space_url": "/v2/spaces/d17d98b9-5f88-44c6-8dbc-6036c9607ce0",
+    "stack_url": "/v2/stacks/46ff2259-d51b-48a3-ac7e-72a86c51d85c",
+    "routes_url": "/v2/apps/97f7e56b-addf-4d26-be82-998a06600011/routes",
+    "events_url": "/v2/apps/97f7e56b-addf-4d26-be82-998a06600011/events",
+    "service_bindings_url": "/v2/apps/97f7e56b-addf-4d26-be82-998a06600011/service_bindings",
+    "route_mappings_url": "/v2/apps/97f7e56b-addf-4d26-be82-998a06600011/route_mappings"
+  }
+}`
+
+const postServiceBindingPayload = `{
+  "metadata": {
+    "guid": "4e690cd4-66ef-4052-a23d-0d748316f18c",
+    "url": "/v2/service_bindings/4e690cd4-66ef-4052-a23d-0d748316f18c",
+    "created_at": "2016-06-08T16:41:42Z",
+    "updated_at": "2016-06-08T16:41:26Z"
+  },
+  "entity": {
+    "app_guid": "081d55a0-1bfa-4e51-8d08-273f764988db",
+    "service_instance_guid": "a0029c76-7017-4a74-94b0-54a04ad94b80",
+    "credentials": {
+      "creds-key-63": "creds-val-63"
+    },
+    "name": "prod-db",
+    "binding_options": {
+    },
+    "gateway_data": null,
+    "gateway_name": "",
+    "syslog_drain_url": null,
+    "volume_mounts": [
+    ],
+    "app_url": "/v2/apps/081d55a0-1bfa-4e51-8d08-273f764988db",
+    "service_instance_url": "/v2/user_provided_service_instances/a0029c76-7017-4a74-94b0-54a04ad94b80"
+  }
 }`
