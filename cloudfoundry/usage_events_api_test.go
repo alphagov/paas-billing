@@ -11,7 +11,7 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	. "github.com/alphagov/paas-billing/cloudfoundry"
-	"github.com/alphagov/paas-billing/mocks"
+	"github.com/alphagov/paas-billing/cloudfoundry/fakes"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,7 +25,7 @@ var usageEventTests = func(eventType string, clientFactory clientFactory) func()
 			now                  time.Time
 			mockCtrl             *gomock.Controller
 			logger               lager.Logger
-			mockClient           *mocks.MockClient
+			mockClient           *fakes.MockClient
 			usageEvents          UsageEventsAPI
 			emptyUsageList       string
 			usageListWithRecords string
@@ -34,56 +34,56 @@ var usageEventTests = func(eventType string, clientFactory clientFactory) func()
 		BeforeEach(func() {
 			now = time.Now()
 			mockCtrl = gomock.NewController(GinkgoT())
-			mockClient = mocks.NewMockClient(mockCtrl)
+			mockClient = fakes.NewMockClient(mockCtrl)
 			logger = lager.NewLogger("test")
 			usageEvents = clientFactory(mockClient, logger)
 
 			emptyUsageList = `{
-  "total_results": 0,
-  "total_pages": 1,
-  "prev_url": null,
-  "next_url": null,
-  "resources": []
-}`
+				"total_results": 0,
+				"total_pages": 1,
+				"prev_url": null,
+				"next_url": null,
+				"resources": []
+			}`
 
 			usageListWithRecords = `{
-  "total_results": 3,
-  "total_pages": 1,
-  "prev_url": null,
-  "next_url": null,
-  "resources": [
-    {
-      "metadata": {
-        "guid": "a000",
-        "url": "/v2/` + eventType + `_usage_events/a000",
-        "created_at": "` + now.Add(-2*time.Minute).Format("2006-01-02T15:04:05Z07:00") + `"
-      },
-      "entity": {
-        "field": "foo1"
-      }
-    },
-    {
-      "metadata": {
-        "guid": "b000",
-        "url": "/v2/` + eventType + `_usage_events/b000",
-        "created_at": "` + now.Add(-1*time.Minute).Format("2006-01-02T15:04:05Z07:00") + `"
-      },
-      "entity": {
-        "field": "foo2"
-      }
-    },
-    {
-      "metadata": {
-        "guid": "c000",
-        "url": "/v2/` + eventType + `_usage_events/c000",
-        "created_at": "` + now.Format("2006-01-02T15:04:05Z07:00") + `"
-      },
-      "entity": {
-        "field": "foo3"
-      }
-    }
-  ]
-}`
+				"total_results": 3,
+				"total_pages": 1,
+				"prev_url": null,
+				"next_url": null,
+				"resources": [
+				{
+					"metadata": {
+						"guid": "a000",
+						"url": "/v2/` + eventType + `_usage_events/a000",
+						"created_at": "` + now.Add(-2*time.Minute).Format("2006-01-02T15:04:05Z07:00") + `"
+					},
+					"entity": {
+						"field": "foo1"
+					}
+				},
+				{
+					"metadata": {
+						"guid": "b000",
+						"url": "/v2/` + eventType + `_usage_events/b000",
+						"created_at": "` + now.Add(-1*time.Minute).Format("2006-01-02T15:04:05Z07:00") + `"
+					},
+					"entity": {
+						"field": "foo2"
+					}
+				},
+				{
+					"metadata": {
+						"guid": "c000",
+						"url": "/v2/` + eventType + `_usage_events/c000",
+						"created_at": "` + now.Format("2006-01-02T15:04:05Z07:00") + `"
+					},
+					"entity": {
+						"field": "foo3"
+					}
+				}
+				]
+			}`
 		})
 
 		AfterEach(func() {
@@ -256,7 +256,7 @@ var usageEventTests = func(eventType string, clientFactory clientFactory) func()
 
 		Context("When reading the response we encounter an IO error", func() {
 			It("should return with an error", func() {
-				bodyMock := mocks.NewMockReadCloser(mockCtrl)
+				bodyMock := fakes.NewMockReadCloser(mockCtrl)
 				bodyMock.EXPECT().Read(gomock.Any()).Return(0, errors.New("some error"))
 				bodyMock.EXPECT().Close()
 				resp := &http.Response{
@@ -292,5 +292,5 @@ var _ = Describe("The Service Usage Events Handler", usageEventTests("service", 
 func expectEventsToBeEqual(e1 UsageEvent, e2 UsageEvent) {
 	Expect(e1.MetaData.GUID).To(Equal(e2.MetaData.GUID))
 	Expect(e1.MetaData.CreatedAt).To(BeTemporally("==", e2.MetaData.CreatedAt))
-	Expect(e1.EntityRaw).To(Equal(e2.EntityRaw))
+	Expect(string(e1.EntityRaw)).To(MatchJSON(string(e2.EntityRaw)))
 }

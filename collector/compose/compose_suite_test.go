@@ -9,5 +9,5 @@ import (
 
 func TestCompose(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Compose Suite")
+	RunSpecs(t, "Collector/Compose")
 }

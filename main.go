@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"os"
 	"os/signal"
@@ -11,14 +12,15 @@ import (
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/auth"
 	"github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/collector"
 	collector_cf "github.com/alphagov/paas-billing/collector/cloudfoundry"
 	collector_compose "github.com/alphagov/paas-billing/collector/compose"
 	"github.com/alphagov/paas-billing/compose"
-	"github.com/alphagov/paas-billing/db"
+	"github.com/alphagov/paas-billing/reporter"
+	"github.com/alphagov/paas-billing/schema"
 	"github.com/alphagov/paas-billing/server"
+	"github.com/alphagov/paas-billing/server/auth"
 	"github.com/pkg/errors"
 )
 
@@ -51,15 +53,24 @@ func createComposeClient() (compose.Client, error) {
 }
 
 func Main() error {
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
+	if err != nil {
+		return errors.Wrap(err, "failed to connect to database")
+	}
 
-	sqlClient, err := db.NewPostgresClient(os.Getenv("DATABASE_URL"))
+	schema, err := schema.NewFromConfig(db, "config.example.json")
 	if err != nil {
 		return err
 	}
 
-	if err := sqlClient.InitSchema(); err != nil {
+	logger.Info("initializing")
+	initStart := time.Now()
+	if err := schema.Init(); err != nil { // TODO: each collector should have an init an be responsible for it's own part of the schema
 		return errors.Wrap(err, "failed to initialise database schema")
 	}
+	logger.Info("initialized", lager.Data{
+		"duration": time.Since(initStart).String(),
+	})
 
 	cfClient, clientErr := createCFClient()
 	if clientErr != nil {
@@ -95,6 +106,8 @@ func Main() error {
 
 	wg.Add(1)
 	go func() {
+		logger.Info("started app usage event collector")
+		defer logger.Info("stopped app usage event collector")
 		defer wg.Done()
 		defer shutdown()
 
@@ -102,7 +115,7 @@ func Main() error {
 			collectorConfig,
 			logger,
 			collector_cf.NewEventFetcher(
-				sqlClient,
+				db,
 				cloudfoundry.NewAppUsageEventsAPI(cfClient, logger),
 			),
 		)
@@ -111,6 +124,8 @@ func Main() error {
 
 	wg.Add(1)
 	go func() {
+		logger.Info("started service usage event collector")
+		defer logger.Info("stopped service usage event collector")
 		defer wg.Done()
 		defer shutdown()
 
@@ -118,7 +133,7 @@ func Main() error {
 			collectorConfig,
 			logger,
 			collector_cf.NewEventFetcher(
-				sqlClient,
+				db,
 				cloudfoundry.NewServiceUsageEventsAPI(cfClient, logger),
 			),
 		)
@@ -127,32 +142,38 @@ func Main() error {
 
 	wg.Add(1)
 	go func() {
+		logger.Info("started compose events collector")
+		defer logger.Info("stopped compose events collector")
 		defer wg.Done()
 		defer shutdown()
 
 		composeEventsCollector := collector.New(
 			collectorConfig,
 			logger,
-			collector_compose.NewEventFetcher(sqlClient, composeClient),
+			collector_compose.NewEventFetcher(
+				db,
+				composeClient,
+			),
 		)
 		composeEventsCollector.Run(ctx)
 	}()
 
 	wg.Add(1)
 	go func() {
+		logger.Info("starting schema updater")
+		defer logger.Info("stopped schema updater")
 		defer wg.Done()
-		defer logger.Info("stopped view updater")
-		logger.Info("starting view updater")
 		for {
-			logger.Info("updating views")
-			if err := sqlClient.UpdateViews(); err != nil {
-				logger.Error("update-views", err)
-			}
 			select {
 			case <-ctx.Done():
 				return
 			case <-time.After(1 * time.Hour):
 			}
+			logger.Info("refreshing schema")
+			if err := schema.Refresh(); err != nil {
+				logger.Error("refresh", err)
+			}
+			logger.Info("refreshed schema")
 		}
 	}()
 
@@ -161,7 +182,11 @@ func Main() error {
 		defer wg.Done()
 		defer logger.Info("stopped api server")
 		logger.Info("starting api server")
-		s := server.New(sqlClient, apiAuthenticator, cfClient)
+		client := reporter.New(db)
+		s := server.New(server.Config{
+			BillingClient: client,
+			Authenticator: apiAuthenticator,
+		})
 		port := os.Getenv("PORT")
 		if port == "" {
 			port = "8881"

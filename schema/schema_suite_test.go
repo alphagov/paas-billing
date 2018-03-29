@@ -1,4 +1,4 @@
-package collector_test
+package schema_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCollector(t *testing.T) {
+func TestDb(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Collector")
+	RunSpecs(t, "Schema")
 }

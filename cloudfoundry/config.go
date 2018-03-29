@@ -1,7 +1,9 @@
 package cloudfoundry
 
 import (
+	"net/http"
 	"os"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 )
@@ -17,5 +19,8 @@ func CreateConfigFromEnv() *cfclient.Config {
 		SkipSslValidation: os.Getenv("CF_SKIP_SSL_VALIDATION") == "true",
 		Token:             os.Getenv("CF_TOKEN"),
 		UserAgent:         os.Getenv("CF_USER_AGENT"),
+		HttpClient: &http.Client{
+			Timeout: 30 * time.Second,
+		},
 	}
 }
