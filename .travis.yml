@@ -4,7 +4,7 @@ sudo: false
 language: go
 
 go:
-  - 1.8
+  - 1.9
 
 services:
   - postgresql
@@ -15,6 +15,7 @@ addons:
 install:
   # Prevent default install task that does a `go get -t ./...`
   - true
+  - go get github.com/onsi/ginkgo/ginkgo
 
 script:
   - export APP_ROOT="$TRAVIS_BUILD_DIR"

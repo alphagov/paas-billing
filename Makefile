@@ -21,7 +21,7 @@ run-dev:
 test:
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	go test ./...
+	ginkgo -nodes=6 -r
 
 .PHONY: test
 generate-mocks: cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
