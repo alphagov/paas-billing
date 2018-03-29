@@ -1,10 +1,9 @@
-package api_test
+package auth
 
 import (
 	"fmt"
 	"strings"
 
-	"github.com/alphagov/paas-billing/auth"
 	"github.com/labstack/echo"
 )
 
@@ -19,8 +18,8 @@ func (sa *SimpleAuthorizer) Spaces() ([]string, error) {
 	return sa.authorizedSpaceGUIDs, nil
 }
 
-func (sa *SimpleAuthorizer) Admin() bool {
-	return sa.admin
+func (sa *SimpleAuthorizer) Admin() (bool, error) {
+	return sa.admin, nil
 }
 
 type SimpleAuthenticator struct {
@@ -37,7 +36,7 @@ func (sa *SimpleAuthenticator) Exchange(c echo.Context) error {
 	return sa.authorizationError
 }
 
-func (sa *SimpleAuthenticator) NewAuthorizer(token string) (auth.Authorizer, error) {
+func (sa *SimpleAuthenticator) NewAuthorizer(token string) (Authorizer, error) {
 	exp := strings.TrimPrefix(FakeBearerToken, "Bearer ")
 	if token != exp {
 		return nil, fmt.Errorf("SimpleAuthenticator failed: expected '%s' got '%s'", exp, token)

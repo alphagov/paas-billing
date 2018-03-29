@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 
-	"github.com/alphagov/paas-billing/auth"
+	"code.cloudfoundry.org/lager"
+
 	"github.com/alphagov/paas-billing/server"
+	"github.com/alphagov/paas-billing/server/auth"
 	"github.com/labstack/echo"
 
 	. "github.com/onsi/ginkgo"
@@ -30,8 +32,13 @@ func (sa *SimpleAuthenticator) NewAuthorizer(token string) (auth.Authorizer, err
 
 var _ = Describe("Server", func() {
 
+	var cfg = server.Config{
+		// Authority: &SimpleAuthenticator{},
+		Logger: lager.NewLogger("test"),
+	}
+
 	It("should catch panics and turn them into 'internal server error' json errors", func() {
-		e := server.New(nil, &SimpleAuthenticator{}, nil)
+		e := server.New(cfg)
 		e.GET("/panic", func(c echo.Context) error {
 			panic("bang")
 			return c.JSON(http.StatusOK, nil)
@@ -45,7 +52,7 @@ var _ = Describe("Server", func() {
 	})
 
 	It("should return 'internal server error' for unknown errors", func() {
-		e := server.New(nil, &SimpleAuthenticator{}, nil)
+		e := server.New(cfg)
 		e.GET("/error", func(c echo.Context) error {
 			return fmt.Errorf("this-error-leaks-sensitive-info")
 		})
@@ -58,7 +65,7 @@ var _ = Describe("Server", func() {
 	})
 
 	It("should pass-through errors of type echo.HTTPError (with message type string)", func() {
-		e := server.New(nil, &SimpleAuthenticator{}, nil)
+		e := server.New(cfg)
 		e.GET("/expected-error", func(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusTeapot, "friendly-string-message")
 		})
@@ -71,7 +78,7 @@ var _ = Describe("Server", func() {
 	})
 
 	It("should pass-through errors of type echo.HTTPError (with message type error)", func() {
-		e := server.New(nil, &SimpleAuthenticator{}, nil)
+		e := server.New(cfg)
 		e.GET("/expected-error", func(c echo.Context) error {
 			return echo.NewHTTPError(http.StatusTeapot, errors.New("friendly-error-message"))
 		})

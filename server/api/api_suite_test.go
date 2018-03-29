@@ -9,5 +9,5 @@ import (
 
 func TestCollector(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "API Suite")
+	RunSpecs(t, "Server/API")
 }

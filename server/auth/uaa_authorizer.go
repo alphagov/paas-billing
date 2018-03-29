@@ -2,6 +2,7 @@ package auth
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,11 +13,34 @@ import (
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo"
+	"golang.org/x/oauth2"
 )
 
-type Authorizer interface {
-	Spaces() ([]string, error)
-	Admin() bool
+type Claims struct {
+	Val string `json:"val"`
+	jwt.StandardClaims
+}
+
+type UAA struct {
+	Config *oauth2.Config
+}
+
+func (uaa *UAA) Authorize(c echo.Context) error {
+	return fmt.Errorf("oauth login flow not implemented: an access token with cloud_controller.read is required")
+}
+
+func (uaa *UAA) Exchange(c echo.Context) error {
+	return fmt.Errorf("oauth login flow not implemented: an access token with cloud_controller.read is required")
+}
+
+func (uaa *UAA) NewAuthorizer(token string) (Authorizer, error) {
+	if token == "" {
+		return nil, errors.New("no auth token: unauthozed")
+	}
+	return &ClientAuthorizer{
+		endpoint: uaa.Config.Endpoint.TokenURL,
+		token:    token,
+	}, nil
 }
 
 type UAAClaims struct {
@@ -62,25 +86,39 @@ func (a *ClientAuthorizer) Spaces() ([]string, error) {
 	return spaceGUIDs, nil
 }
 
-func (a *ClientAuthorizer) Admin() bool {
-	return a.hasScope("cloud_controller.admin_read_only") || a.hasScope("cloud_controller.global_auditor") || a.hasScope("cloud_controller.admin")
+func (a *ClientAuthorizer) Admin() (bool, error) {
+	if ok, err := a.hasScope("cloud_controller.admin_read_only"); ok {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+	if ok, err := a.hasScope("cloud_controller.global_auditor"); ok {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+	if ok, err := a.hasScope("cloud_controller.admin"); ok {
+		return true, nil
+	} else if err != nil {
+		return false, err
+	}
+	return false, nil
 }
 
-func (a *ClientAuthorizer) hasScope(scope string) bool {
+func (a *ClientAuthorizer) hasScope(scope string) (bool, error) {
 	if a.scopes == nil {
 		var err error
 		a.scopes, err = a.getVerifiedScopes()
 		if err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			return false
+			return false, err
 		}
 	}
 	for _, authorizedScope := range a.scopes {
 		if scope == authorizedScope {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 func (a *ClientAuthorizer) getVerifiedScopes() ([]string, error) {
