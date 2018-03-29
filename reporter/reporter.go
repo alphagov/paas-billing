@@ -118,11 +118,8 @@ func (r *Reporter) queryJSON(sql string, args ...interface{}) (*sql.Rows, error)
 // GetBillableEventRows returns a handle to a resultset of BillableEvents. Use
 // this to iterate over rows without buffering all into memory
 func (r *Reporter) GetBillableEventRows(filter EventFilter) (*BillableEventRows, error) {
-	if filter.RangeStart == "" {
-		return nil, fmt.Errorf(`a range start filter value is required`)
-	}
-	if filter.RangeStop == "" {
-		return nil, fmt.Errorf(`a range stop filter value is required`)
+	if err := filter.Validate(); err != nil {
+		return nil, err
 	}
 	args := []interface{}{
 		fmt.Sprintf("[%s, %s)", filter.RangeStart, filter.RangeStop), // $1
@@ -254,4 +251,14 @@ type EventFilter struct {
 	RangeStart string
 	RangeStop  string
 	OrgGUIDs   []string
+}
+
+func (filter *EventFilter) Validate() error {
+	if filter.RangeStart == "" {
+		return fmt.Errorf(`a range start filter value is required`)
+	}
+	if filter.RangeStop == "" {
+		return fmt.Errorf(`a range stop filter value is required`)
+	}
+	return nil
 }

@@ -40,6 +40,10 @@ func BillableEventsHandler(billingClient *reporter.Reporter, uaa auth.Authentica
 			RangeStop:  c.QueryParam("range_stop"),
 			OrgGUIDs:   c.Request().URL.Query()["org_guid"],
 		}
+		if err := filter.Validate(); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+		// query the data and stream rows back
 		rows, err := billingClient.GetBillableEventRows(filter)
 		if err != nil {
 			return err
