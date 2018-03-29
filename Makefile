@@ -1,6 +1,6 @@
 DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
 TEST_DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
-DATABASE_SCHEMA_DIR ?= $(PWD)/schema/sql
+APP_ROOT ?= $(PWD)
 
 help:
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
@@ -14,13 +14,14 @@ run-dev:
 	$(eval export COMPOSE_API_KEY=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/compose-secrets.yml - | awk '/compose_api_key/ {print $$2}'))
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
-	$(eval export DATABASE_SCHEMA_DIR=${DATABASE_SCHEMA_DIR})
+	$(eval export APP_ROOT=${APP_ROOT})
 	go run main.go
 
 .PHONY: test
 test:
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
-	ginkgo -succinct -nodes=4 -failFast ./...
+	$(eval export APP_ROOT=${APP_ROOT})
+	go test ./...
 
 .PHONY: test
 generate-mocks: cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go

@@ -17,7 +17,7 @@ Note: The API lists the events in order but the timestamps on events should not 
 The application handles the following environment variables:
 
  * **DATABASE_URL**: Postgres connection string (postgres://user:pass@host:port)
- * DATABASE_SCHEMA_DIR: absolute path to database schema files (default: $PWD/db/sql)
+ * APP_ROOT: absolute path to the application source to discover config/assets (default: $PWD)
  * **CF_API_ADDRESS**: Cloud Foundry API endpoint
  * **CF_CLIENT_ID**: Cloud Foundry client id
  * **CF_CLIENT_SECRET**: Cloud Foundry client secret

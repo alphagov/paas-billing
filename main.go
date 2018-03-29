@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
@@ -58,14 +59,19 @@ func Main() error {
 		return errors.Wrap(err, "failed to connect to database")
 	}
 
-	schema, err := schema.NewFromConfig(db, "config.example.json")
+	configFile, err := getConfigFilepath()
+	if err != nil {
+		return errors.Wrap(err, "failed to locate configuration file")
+	}
+
+	schema, err := schema.NewFromConfig(db, configFile)
 	if err != nil {
 		return err
 	}
 
 	logger.Info("initializing")
 	initStart := time.Now()
-	if err := schema.Init(); err != nil { // TODO: each collector should have an init an be responsible for it's own part of the schema
+	if err := schema.Init(); err != nil {
 		return errors.Wrap(err, "failed to initialise database schema")
 	}
 	logger.Info("initialized", lager.Data{
@@ -204,4 +210,25 @@ func main() {
 		os.Exit(1)
 	}
 	logger.Info("shutdown")
+}
+
+func appRootDir() string {
+	p := os.Getenv("APP_ROOT")
+	if p != "" {
+		return p
+	}
+	pwd := os.Getenv("PWD")
+	if pwd == "" {
+		pwd, _ = os.Getwd()
+	}
+	return pwd
+}
+
+func getConfigFilepath() (string, error) {
+	root := appRootDir()
+	p := filepath.Join(root, "config.json")
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return "", fmt.Errorf("%s does not exist", p)
+	}
+	return p, nil
 }

@@ -8,8 +8,12 @@ import (
 	"time"
 
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
-	"github.com/alphagov/paas-billing/db"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
+)
+
+const (
+	StateStarted = "STARTED"
+	StateStopped = "STOPPED"
 )
 
 const fakeID = 0
@@ -46,7 +50,7 @@ func createEventsForAppsWithNoRecordedEvents(tx *sql.Tx, firstEventTimestamp *ti
 	var fakeEventsInserted int
 	for _, app := range apps {
 		// Skip non running apps
-		if app.State != db.StateStarted {
+		if app.State != StateStarted {
 			continue
 		}
 

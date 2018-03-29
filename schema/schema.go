@@ -356,7 +356,7 @@ func checkPlanConsistancy(tx *sql.Tx) error {
 		return err
 	}
 	defer rows.Close()
-	for rows.Next() {
+	if rows.Next() {
 		var guid string
 		if err := rows.Scan(&guid); err != nil {
 			return err
@@ -398,15 +398,14 @@ func wrapPqError(err error, prefix string) error {
 }
 
 func schemaDir() string {
-	p := os.Getenv("DATABASE_SCHEMA_DIR")
-	if p != "" {
-		return p
+	root := os.Getenv("APP_ROOT")
+	if root == "" {
+		root = os.Getenv("PWD")
 	}
-	pwd := os.Getenv("PWD")
-	if pwd == "" {
-		pwd, _ = os.Getwd()
+	if root == "" {
+		root, _ = os.Getwd()
 	}
-	return filepath.Join(pwd, "schema", "sql")
+	return filepath.Join(root, "schema", "sql")
 }
 
 func schemaFile(filename string) string {
