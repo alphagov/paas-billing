@@ -83,11 +83,15 @@ func (s *Schema) refresh(tx *sql.Tx) error {
 	if err := execFile(tx, "drop_ephemeral_objects.sql"); err != nil {
 		return err
 	}
+	// create the ephemeral configuration objects (pricing/plans/etc)
+	if err := execFile(tx, "create_ephemeral_objects.sql"); err != nil {
+		return err
+	}
 	// reset the event normalization
 	if err := execFile(tx, "create_events.sql"); err != nil {
 		return err
 	}
-	// insert the config
+	// populate the config
 	if err := s.initVATRates(tx); err != nil {
 		return err
 	}
@@ -97,11 +101,7 @@ func (s *Schema) refresh(tx *sql.Tx) error {
 	if err := s.initPlans(tx); err != nil {
 		return err
 	}
-	// create the ephemeral tables (pricing/plans/etc)
-	if err := execFile(tx, "create_ephemeral_objects.sql"); err != nil {
-		return err
-	}
-	// create the
+	// create the billable components view of the data
 	if err := execFile(tx, "create_billable_event_components.sql"); err != nil {
 		return err
 	}
@@ -341,7 +341,9 @@ func checkPlanConsistancy(tx *sql.Tx) error {
 				pricing_plans
 		)
 		select distinct
-			plan_guid	
+			plan_guid,	
+			plan_name,
+			resource_type
 		from
 			events
 		where
@@ -357,11 +359,13 @@ func checkPlanConsistancy(tx *sql.Tx) error {
 	}
 	defer rows.Close()
 	if rows.Next() {
-		var guid string
-		if err := rows.Scan(&guid); err != nil {
+		var planGUID string
+		var planName string
+		var resourceType string
+		if err := rows.Scan(&planGUID, &planName, &resourceType); err != nil {
 			return err
 		}
-		return fmt.Errorf("missing pricing_plan for plan_guid '%s'", guid)
+		return fmt.Errorf("missing '%s' pricing plan configuration for '%s' (%s)", resourceType, planName, planGUID)
 	}
 	return nil
 }
