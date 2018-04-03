@@ -2,3 +2,4 @@ debug.test
 coverage.txt
 profile.out
 paas-billing
+scripts/genplans/prices.json

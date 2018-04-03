@@ -1,0 +1,17 @@
+[
+  {
+    "name": "elasticache tiny clustered",
+    "valid_from": "2017-01-01",
+    "plan_guid": "957e6177-323c-4eeb-8630-c4bfa979a86c",
+    "components": [
+      {
+        "name": "instance",
+        "formula": "$number_of_nodes * ceil($time_in_seconds/3600) * 0.018",
+	"number_of_nodes": 1,
+        "currency_code": "USD",
+        "vat_code": "Standard"
+      }
+    ]
+  }
+]
+
