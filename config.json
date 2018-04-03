@@ -28,6 +28,7 @@
 			"rate": 0
 		}
 	],
+	"ignore_missing_plans": true,
 	"pricing_plans": [
 		{
 			"name": "prometheus",
