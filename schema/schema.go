@@ -264,14 +264,28 @@ func checkCurrencyRates(tx *sql.Tx) error {
 // generateMissingPlans creates dummy plans with 0 cost at the epoch time
 // useful for getting the system up with an existing dataset without configuring it properly
 func generateMissingPlans(tx *sql.Tx) error {
-	if _, err := tx.Exec(`
-		insert into pricing_plans (plan_guid, valid_from, name) select distinct
+	rows, err := tx.Query(`
+		insert into pricing_plans (
+			plan_guid, valid_from, name
+		) (select distinct
 			plan_guid,
 			'epoch'::timestamptz,
-			first_value(resource_type || ' ' || plan_name) over ()
-		from events
-	`); err != nil {
+			first_value(resource_type || ' ' || plan_name) over (partition by plan_guid order by lower(duration) desc)
+		from events)
+		returning plan_guid, name
+	`)
+	if err != nil {
 		return wrapPqError(err, "generate-service-plan")
+	}
+	defer rows.Close()
+	generated := []string{}
+	for rows.Next() {
+		var planGUID string
+		var planName string
+		if err := rows.Scan(&planGUID, &planName); err != nil {
+			return err
+		}
+		generated = append(generated, fmt.Sprintf("%s (%s)", planName, planGUID))
 	}
 	if _, err := tx.Exec(`
 		insert into pricing_plan_components (
@@ -286,6 +300,9 @@ func generateMissingPlans(tx *sql.Tx) error {
 		from events
 	`); err != nil {
 		return wrapPqError(err, "generate-service-plan-component")
+	}
+	for _, gen := range generated {
+		fmt.Println("WARNING: generated epoch plan for:", gen)
 	}
 	return nil
 }
