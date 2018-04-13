@@ -9,5 +9,5 @@ import (
 
 func TestCloudfoundry(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Collector/Cloudfoundry")
+	RunSpecs(t, "Cloudfoundry Suite")
 }

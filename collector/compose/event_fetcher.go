@@ -1,51 +1,37 @@
 package compose
 
 import (
-	"database/sql"
-	"encoding/json"
-	"fmt"
-	"strings"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/collector"
 	composeclient "github.com/alphagov/paas-billing/compose"
+	"github.com/alphagov/paas-billing/db"
 	composeapi "github.com/compose/gocomposeapi"
 )
 
 var _ collector.EventFetcher = &EventFetcher{}
 
-const (
-	latestEventCursor = "latest_event_id"
-	positionCursor    = "cursor"
-)
-
 type EventFetcher struct {
-	logger lager.Logger
-	db     *sql.DB
-	client composeclient.Client
+	logger    lager.Logger
+	sqlClient db.SQLClient
+	client    composeclient.Client
 }
 
-func NewEventFetcher(db *sql.DB, client composeclient.Client) *EventFetcher {
+func NewEventFetcher(sqlClient db.SQLClient, client composeclient.Client) *EventFetcher {
 	return &EventFetcher{
-		db:     db,
-		client: client,
+		sqlClient: sqlClient,
+		client:    client,
 	}
 }
 
 func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMinAge time.Duration) (int, error) {
-	tx, err := e.db.Begin()
-	if err != nil {
-		return 0, err
-	}
-	defer tx.Rollback()
-
-	latestEventID, err := e.getNamedCursor(tx, latestEventCursor)
+	latestEventID, err := e.sqlClient.FetchComposeLatestEventID()
 	if err != nil {
 		return 0, err
 	}
 
-	cursor, err := e.getNamedCursor(tx, positionCursor)
+	cursor, err := e.sqlClient.FetchComposeCursor()
 	if err != nil {
 		return 0, err
 	}
@@ -63,7 +49,7 @@ func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMi
 	if errs != nil {
 		return 0, composeclient.SquashErrors(errs)
 	}
-	elapsedTime := time.Since(startTime)
+	elapsedTime := time.Now().Sub(startTime)
 
 	cnt := 0
 	filteredEvents := make([]composeapi.AuditEvent, 0)
@@ -85,15 +71,22 @@ func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMi
 	})
 
 	if cnt > 0 || cursor != nil {
+		tx, err := e.sqlClient.BeginTx()
+		if err != nil {
+			return 0, err
+		}
+
 		if len(filteredEvents) > 0 {
-			if err := e.insertComposeAuditEvents(tx, filteredEvents); err != nil {
+			if err := tx.InsertComposeAuditEvents(filteredEvents); err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 		}
 
 		if cursor == nil {
 			latestEventID = &(*auditEvents)[0].ID
-			if err := e.setNamedCursor(tx, latestEventCursor, latestEventID); err != nil {
+			if err := tx.InsertComposeLatestEventID(*latestEventID); err != nil {
+				tx.Rollback()
 				return 0, err
 			}
 		}
@@ -104,7 +97,8 @@ func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMi
 			cursor = nil
 		}
 
-		if err := e.setNamedCursor(tx, positionCursor, cursor); err != nil {
+		if err := tx.InsertComposeCursor(cursor); err != nil {
+			tx.Rollback()
 			return 0, err
 		}
 
@@ -124,46 +118,4 @@ func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMi
 
 func (e *EventFetcher) Name() string {
 	return "compose-audit-events"
-}
-
-func (e *EventFetcher) setNamedCursor(tx *sql.Tx, name string, value *string) error {
-	_, err := tx.Exec("UPDATE compose_audit_events_cursor SET value = $1 WHERE name = $2", value, name)
-	return err
-}
-
-func (e *EventFetcher) getNamedCursor(tx *sql.Tx, name string) (*string, error) {
-	var value *string
-	queryErr := e.db.QueryRow(
-		"SELECT value FROM compose_audit_events_cursor WHERE name = $1", name,
-	).Scan(&value)
-
-	switch {
-	case queryErr == sql.ErrNoRows:
-		return nil, nil
-	case queryErr != nil:
-		return nil, queryErr
-	default:
-		return value, nil
-	}
-}
-
-func (e *EventFetcher) insertComposeAuditEvents(tx *sql.Tx, events []composeapi.AuditEvent) error {
-	valueStrings := make([]string, 0, len(events))
-	valueArgs := make([]interface{}, 0, len(events)*3)
-	i := 1
-	for _, event := range events {
-		eventJSON, err := json.Marshal(event)
-		if err != nil {
-			return fmt.Errorf("failed to convert Compose audit event to JSON: %s", err.Error())
-		}
-		p1, p2, p3 := i, i+1, i+2
-		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d, ($%d)::jsonb - '_links')", p1, p2, p3))
-		valueArgs = append(valueArgs, event.ID)
-		valueArgs = append(valueArgs, event.CreatedAt)
-		valueArgs = append(valueArgs, string(eventJSON))
-		i += 3
-	}
-	stmt := fmt.Sprintf("INSERT INTO compose_audit_events (event_id, created_at, raw_message) VALUES %s", strings.Join(valueStrings, ","))
-	_, err := tx.Exec(stmt, valueArgs...)
-	return err
 }

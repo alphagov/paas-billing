@@ -8,289 +8,138 @@ import (
 	"code.cloudfoundry.org/lager"
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	cffakes "github.com/alphagov/paas-billing/cloudfoundry/fakes"
-	"github.com/alphagov/paas-billing/testenv"
+	"github.com/alphagov/paas-billing/db"
+	dbfakes "github.com/alphagov/paas-billing/db/fakes"
 
 	. "github.com/alphagov/paas-billing/collector/cloudfoundry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
+const (
+	event1GUID = "2C5D3E72-2082-43C1-9262-814EAE7E65AA"
+	event2GUID = "968437F2-CCEE-4B8E-B29B-34EA701BA196"
+	event3GUID = "0C586A5D-BFB7-4B31-91A2-7A7D06962D50"
+	event4GUID = "F2133349-E9D5-47B6-AA0C-00A5AC96B703"
+)
+
 var _ = Describe("Collector", func() {
-
 	var (
-		testEvent1 = cf.UsageEvent{
-			MetaData: cf.MetaData{
-				GUID:      "2c5d3e72-2082-43c1-9262-814eae7e65aa",
-				CreatedAt: testenv.Time("2001-01-01T00:00:00+00:00"),
-			},
-			EntityRaw: json.RawMessage(`{"name":"testEvent1"}`),
-		}
-		testEvent2 = cf.UsageEvent{
-			MetaData: cf.MetaData{
-				GUID:      "968437f2-ccee-4b8e-b29b-34ea701ba196",
-				CreatedAt: testenv.Time("2002-02-02T00:00:00+00:00"),
-			},
-			EntityRaw: json.RawMessage(`{"name":"testEvent2"}`),
-		}
-	)
-
-	var (
-		db     *testenv.TempDB
-		logger = lager.NewLogger("test")
+		logger              lager.Logger
+		fakeClient          *cffakes.FakeUsageEventsAPI
+		fakeSQLCLient       *dbfakes.FakeSQLClient
+		emptyUsageEvents    *cf.UsageEventList
+		nonEmptyUsageEvents *cf.UsageEventList
 	)
 
 	BeforeEach(func() {
-		var err error
-		db, err = testenv.Open(testenv.BasicConfig)
-		Expect(err).ToNot(HaveOccurred())
-	})
+		fakeClient = &cffakes.FakeUsageEventsAPI{}
+		fakeClient.TypeReturns("app")
 
-	AfterEach(func() {
-		Expect(db.Close()).To(Succeed())
+		fakeSQLCLient = &dbfakes.FakeSQLClient{}
+
+		logger = lager.NewLogger("test")
+
+		emptyUsageEvents = &cf.UsageEventList{Resources: []cf.UsageEvent{}}
+		nonEmptyUsageEvents = &cf.UsageEventList{
+			Resources: []cf.UsageEvent{
+				{
+					MetaData:  cf.MetaData{GUID: event1GUID},
+					EntityRaw: json.RawMessage(`{"field":"value1"}`),
+				},
+				{
+					MetaData:  cf.MetaData{GUID: event2GUID},
+					EntityRaw: json.RawMessage(`{"field":"value2"}`),
+				},
+			},
+		}
 	})
 
 	It("should fetch the latest events and insert into the database", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
+		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, "LAST-GUID", nil)
+		fakeClient.GetReturnsOnCall(0, nonEmptyUsageEvents, nil)
+		fakeSQLCLient.InsertUsageEventListReturnsOnCall(0, nil)
 
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent1,
-				testEvent2,
-			},
-		}, nil)
-
+		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
 		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cnt).To(Equal(2))
 
-		Expect(
-			db.Query(`select * from app_usage_events`),
-		).To(MatchJSON(testenv.Rows{
-			{
-				"id":          1,
-				"guid":        testEvent1.MetaData.GUID,
-				"created_at":  testEvent1.MetaData.CreatedAt.Format(testenv.ISO8601),
-				"raw_message": testEvent1.EntityRaw,
-			},
-			{
-				"id":          2,
-				"guid":        testEvent2.MetaData.GUID,
-				"created_at":  testEvent2.MetaData.CreatedAt.Format(testenv.ISO8601),
-				"raw_message": testEvent2.EntityRaw,
-			},
-		}))
+		Expect(fakeSQLCLient.FetchLastGUIDCallCount()).To(Equal(1))
+		tableName := fakeSQLCLient.FetchLastGUIDArgsForCall(0)
+		Expect(tableName).To(Equal(db.AppUsageTableName))
+
+		Expect(fakeClient.GetCallCount()).To(Equal(1))
+		afterGUID, count, minAge := fakeClient.GetArgsForCall(0)
+		Expect(afterGUID).To(Equal("LAST-GUID"))
+		Expect(count).To(Equal(10))
+		Expect(minAge).To(Equal(time.Minute))
+
+		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(Equal(1))
+		usageEvents, tableName := fakeSQLCLient.InsertUsageEventListArgsForCall(0)
+		Expect(usageEvents).To(Equal(nonEmptyUsageEvents))
+		Expect(tableName).To(Equal(db.AppUsageTableName))
 	})
 
-	It("should append multiple batches of events into the database", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
+	It("should handle if there is no last guid in the database", func() {
+		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
+		fakeClient.GetReturnsOnCall(0, nonEmptyUsageEvents, nil)
 
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent1,
-			},
-		}, nil)
+		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
 		_, err := fetcher.FetchEvents(logger, 10, time.Minute)
 		Expect(err).ToNot(HaveOccurred())
 
-		fakeCFClient.GetReturnsOnCall(1, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent2,
-			},
-		}, nil)
-		_, err = fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).ToNot(HaveOccurred())
-
-		Expect(
-			db.Query(`select * from app_usage_events`),
-		).To(MatchJSON(testenv.Rows{
-			{
-				"id":          1,
-				"guid":        testEvent1.MetaData.GUID,
-				"created_at":  testEvent1.MetaData.CreatedAt.Format(testenv.ISO8601),
-				"raw_message": testEvent1.EntityRaw,
-			},
-			{
-				"id":          2,
-				"guid":        testEvent2.MetaData.GUID,
-				"created_at":  testEvent2.MetaData.CreatedAt.Format(testenv.ISO8601),
-				"raw_message": testEvent2.EntityRaw,
-			},
-		}))
-	})
-
-	It("should fail to insert duplicate events", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
-
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent1,
-				testEvent1,
-			},
-		}, nil)
-
-		_, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError(ContainSubstring("duplicate key value")))
-		Expect(db.Get(`select count(*) from app_usage_events`)).To(BeZero())
-	})
-
-	It("should set the last guid", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
-
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent1,
-			},
-		}, nil)
-
-		_, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).ToNot(HaveOccurred())
-
-		last, err := fetcher.LastGUID()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(last).To(Equal(testEvent1.MetaData.GUID))
-	})
-
-	It("should use a nil afterGUID if no events present", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
-
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent1,
-			},
-		}, nil)
-		_, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).ToNot(HaveOccurred())
-
-		afterGuid, _, _ := fakeCFClient.GetArgsForCall(0)
-		Expect(afterGuid).To(Equal("GUID_NIL"))
-	})
-
-	It("should use correct afterGUID for subsequent fetches", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
-
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent1,
-			},
-		}, nil)
-		_, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).ToNot(HaveOccurred())
-
-		fakeCFClient.GetReturnsOnCall(1, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				testEvent2,
-			},
-		}, nil)
-		_, err = fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).ToNot(HaveOccurred())
-
-		afterGuid, _, _ := fakeCFClient.GetArgsForCall(1)
-		Expect(afterGuid).To(Equal(testEvent1.MetaData.GUID))
-
-		Expect(
-			db.Query(`select * from app_usage_events`),
-		).To(MatchJSON(testenv.Rows{
-			{
-				"id":          1,
-				"guid":        testEvent1.MetaData.GUID,
-				"created_at":  testEvent1.MetaData.CreatedAt.Format(testenv.ISO8601),
-				"raw_message": testEvent1.EntityRaw,
-			},
-			{
-				"id":          2,
-				"guid":        testEvent2.MetaData.GUID,
-				"created_at":  testEvent2.MetaData.CreatedAt.Format(testenv.ISO8601),
-				"raw_message": testEvent2.EntityRaw,
-			},
-		}))
+		afterGUID, _, _ := fakeClient.GetArgsForCall(0)
+		Expect(afterGUID).To(Equal(cf.GUIDNil))
 	})
 
 	It("should not insert an empty event list into the database", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
+		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
+		fakeClient.GetReturnsOnCall(0, emptyUsageEvents, nil)
 
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{},
-		}, nil)
-
+		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
 		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cnt).To(BeZero())
 
-		Expect(db.Get(`select count(*) from app_usage_events`)).To(BeZero())
+		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(BeZero())
 	})
 
 	It("should return error if it can't fetch the last guid", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
+		guidErr := errors.New("some error")
+		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, "", guidErr)
 
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		db.Conn.Close()
-
+		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
 		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError(ContainSubstring("database is closed")))
+		Expect(err).To(MatchError(guidErr))
 		Expect(cnt).To(BeZero())
+
+		Expect(fakeClient.GetCallCount()).To(BeZero())
+		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(BeZero())
 	})
 
 	It("should return error if it can't fetch new events", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
-
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
+		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
 		fetchErr := errors.New("some error")
-		fakeCFClient.GetReturnsOnCall(0, nil, fetchErr)
+		fakeClient.GetReturnsOnCall(0, nil, fetchErr)
 
+		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
 		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
 		Expect(err).To(MatchError(fetchErr))
 		Expect(cnt).To(BeZero())
 
-		Expect(db.Get(`select count(*) from app_usage_events`)).To(BeZero())
+		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(BeZero())
 	})
 
-	It("should return error if event has invalid entity json", func() {
-		fakeCFClient := &cffakes.FakeUsageEventsAPI{}
-		fakeCFClient.TypeReturns("app")
+	It("should return error if it can't insert the events into the database", func() {
+		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
+		fakeClient.GetReturnsOnCall(0, nonEmptyUsageEvents, nil)
+		dbErr := errors.New("some error")
+		fakeSQLCLient.InsertUsageEventListReturnsOnCall(0, dbErr)
 
-		fetcher := NewEventFetcher(db.Conn, fakeCFClient)
-
-		fakeCFClient.GetReturnsOnCall(0, &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				{
-					MetaData: cf.MetaData{
-						GUID:      "968437f2-ccee-4b8e-b29b-34ea701ba196",
-						CreatedAt: testenv.Time("2001-01-01T00:00:00Z"),
-					},
-					EntityRaw: json.RawMessage(`{"bad-json"}`),
-				},
-			},
-		}, nil)
-
+		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
 		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).To(MatchError(ContainSubstring("invalid input syntax for type json")))
+		Expect(err).To(MatchError(dbErr))
 		Expect(cnt).To(BeZero())
 	})
 
