@@ -12,17 +12,15 @@ ALTER TABLE compose_audit_events ALTER COLUMN created_at SET NOT NULL;
 ALTER TABLE compose_audit_events ALTER COLUMN raw_message SET NOT NULL;
 ALTER TABLE compose_audit_events ALTER COLUMN event_id TYPE text USING trim(event_id);
 
-CREATE TABLE IF NOT EXISTS compose_audit_events_cursor (
-	name VARCHAR(16) UNIQUE,
-	value CHAR(24)
-);
-INSERT INTO
-	compose_audit_events_cursor (name, value)
-VALUES
-	('latest_event_id', NULL),
-	('cursor', NULL)
-ON CONFLICT (name) DO NOTHING;
+DO $$ BEGIN
+	ALTER TABLE compose_audit_events ADD CONSTRAINT event_id_not_blank CHECK (length(event_id) > 0);
+EXCEPTION
+	WHEN duplicate_object THEN RAISE NOTICE 'constraint already exists';
+END; $$;
 
-ALTER TABLE compose_audit_events_cursor ALTER COLUMN name SET NOT NULL;
-ALTER TABLE compose_audit_events_cursor ALTER COLUMN name TYPE text USING trim(name);
-ALTER TABLE compose_audit_events_cursor ALTER COLUMN value TYPE text USING trim(value);
+DO $$ BEGIN
+	ALTER TABLE compose_audit_events ADD CONSTRAINT created_at_not_zero_value CHECK (created_at > 'epoch'::timestamptz);
+EXCEPTION
+	WHEN duplicate_object THEN RAISE NOTICE 'constraint already exists';
+END; $$;
+

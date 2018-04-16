@@ -1,121 +1,127 @@
 package compose
 
 import (
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/collector"
 	composeclient "github.com/alphagov/paas-billing/compose"
-	"github.com/alphagov/paas-billing/db"
+	"github.com/alphagov/paas-billing/store"
 	composeapi "github.com/compose/gocomposeapi"
 )
 
 var _ collector.EventFetcher = &EventFetcher{}
 
+const (
+	TimePrecisionOffset = -1 * time.Second
+	DefaultFetchLimit   = 50
+	Kind                = "compose"
+)
+
+var (
+	DefaultEventEpoch = time.Time{}
+)
+
+const (
+	DeploymentScaleMembersEvent = "deployment.scale.members"
+)
+
 type EventFetcher struct {
-	logger    lager.Logger
-	sqlClient db.SQLClient
-	client    composeclient.Client
+	Logger     lager.Logger
+	Store      store.EventStorer
+	Compose    composeclient.Client
+	FetchLimit int
 }
 
-func NewEventFetcher(sqlClient db.SQLClient, client composeclient.Client) *EventFetcher {
-	return &EventFetcher{
-		sqlClient: sqlClient,
-		client:    client,
+func (e *EventFetcher) fetchScaleEvents(newerThan *time.Time) ([]store.RawEvent, error) {
+	events := make([]store.RawEvent, 0)
+	limit := DefaultFetchLimit
+	if e.FetchLimit != 0 {
+		limit = e.FetchLimit
 	}
+	if limit < 1 || limit > 100 {
+		return nil, fmt.Errorf("FetchLimit must be between 1 and 100")
+	}
+	params := composeapi.AuditEventsParams{
+		NewerThan: newerThan,
+		Limit:     limit,
+	}
+	for {
+		e.Logger.Info("fetching", lager.Data{
+			"newer_than": fmt.Sprintf("%v", params.NewerThan),
+			"cursor":     params.Cursor,
+			"limit":      params.Limit,
+		})
+		auditEvents, errs := e.Compose.GetAuditEvents(params)
+		if errs != nil {
+			return nil, composeclient.SquashErrors(errs)
+		}
+		if auditEvents == nil {
+			break
+		}
+		for _, auditEvent := range *auditEvents {
+			if auditEvent.Event != DeploymentScaleMembersEvent {
+				continue
+			}
+			eventJSON, err := json.Marshal(auditEvent)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert Compose audit event to JSON: %s", err.Error())
+			}
+			events = append([]store.RawEvent{
+				{
+					GUID:       auditEvent.ID,
+					Kind:       e.Kind(),
+					CreatedAt:  auditEvent.CreatedAt,
+					RawMessage: json.RawMessage(eventJSON),
+				},
+			}, events...)
+			params.Cursor = auditEvent.ID
+		}
+		if len(*auditEvents) < params.Limit {
+			break
+		}
+	}
+	return events, nil
 }
 
-func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMinAge time.Duration) (int, error) {
-	latestEventID, err := e.sqlClient.FetchComposeLatestEventID()
-	if err != nil {
-		return 0, err
-	}
-
-	cursor, err := e.sqlClient.FetchComposeCursor()
-	if err != nil {
-		return 0, err
-	}
-
-	var cursorStr string
-	if cursor != nil {
-		cursorStr = *cursor
+func (e *EventFetcher) FetchEvents(lastEvent *store.RawEvent) ([]store.RawEvent, error) {
+	var lastEventTime *time.Time = nil
+	if lastEvent != nil {
+		t := lastEvent.CreatedAt.Add(TimePrecisionOffset)
+		lastEventTime = &t
 	}
 
 	startTime := time.Now()
-	auditEvents, errs := e.client.GetAuditEvents(composeapi.AuditEventsParams{
-		Cursor: cursorStr,
-		Limit:  fetchLimit,
-	})
-	if errs != nil {
-		return 0, composeclient.SquashErrors(errs)
+	scaleEvents, err := e.fetchScaleEvents(lastEventTime)
+	if err != nil {
+		return nil, err
 	}
-	elapsedTime := time.Now().Sub(startTime)
+	scaleEvents = sliceToLatest(scaleEvents, lastEvent)
+	elapsedTime := time.Since(startTime)
 
-	cnt := 0
-	filteredEvents := make([]composeapi.AuditEvent, 0)
-	for _, event := range *auditEvents {
-		if latestEventID != nil && event.ID == *latestEventID {
-			break
-		}
-		if event.Event == "deployment.scale.members" {
-			filteredEvents = append(filteredEvents, event)
-		}
-		cnt++
-	}
-
-	logger.Info("fetch", lager.Data{
-		"cursor":          cursor,
-		"latest_event_id": latestEventID,
-		"event_cnt":       cnt,
-		"response_time":   elapsedTime.String(),
+	e.Logger.Info("fetched", lager.Data{
+		"newer_than":    fmt.Sprintf("%v", lastEventTime),
+		"event_cnt":     len(scaleEvents),
+		"response_time": elapsedTime.String(),
 	})
 
-	if cnt > 0 || cursor != nil {
-		tx, err := e.sqlClient.BeginTx()
-		if err != nil {
-			return 0, err
-		}
-
-		if len(filteredEvents) > 0 {
-			if err := tx.InsertComposeAuditEvents(filteredEvents); err != nil {
-				tx.Rollback()
-				return 0, err
-			}
-		}
-
-		if cursor == nil {
-			latestEventID = &(*auditEvents)[0].ID
-			if err := tx.InsertComposeLatestEventID(*latestEventID); err != nil {
-				tx.Rollback()
-				return 0, err
-			}
-		}
-
-		if cnt == fetchLimit {
-			cursor = &(*auditEvents)[len(*auditEvents)-1].ID
-		} else {
-			cursor = nil
-		}
-
-		if err := tx.InsertComposeCursor(cursor); err != nil {
-			tx.Rollback()
-			return 0, err
-		}
-
-		if err := tx.Commit(); err != nil {
-			return 0, err
-		}
-
-		logger.Info("store", lager.Data{
-			"cursor":            cursor,
-			"latest_event_id":   latestEventID,
-			"billing_event_cnt": len(filteredEvents),
-		})
-	}
-
-	return cnt, nil
+	return scaleEvents, nil
 }
 
-func (e *EventFetcher) Name() string {
-	return "compose-audit-events"
+func (e *EventFetcher) Kind() string {
+	return Kind
+}
+
+func sliceToLatest(events []store.RawEvent, lastEvent *store.RawEvent) []store.RawEvent {
+	if lastEvent == nil {
+		return events
+	}
+	for i, event := range events {
+		if event.GUID == lastEvent.GUID {
+			return events[i+1:]
+		}
+	}
+	return events
 }

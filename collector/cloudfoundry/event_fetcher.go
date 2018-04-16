@@ -7,47 +7,70 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/cloudfoundry"
 	"github.com/alphagov/paas-billing/collector"
-	"github.com/alphagov/paas-billing/db"
+	"github.com/alphagov/paas-billing/store"
+)
+
+const (
+	DefaultFetchLimit   = 50
+	DefaultRecordMinAge = 5 * time.Minute
 )
 
 var _ collector.EventFetcher = &EventFetcher{}
 
 type EventFetcher struct {
-	sqlClient db.SQLClient
-	client    cloudfoundry.UsageEventsAPI
+	Client       cloudfoundry.UsageEventsAPI
+	Logger       lager.Logger
+	RecordMinAge time.Duration
+	FetchLimit   int
 }
 
-func NewEventFetcher(sqlClient db.SQLClient, client cloudfoundry.UsageEventsAPI) *EventFetcher {
-	return &EventFetcher{
-		sqlClient: sqlClient,
-		client:    client,
+func (e *EventFetcher) FetchEvents(lastEvent *store.RawEvent) ([]store.RawEvent, error) {
+	guid := cloudfoundry.GUIDNil
+	if lastEvent != nil {
+		if lastEvent.GUID == "" {
+			return nil, fmt.Errorf("invalid GUID for lastEvent")
+		}
+		guid = lastEvent.GUID
 	}
-}
 
-func (e *EventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMinAge time.Duration) (int, error) {
-	tableName := fmt.Sprintf("%s_usage_events", e.client.Type())
+	fetchLimit := e.FetchLimit
+	if fetchLimit < 1 {
+		fetchLimit = DefaultFetchLimit
+	}
+	if fetchLimit < 1 || fetchLimit > 100 {
+		return nil, fmt.Errorf("FetchLimit must be between 1 and 100")
+	}
+	recordMinAge := e.RecordMinAge
+	if e.RecordMinAge == 0 {
+		recordMinAge = DefaultRecordMinAge
+	}
+	if recordMinAge < DefaultRecordMinAge {
+		return nil, fmt.Errorf("RecordMinAge should be at least 5m to reduce the risk of late arriving events being skipped")
+	}
 
-	guid, err := e.sqlClient.FetchLastGUID(tableName)
+	usageEvents, err := e.Client.Get(guid, fetchLimit, recordMinAge)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-
-	usageEvents, err := e.client.Get(guid, fetchLimit, recordMinAge)
-	if err != nil {
-		return 0, err
-	}
-	cnt := len(usageEvents.Resources)
-	logger.Info("fetch", lager.Data{"last_guid": guid, "record_count": cnt})
-
-	if cnt > 0 {
-		if err := e.sqlClient.InsertUsageEventList(usageEvents, tableName); err != nil {
-			return 0, err
+	events := []store.RawEvent{}
+	if usageEvents != nil {
+		for _, usageEvent := range usageEvents.Resources {
+			events = append(events, store.RawEvent{
+				GUID:       usageEvent.MetaData.GUID,
+				Kind:       e.Client.Type(),
+				CreatedAt:  usageEvent.MetaData.CreatedAt,
+				RawMessage: usageEvent.EntityRaw,
+			})
 		}
 	}
+	e.Logger.Info("fetched", lager.Data{
+		"last_guid":   guid,
+		"event_count": len(events),
+	})
 
-	return cnt, nil
+	return events, nil
 }
 
-func (e *EventFetcher) Name() string {
-	return fmt.Sprintf("cf-%s-usage-event-collector", e.client.Type())
+func (e *EventFetcher) Kind() string {
+	return e.Client.Type()
 }

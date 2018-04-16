@@ -24,7 +24,7 @@ test:
 	ginkgo -nodes=6 -r
 
 .PHONY: test
-generate-mocks: cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
+generate-mocks: store/fakes/fake_event_storer.go cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
 	echo "regenerating mocks"
 
 cloudfoundry/fakes/mock_usage_events_api.go: cloudfoundry/usage_events_api.go
@@ -47,7 +47,10 @@ cloudfoundry/fakes/fake_usage_events_api.go: cloudfoundry/usage_events_api.go
 	go generate cloudfoundry/...
 
 collector/fakes/fake_event_fetcher.go: collector/collector.go
-	go generate collector/...
+	go generate collector/collector.go
 
 compose/fakes/fake_client.go: compose/compose.go
 	go generate compose/...
+
+store/fakes/fake_event_storer.go: store/store.go
+	go generate store/store.go

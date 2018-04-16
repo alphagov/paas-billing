@@ -15,3 +15,9 @@ CREATE INDEX IF NOT EXISTS app_usage_space_name_idx ON app_usage_events ( (raw_m
 
 ALTER TABLE app_usage_events ALTER COLUMN created_at TYPE timestamptz USING created_at AT TIME ZONE 'UTC';
 ALTER TABLE app_usage_events ALTER COLUMN guid TYPE uuid USING guid::uuid;
+
+DO $$ BEGIN
+	ALTER TABLE app_usage_events ADD CONSTRAINT created_at_not_zero_value CHECK (created_at > 'epoch'::timestamptz);
+EXCEPTION
+	WHEN duplicate_object THEN RAISE NOTICE 'constraint already exists';
+END; $$;

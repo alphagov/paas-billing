@@ -2,8 +2,10 @@ package schema_test
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/alphagov/paas-billing/schema"
+	"github.com/alphagov/paas-billing/store"
 	"github.com/alphagov/paas-billing/testenv"
 	uuid "github.com/satori/go.uuid"
 
@@ -12,7 +14,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Init", func() {
+var _ = Describe("Schema", func() {
 
 	var (
 		cfg schema.Config
@@ -347,6 +349,294 @@ var _ = Describe("Init", func() {
 		Entry("no lowercase", "standard"),
 		Entry("no uppercase", "ZERO"),
 		Entry("no random codes", "myrate"),
+	)
+
+	DescribeTable("should store events of difference kinds",
+		func(kind string) {
+			db, err := testenv.Open(schema.Config{})
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
+			event1 := store.RawEvent{
+				GUID:       "94147a2f-2626-4445-8b4e-22ebe8071a29",
+				CreatedAt:  time.Date(2001, 1, 1, 1, 1, 1, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-1"}`),
+			}
+			event2 := store.RawEvent{
+				GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+				CreatedAt:  time.Date(2002, 2, 2, 2, 2, 2, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-2"}`),
+			}
+			event3 := store.RawEvent{
+				GUID:       "395b7d4c-c859-4a28-9a53-6b15fab447c7",
+				CreatedAt:  time.Date(2003, 3, 3, 3, 3, 3, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-3"}`),
+			}
+			By("attempting to store a batch of events", func() {
+				err := db.Schema.StoreEvents([]store.RawEvent{
+					event1,
+					event2,
+					event3,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			By("fetching the stored events back", func() {
+				storedEvents, err := db.Schema.GetEvents(store.RawEventFilter{
+					Kind: kind,
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(storedEvents).To(Equal([]store.RawEvent{
+					event3,
+					event2,
+					event1,
+				}))
+			})
+		},
+		Entry("app usage event", "app"),
+		Entry("service usage event", "service"),
+		Entry("compose event", "compose"),
+	)
+
+	DescribeTable("should not commit when batch contains invalid app event",
+		func(kind string, expectedErr string, badEvent store.RawEvent) {
+			db, err := testenv.Open(schema.Config{})
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
+			event1 := store.RawEvent{
+				GUID:       "94147a2f-2626-4445-8b4e-22ebe8071a29",
+				CreatedAt:  time.Date(2002, 2, 2, 2, 2, 2, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-2"}`),
+			}
+			event3 := store.RawEvent{
+				GUID:       "395b7d4c-c859-4a28-9a53-6b15fab447c7",
+				CreatedAt:  time.Date(2003, 3, 3, 3, 3, 3, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-3"}`),
+			}
+			By("attempting to store a bad batch of events", func() {
+				err := db.Schema.StoreEvents([]store.RawEvent{
+					event1,
+					badEvent,
+					event3,
+				})
+				Expect(err).To(MatchError(ContainSubstring(expectedErr)))
+			})
+			By("fetching no events back", func() {
+				storedEvents, err := db.Schema.GetEvents(store.RawEventFilter{
+					Kind: kind,
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(storedEvents).To(Equal([]store.RawEvent{}))
+			})
+		},
+		Entry("app event with no GUID", "app", "must have a GUID", store.RawEvent{
+			CreatedAt:  time.Date(2002, 1, 1, 1, 1, 1, 0, time.UTC),
+			Kind:       "app",
+			RawMessage: json.RawMessage(`{"name": "bad-app-2"}`),
+		}),
+		Entry("app event with no CreatedAt", "app", "must have a CreatedAt", store.RawEvent{
+			GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+			Kind:       "app",
+			RawMessage: json.RawMessage(`{"name": "bad-app-2"}`),
+		}),
+		Entry("app event with no Kind", "app", "must have a Kind", store.RawEvent{
+			GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+			CreatedAt:  time.Date(2002, 1, 1, 1, 1, 1, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"name": "bad-app-2"}`),
+		}),
+		Entry("app event with no RawMessage", "app", "must have a RawMessage payload", store.RawEvent{
+			GUID:      "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+			CreatedAt: time.Date(2002, 1, 1, 1, 1, 1, 0, time.UTC),
+			Kind:      "app",
+		}),
+		Entry("compose event with no GUID", "compose", "must have a GUID", store.RawEvent{
+			CreatedAt:  time.Date(2002, 1, 1, 1, 1, 1, 0, time.UTC),
+			Kind:       "compose",
+			RawMessage: json.RawMessage(`{"name": "bad-app-2"}`),
+		}),
+		Entry("compose event with no CreatedAt", "compose", "must have a CreatedAt", store.RawEvent{
+			GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+			Kind:       "compose",
+			RawMessage: json.RawMessage(`{"name": "bad-app-2"}`),
+		}),
+		Entry("compose event with no Kind", "compose", "must have a Kind", store.RawEvent{
+			GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+			CreatedAt:  time.Date(2002, 1, 1, 1, 1, 1, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"name": "bad-app-2"}`),
+		}),
+		Entry("compose event with no RawMessage", "compose", "must have a RawMessage payload", store.RawEvent{
+			GUID:      "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+			CreatedAt: time.Date(2002, 1, 1, 1, 1, 1, 0, time.UTC),
+			Kind:      "compose",
+		}),
+	)
+
+	DescribeTable("should be an error to GetEvents with invalid Kind",
+		func(kind string, expectedErr string) {
+			db, err := testenv.Open(schema.Config{})
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
+			storedEvents, err := db.Schema.GetEvents(store.RawEventFilter{
+				Kind: kind,
+			})
+			Expect(err).To(MatchError(ContainSubstring(expectedErr)))
+			Expect(storedEvents).To(BeNil())
+		},
+		Entry("unset kind", "", "you must supply a kind to filter events by"),
+		Entry("unknown kind", "unknown", "cannot query events of kind 'unknown'"),
+	)
+
+	DescribeTable("should ignore events that already exist in the database",
+		func(kind string) {
+			db, err := testenv.Open(schema.Config{})
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
+			event1 := store.RawEvent{
+				GUID:       "94147a2f-2626-4445-8b4e-22ebe8071a29",
+				CreatedAt:  time.Date(2001, 1, 1, 1, 1, 1, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-1"}`),
+			}
+			event2 := store.RawEvent{
+				GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+				CreatedAt:  time.Date(2002, 2, 2, 2, 2, 2, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-2"}`),
+			}
+			event3 := store.RawEvent{
+				GUID:       "395b7d4c-c859-4a28-9a53-6b15fab447c7",
+				CreatedAt:  time.Date(2003, 3, 3, 3, 3, 3, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-3"}`),
+			}
+			By("inserting a batch of events", func() {
+				err := db.Schema.StoreEvents([]store.RawEvent{
+					event1,
+					event2,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			By("inserting new same batch again", func() {
+				err := db.Schema.StoreEvents([]store.RawEvent{
+					event1,
+					event2,
+					event3,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			By("fetching all events back", func() {
+				storedEvents, err := db.Schema.GetEvents(store.RawEventFilter{
+					Kind: kind,
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(storedEvents).To(Equal([]store.RawEvent{
+					event3,
+					event2,
+					event1,
+				}))
+			})
+		},
+		Entry("app event", "app"),
+		Entry("service event", "service"),
+		Entry("compose event", "compose"),
+	)
+
+	DescribeTable("should be able to fetch only the LAST known event",
+		func(kind string) {
+			db, err := testenv.Open(schema.Config{})
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
+			event1 := store.RawEvent{
+				GUID:       "94147a2f-2626-4445-8b4e-22ebe8071a29",
+				CreatedAt:  time.Date(2001, 1, 1, 1, 1, 1, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-1"}`),
+			}
+			event2 := store.RawEvent{
+				GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+				CreatedAt:  time.Date(2003, 3, 3, 3, 3, 3, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-2"}`),
+			}
+			event3 := store.RawEvent{
+				GUID:       "395b7d4c-c859-4a28-9a53-6b15fab447c7",
+				CreatedAt:  time.Date(2002, 2, 2, 2, 2, 2, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-3"}`),
+			}
+			By("inserting a batch of events", func() {
+				err := db.Schema.StoreEvents([]store.RawEvent{
+					event1,
+					event2,
+					event3,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			By("fetching back a single event", func() {
+				storedEvents, err := db.Schema.GetEvents(store.RawEventFilter{
+					Kind:  kind,
+					Limit: 1,
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(storedEvents).To(Equal([]store.RawEvent{
+					event3,
+				}))
+			})
+		},
+		Entry("app event", "app"),
+		Entry("service event", "service"),
+		Entry("compose event", "compose"),
+	)
+
+	DescribeTable("should be able to fetch only the FIRST known event",
+		func(kind string) {
+			db, err := testenv.Open(schema.Config{})
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
+			event1 := store.RawEvent{
+				GUID:       "94147a2f-2626-4445-8b4e-22ebe8071a29",
+				CreatedAt:  time.Date(2001, 1, 1, 1, 1, 1, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-1"}`),
+			}
+			event2 := store.RawEvent{
+				GUID:       "7311ecc5-33f7-42f5-92b6-7f0789bf92a5",
+				CreatedAt:  time.Date(2003, 3, 3, 3, 3, 3, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-2"}`),
+			}
+			event3 := store.RawEvent{
+				GUID:       "395b7d4c-c859-4a28-9a53-6b15fab447c7",
+				CreatedAt:  time.Date(2002, 2, 2, 2, 2, 2, 0, time.UTC),
+				Kind:       kind,
+				RawMessage: json.RawMessage(`{"name": "app-3"}`),
+			}
+			By("inserting a batch of events", func() {
+				err := db.Schema.StoreEvents([]store.RawEvent{
+					event1,
+					event2,
+					event3,
+				})
+				Expect(err).ToNot(HaveOccurred())
+			})
+			By("fetching back a single event", func() {
+				storedEvents, err := db.Schema.GetEvents(store.RawEventFilter{
+					Kind:    kind,
+					Reverse: true,
+					Limit:   1,
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(storedEvents).To(Equal([]store.RawEvent{
+					event1,
+				}))
+			})
+		},
+		Entry("app event", "app"),
+		Entry("service event", "service"),
+		Entry("compose event", "compose"),
 	)
 
 })

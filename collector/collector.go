@@ -2,16 +2,17 @@ package collector
 
 import (
 	"context"
-	"os"
 	"time"
+
+	"github.com/alphagov/paas-billing/store"
 
 	"code.cloudfoundry.org/lager"
 )
 
 //go:generate counterfeiter -o fakes/fake_event_fetcher.go . EventFetcher
 type EventFetcher interface {
-	Name() string
-	FetchEvents(logger lager.Logger, fetchLimit int, recordMinAge time.Duration) (int, error)
+	FetchEvents(lastKnownEvent *store.RawEvent) ([]store.RawEvent, error)
+	Kind() string
 }
 
 // Collector is the usage events collector
@@ -21,7 +22,7 @@ type Collector struct {
 	config       *Config
 	logger       lager.Logger
 	eventFetcher EventFetcher
-	signalChan   chan os.Signal
+	store        store.EventStorer
 }
 
 // New creates a new usage events collector
@@ -29,11 +30,13 @@ func New(
 	config *Config,
 	logger lager.Logger,
 	eventFetcher EventFetcher,
+	eventStore store.EventStorer,
 ) *Collector {
 	collector := &Collector{
 		config:       config,
-		logger:       logger.Session(eventFetcher.Name()),
+		logger:       logger.Session(eventFetcher.Kind()),
 		eventFetcher: eventFetcher,
+		store:        eventStore,
 	}
 	return collector
 }
@@ -47,11 +50,10 @@ func (c *Collector) Run(ctx context.Context) {
 	for {
 		select {
 		case <-timer.C:
-			cnt, err := c.eventFetcher.FetchEvents(c.logger, c.config.FetchLimit, c.config.RecordMinAge)
+			cnt, err := c.collect()
 			if err != nil {
-				c.logger.Error("fetch", err)
+				c.logger.Error("collect", err)
 			}
-
 			if cnt == c.config.FetchLimit {
 				timer.Reset(c.config.MinWaitTime)
 			} else {
@@ -63,4 +65,33 @@ func (c *Collector) Run(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (c *Collector) getLastEvent() (*store.RawEvent, error) {
+	lastEvents, err := c.store.GetEvents(store.RawEventFilter{
+		Kind:  c.eventFetcher.Kind(),
+		Limit: 1,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(lastEvents) < 1 {
+		return nil, nil
+	}
+	return &lastEvents[0], nil
+}
+
+func (c *Collector) collect() (int, error) {
+	lastEvent, err := c.getLastEvent()
+	if err != nil {
+		return 0, err
+	}
+	events, err := c.eventFetcher.FetchEvents(lastEvent)
+	if err != nil {
+		return 0, err
+	}
+	if err := c.store.StoreEvents(events); err != nil {
+		return 0, err
+	}
+	return len(events), nil
 }

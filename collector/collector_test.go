@@ -8,6 +8,8 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/collector"
 	"github.com/alphagov/paas-billing/collector/fakes"
+	"github.com/alphagov/paas-billing/store"
+	storefakes "github.com/alphagov/paas-billing/store/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -18,6 +20,7 @@ var _ = Describe("Collector", func() {
 		config           *collector.Config
 		logger           lager.Logger
 		fakeEventFetcher *fakes.FakeEventFetcher
+		fakeEventStore   *storefakes.FakeEventStorer
 		coll             *collector.Collector
 		ctx              context.Context
 		cancelFunc       context.CancelFunc
@@ -32,7 +35,9 @@ var _ = Describe("Collector", func() {
 		}
 		logger = lager.NewLogger("test")
 		fakeEventFetcher = &fakes.FakeEventFetcher{}
-		coll = collector.New(config, logger, fakeEventFetcher)
+		fakeEventStore = &storefakes.FakeEventStorer{}
+
+		coll = collector.New(config, logger, fakeEventFetcher, fakeEventStore)
 		ctx, cancelFunc = context.WithCancel(context.Background())
 	})
 
@@ -41,48 +46,42 @@ var _ = Describe("Collector", func() {
 	})
 
 	It("should fetch events regularly", func() {
-		go func() {
-			coll.Run(ctx)
-		}()
+		go coll.Run(ctx)
 
 		Eventually(fakeEventFetcher.FetchEventsCallCount, 5).Should(BeNumerically(">", 1))
 	}, 5)
 
 	It("should handle errors and retry again", func() {
-		fakeEventFetcher.FetchEventsReturnsOnCall(0, 0, errors.New("some error"))
+		fakeEventFetcher.FetchEventsReturnsOnCall(0, []store.RawEvent{}, errors.New("some error"))
 
-		go func() {
-			coll.Run(ctx)
-		}()
+		go coll.Run(ctx)
 
 		Eventually(fakeEventFetcher.FetchEventsCallCount, 5).Should(BeNumerically(">", 1))
 	}, 5)
 
-	It("should wait only the minimum wait time it it fetched a full page", func() {
+	It("should wait only the minimum wait time if collected FetchLimit number of events", func() {
 		config.DefaultSchedule = time.Duration(1 * time.Minute)
-		fakeEventFetcher.FetchEventsReturnsOnCall(0, config.FetchLimit, nil)
+		collectedEvents := make([]store.RawEvent, config.FetchLimit)
+		fakeEventFetcher.FetchEventsReturnsOnCall(0, collectedEvents, nil)
+		fakeEventStore.StoreEventsReturnsOnCall(0, nil)
 
-		go func() {
-			coll.Run(ctx)
-		}()
+		go coll.Run(ctx)
 
 		Eventually(fakeEventFetcher.FetchEventsCallCount, 5).Should(BeNumerically(">", 1))
 	}, 5)
 
-	Context("When the collector gets an interrupt signal", func() {
-		It("should stop gracefully", func() {
-			ctx, cancelFunc := context.WithCancel(context.Background())
+	It("should stop gracefully when sent an interrupt signal", func() {
+		ctx, cancelFunc := context.WithCancel(context.Background())
 
-			c := make(chan bool, 0)
-			go func() {
-				coll.Run(ctx)
-				c <- true
-			}()
+		c := make(chan bool)
+		go func() {
+			coll.Run(ctx)
+			c <- true
+		}()
 
-			cancelFunc()
+		cancelFunc()
 
-			Expect(<-c).To(BeTrue())
-		}, 5)
-	})
+		Expect(<-c).To(BeTrue())
+	}, 5)
 
 })

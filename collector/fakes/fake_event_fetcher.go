@@ -3,93 +3,48 @@ package fakes
 
 import (
 	"sync"
-	"time"
 
-	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/collector"
+	"github.com/alphagov/paas-billing/store"
 )
 
 type FakeEventFetcher struct {
-	NameStub        func() string
-	nameMutex       sync.RWMutex
-	nameArgsForCall []struct{}
-	nameReturns     struct {
-		result1 string
-	}
-	nameReturnsOnCall map[int]struct {
-		result1 string
-	}
-	FetchEventsStub        func(logger lager.Logger, fetchLimit int, recordMinAge time.Duration) (int, error)
+	FetchEventsStub        func(lastKnownEvent *store.RawEvent) ([]store.RawEvent, error)
 	fetchEventsMutex       sync.RWMutex
 	fetchEventsArgsForCall []struct {
-		logger       lager.Logger
-		fetchLimit   int
-		recordMinAge time.Duration
+		lastKnownEvent *store.RawEvent
 	}
 	fetchEventsReturns struct {
-		result1 int
+		result1 []store.RawEvent
 		result2 error
 	}
 	fetchEventsReturnsOnCall map[int]struct {
-		result1 int
+		result1 []store.RawEvent
 		result2 error
+	}
+	KindStub        func() string
+	kindMutex       sync.RWMutex
+	kindArgsForCall []struct{}
+	kindReturns     struct {
+		result1 string
+	}
+	kindReturnsOnCall map[int]struct {
+		result1 string
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEventFetcher) Name() string {
-	fake.nameMutex.Lock()
-	ret, specificReturn := fake.nameReturnsOnCall[len(fake.nameArgsForCall)]
-	fake.nameArgsForCall = append(fake.nameArgsForCall, struct{}{})
-	fake.recordInvocation("Name", []interface{}{})
-	fake.nameMutex.Unlock()
-	if fake.NameStub != nil {
-		return fake.NameStub()
-	}
-	if specificReturn {
-		return ret.result1
-	}
-	return fake.nameReturns.result1
-}
-
-func (fake *FakeEventFetcher) NameCallCount() int {
-	fake.nameMutex.RLock()
-	defer fake.nameMutex.RUnlock()
-	return len(fake.nameArgsForCall)
-}
-
-func (fake *FakeEventFetcher) NameReturns(result1 string) {
-	fake.NameStub = nil
-	fake.nameReturns = struct {
-		result1 string
-	}{result1}
-}
-
-func (fake *FakeEventFetcher) NameReturnsOnCall(i int, result1 string) {
-	fake.NameStub = nil
-	if fake.nameReturnsOnCall == nil {
-		fake.nameReturnsOnCall = make(map[int]struct {
-			result1 string
-		})
-	}
-	fake.nameReturnsOnCall[i] = struct {
-		result1 string
-	}{result1}
-}
-
-func (fake *FakeEventFetcher) FetchEvents(logger lager.Logger, fetchLimit int, recordMinAge time.Duration) (int, error) {
+func (fake *FakeEventFetcher) FetchEvents(lastKnownEvent *store.RawEvent) ([]store.RawEvent, error) {
 	fake.fetchEventsMutex.Lock()
 	ret, specificReturn := fake.fetchEventsReturnsOnCall[len(fake.fetchEventsArgsForCall)]
 	fake.fetchEventsArgsForCall = append(fake.fetchEventsArgsForCall, struct {
-		logger       lager.Logger
-		fetchLimit   int
-		recordMinAge time.Duration
-	}{logger, fetchLimit, recordMinAge})
-	fake.recordInvocation("FetchEvents", []interface{}{logger, fetchLimit, recordMinAge})
+		lastKnownEvent *store.RawEvent
+	}{lastKnownEvent})
+	fake.recordInvocation("FetchEvents", []interface{}{lastKnownEvent})
 	fake.fetchEventsMutex.Unlock()
 	if fake.FetchEventsStub != nil {
-		return fake.FetchEventsStub(logger, fetchLimit, recordMinAge)
+		return fake.FetchEventsStub(lastKnownEvent)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -103,41 +58,81 @@ func (fake *FakeEventFetcher) FetchEventsCallCount() int {
 	return len(fake.fetchEventsArgsForCall)
 }
 
-func (fake *FakeEventFetcher) FetchEventsArgsForCall(i int) (lager.Logger, int, time.Duration) {
+func (fake *FakeEventFetcher) FetchEventsArgsForCall(i int) *store.RawEvent {
 	fake.fetchEventsMutex.RLock()
 	defer fake.fetchEventsMutex.RUnlock()
-	return fake.fetchEventsArgsForCall[i].logger, fake.fetchEventsArgsForCall[i].fetchLimit, fake.fetchEventsArgsForCall[i].recordMinAge
+	return fake.fetchEventsArgsForCall[i].lastKnownEvent
 }
 
-func (fake *FakeEventFetcher) FetchEventsReturns(result1 int, result2 error) {
+func (fake *FakeEventFetcher) FetchEventsReturns(result1 []store.RawEvent, result2 error) {
 	fake.FetchEventsStub = nil
 	fake.fetchEventsReturns = struct {
-		result1 int
+		result1 []store.RawEvent
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeEventFetcher) FetchEventsReturnsOnCall(i int, result1 int, result2 error) {
+func (fake *FakeEventFetcher) FetchEventsReturnsOnCall(i int, result1 []store.RawEvent, result2 error) {
 	fake.FetchEventsStub = nil
 	if fake.fetchEventsReturnsOnCall == nil {
 		fake.fetchEventsReturnsOnCall = make(map[int]struct {
-			result1 int
+			result1 []store.RawEvent
 			result2 error
 		})
 	}
 	fake.fetchEventsReturnsOnCall[i] = struct {
-		result1 int
+		result1 []store.RawEvent
 		result2 error
 	}{result1, result2}
+}
+
+func (fake *FakeEventFetcher) Kind() string {
+	fake.kindMutex.Lock()
+	ret, specificReturn := fake.kindReturnsOnCall[len(fake.kindArgsForCall)]
+	fake.kindArgsForCall = append(fake.kindArgsForCall, struct{}{})
+	fake.recordInvocation("Kind", []interface{}{})
+	fake.kindMutex.Unlock()
+	if fake.KindStub != nil {
+		return fake.KindStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.kindReturns.result1
+}
+
+func (fake *FakeEventFetcher) KindCallCount() int {
+	fake.kindMutex.RLock()
+	defer fake.kindMutex.RUnlock()
+	return len(fake.kindArgsForCall)
+}
+
+func (fake *FakeEventFetcher) KindReturns(result1 string) {
+	fake.KindStub = nil
+	fake.kindReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeEventFetcher) KindReturnsOnCall(i int, result1 string) {
+	fake.KindStub = nil
+	if fake.kindReturnsOnCall == nil {
+		fake.kindReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.kindReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
 }
 
 func (fake *FakeEventFetcher) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.nameMutex.RLock()
-	defer fake.nameMutex.RUnlock()
 	fake.fetchEventsMutex.RLock()
 	defer fake.fetchEventsMutex.RUnlock()
+	fake.kindMutex.RLock()
+	defer fake.kindMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

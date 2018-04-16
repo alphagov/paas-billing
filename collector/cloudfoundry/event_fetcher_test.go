@@ -8,8 +8,7 @@ import (
 	"code.cloudfoundry.org/lager"
 	cf "github.com/alphagov/paas-billing/cloudfoundry"
 	cffakes "github.com/alphagov/paas-billing/cloudfoundry/fakes"
-	"github.com/alphagov/paas-billing/db"
-	dbfakes "github.com/alphagov/paas-billing/db/fakes"
+	"github.com/alphagov/paas-billing/store"
 
 	. "github.com/alphagov/paas-billing/collector/cloudfoundry"
 	. "github.com/onsi/ginkgo"
@@ -17,130 +16,129 @@ import (
 )
 
 const (
-	event1GUID = "2C5D3E72-2082-43C1-9262-814EAE7E65AA"
-	event2GUID = "968437F2-CCEE-4B8E-B29B-34EA701BA196"
-	event3GUID = "0C586A5D-BFB7-4B31-91A2-7A7D06962D50"
-	event4GUID = "F2133349-E9D5-47B6-AA0C-00A5AC96B703"
+// event3GUID = "0C586A5D-BFB7-4B31-91A2-7A7D06962D50"
+// event4GUID = "F2133349-E9D5-47B6-AA0C-00A5AC96B703"
 )
 
-var _ = Describe("Collector", func() {
+var _ = Describe("UsageEvent Fetcher", func() {
 	var (
-		logger              lager.Logger
-		fakeClient          *cffakes.FakeUsageEventsAPI
-		fakeSQLCLient       *dbfakes.FakeSQLClient
-		emptyUsageEvents    *cf.UsageEventList
-		nonEmptyUsageEvents *cf.UsageEventList
+		fetcher     *EventFetcher
+		fakeClient  *cffakes.FakeUsageEventsAPI
+		eventKind   = "app"
+		usageEvent1 = cf.UsageEvent{
+			MetaData:  cf.MetaData{GUID: "2C5D3E72-2082-43C1-9262-814EAE7E65AA", CreatedAt: time.Date(2001, 1, 1, 1, 1, 1, 1, time.UTC)},
+			EntityRaw: json.RawMessage(`{"field":"value1"}`),
+		}
+		usageEvent2 = cf.UsageEvent{
+			MetaData:  cf.MetaData{GUID: "968437F2-CCEE-4B8E-B29B-34EA701BA196", CreatedAt: time.Date(2002, 2, 2, 2, 2, 2, 2, time.UTC)},
+			EntityRaw: json.RawMessage(`{"field":"value2"}`),
+		}
+		rawEvent1 = store.RawEvent{
+			GUID:       usageEvent1.MetaData.GUID,
+			Kind:       eventKind,
+			CreatedAt:  usageEvent1.MetaData.CreatedAt,
+			RawMessage: json.RawMessage(`{"field":"value1"}`),
+		}
+		rawEvent2 = store.RawEvent{
+			GUID:       usageEvent2.MetaData.GUID,
+			Kind:       eventKind,
+			CreatedAt:  usageEvent2.MetaData.CreatedAt,
+			RawMessage: json.RawMessage(`{"field":"value2"}`),
+		}
 	)
 
 	BeforeEach(func() {
 		fakeClient = &cffakes.FakeUsageEventsAPI{}
-		fakeClient.TypeReturns("app")
-
-		fakeSQLCLient = &dbfakes.FakeSQLClient{}
-
-		logger = lager.NewLogger("test")
-
-		emptyUsageEvents = &cf.UsageEventList{Resources: []cf.UsageEvent{}}
-		nonEmptyUsageEvents = &cf.UsageEventList{
-			Resources: []cf.UsageEvent{
-				{
-					MetaData:  cf.MetaData{GUID: event1GUID},
-					EntityRaw: json.RawMessage(`{"field":"value1"}`),
-				},
-				{
-					MetaData:  cf.MetaData{GUID: event2GUID},
-					EntityRaw: json.RawMessage(`{"field":"value2"}`),
-				},
-			},
+		fakeClient.TypeReturns(eventKind)
+		fetcher = &EventFetcher{
+			Logger: lager.NewLogger("test"),
+			Client: fakeClient,
 		}
 	})
 
-	It("should fetch the latest events and insert into the database", func() {
-		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, "LAST-GUID", nil)
-		fakeClient.GetReturnsOnCall(0, nonEmptyUsageEvents, nil)
-		fakeSQLCLient.InsertUsageEventListReturnsOnCall(0, nil)
+	It("should fetch usage events without using after_guid when no lastEvent is set", func() {
+		fakeClient.GetReturnsOnCall(0, &cf.UsageEventList{
+			Resources: []cf.UsageEvent{
+				usageEvent1,
+				usageEvent2,
+			},
+		}, nil)
 
-		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
-		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
+		fetchedEvents, err := fetcher.FetchEvents(nil)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cnt).To(Equal(2))
-
-		Expect(fakeSQLCLient.FetchLastGUIDCallCount()).To(Equal(1))
-		tableName := fakeSQLCLient.FetchLastGUIDArgsForCall(0)
-		Expect(tableName).To(Equal(db.AppUsageTableName))
+		Expect(len(fetchedEvents)).To(Equal(2))
+		Expect(fetchedEvents).To(Equal([]store.RawEvent{
+			rawEvent1,
+			rawEvent2,
+		}))
 
 		Expect(fakeClient.GetCallCount()).To(Equal(1))
-		afterGUID, count, minAge := fakeClient.GetArgsForCall(0)
-		Expect(afterGUID).To(Equal("LAST-GUID"))
-		Expect(count).To(Equal(10))
-		Expect(minAge).To(Equal(time.Minute))
-
-		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(Equal(1))
-		usageEvents, tableName := fakeSQLCLient.InsertUsageEventListArgsForCall(0)
-		Expect(usageEvents).To(Equal(nonEmptyUsageEvents))
-		Expect(tableName).To(Equal(db.AppUsageTableName))
-	})
-
-	It("should handle if there is no last guid in the database", func() {
-		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
-		fakeClient.GetReturnsOnCall(0, nonEmptyUsageEvents, nil)
-
-		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
-		_, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).ToNot(HaveOccurred())
-
-		afterGUID, _, _ := fakeClient.GetArgsForCall(0)
+		afterGUID, fetchLimit, minAge := fakeClient.GetArgsForCall(0)
 		Expect(afterGUID).To(Equal(cf.GUIDNil))
+		Expect(fetchLimit).To(Equal(DefaultFetchLimit))
+		Expect(minAge).To(Equal(DefaultRecordMinAge))
 	})
 
-	It("should not insert an empty event list into the database", func() {
-		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
-		fakeClient.GetReturnsOnCall(0, emptyUsageEvents, nil)
+	It("should request events using after_guid when when a lastEvent is set", func() {
+		fakeClient.GetReturnsOnCall(0, &cf.UsageEventList{
+			Resources: []cf.UsageEvent{
+				usageEvent2,
+			},
+		}, nil)
 
-		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
-		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
+		lastEvent := &store.RawEvent{
+			GUID: usageEvent1.MetaData.GUID,
+		}
+		fetchedEvents, err := fetcher.FetchEvents(lastEvent)
+		Expect(fetchedEvents).To(Equal([]store.RawEvent{
+			rawEvent2,
+		}))
+
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cnt).To(BeZero())
+		Expect(len(fetchedEvents)).To(Equal(1))
 
-		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(BeZero())
+		Expect(fakeClient.GetCallCount()).To(Equal(1))
+		afterGUID, fetchLimit, minAge := fakeClient.GetArgsForCall(0)
+		Expect(afterGUID).To(Equal(usageEvent1.MetaData.GUID))
+		Expect(fetchLimit).To(Equal(DefaultFetchLimit))
+		Expect(minAge).To(Equal(DefaultRecordMinAge))
+
 	})
 
-	It("should return error if it can't fetch the last guid", func() {
-		guidErr := errors.New("some error")
-		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, "", guidErr)
+	It("should request FetchLimit number of events", func() {
+		fetcher.FetchLimit = 100
+		_, err := fetcher.FetchEvents(nil)
+		Expect(err).ToNot(HaveOccurred())
 
-		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
-		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).To(MatchError(guidErr))
-		Expect(cnt).To(BeZero())
+		Expect(fakeClient.GetCallCount()).To(Equal(1))
+		_, fetchLimit, _ := fakeClient.GetArgsForCall(0)
+		Expect(fetchLimit).To(Equal(fetcher.FetchLimit))
+	})
 
-		Expect(fakeClient.GetCallCount()).To(BeZero())
-		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(BeZero())
+	It("should request events with RecordMinAge offset", func() {
+		fetcher.RecordMinAge = 15 * time.Minute
+		_, err := fetcher.FetchEvents(nil)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(fakeClient.GetCallCount()).To(Equal(1))
+		_, _, minAge := fakeClient.GetArgsForCall(0)
+		Expect(minAge).To(Equal(fetcher.RecordMinAge))
+	})
+
+	It("should return an error if the lastEvent given has no GUID", func() {
+		badLastEvent := &store.RawEvent{}
+
+		_, err := fetcher.FetchEvents(badLastEvent)
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError("invalid GUID for lastEvent"))
 	})
 
 	It("should return error if it can't fetch new events", func() {
-		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
 		fetchErr := errors.New("some error")
 		fakeClient.GetReturnsOnCall(0, nil, fetchErr)
 
-		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
-		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
+		_, err := fetcher.FetchEvents(nil)
 		Expect(err).To(MatchError(fetchErr))
-		Expect(cnt).To(BeZero())
-
-		Expect(fakeSQLCLient.InsertUsageEventListCallCount()).To(BeZero())
-	})
-
-	It("should return error if it can't insert the events into the database", func() {
-		fakeSQLCLient.FetchLastGUIDReturnsOnCall(0, cf.GUIDNil, nil)
-		fakeClient.GetReturnsOnCall(0, nonEmptyUsageEvents, nil)
-		dbErr := errors.New("some error")
-		fakeSQLCLient.InsertUsageEventListReturnsOnCall(0, dbErr)
-
-		fetcher := NewEventFetcher(fakeSQLCLient, fakeClient)
-		cnt, err := fetcher.FetchEvents(logger, 10, time.Minute)
-		Expect(err).To(MatchError(dbErr))
-		Expect(cnt).To(BeZero())
 	})
 
 })

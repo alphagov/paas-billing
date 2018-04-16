@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/alphagov/paas-billing/store"
 	"github.com/lib/pq"
 )
 
@@ -17,6 +18,8 @@ const (
 	ServiceUsageTableName = "service_usage_events"
 	ComputePlanGUID       = "f4d4b95a-f55e-4593-8d54-3364c25798c4"
 )
+
+var _ store.EventStorer = &Schema{}
 
 type Schema struct {
 	db  *sql.DB
@@ -195,6 +198,178 @@ func (s *Schema) initPlans(tx *sql.Tx) (err error) {
 	}
 
 	return nil
+}
+
+func (s *Schema) StoreEvents(events []store.RawEvent) error {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, event := range events {
+		if err := event.Validate(); err != nil {
+			return err
+		}
+		switch event.Kind {
+		case "app", "service":
+			if err := s.storeUsageEvent(tx, event); err != nil {
+				return err
+			}
+		case "compose":
+			if err := s.storeComposeEvent(tx, event); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("cannot store event without a Kind: %v", event)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Schema) storeUsageEvent(tx *sql.Tx, event store.RawEvent) error {
+	tableName := ""
+	switch event.Kind {
+	case "app":
+		tableName = "app_usage_events"
+	case "service":
+		tableName = "service_usage_events"
+	default:
+		return fmt.Errorf("storeUsageEvent cannot store event of type %s", event.Kind)
+	}
+	stmt := fmt.Sprintf(`
+		insert into %s (
+			guid, created_at, raw_message
+		) values (
+			$1, $2, $3
+		) on conflict do nothing
+	`, tableName)
+	_, err := tx.Exec(stmt, event.GUID, event.CreatedAt, event.RawMessage)
+	return err
+}
+
+func (s *Schema) storeComposeEvent(tx *sql.Tx, event store.RawEvent) error {
+	if event.Kind != "compose" {
+		return fmt.Errorf("storeComposeEvent cannot store event of type %s", event.Kind)
+	}
+	stmt := fmt.Sprintf(`
+		insert into compose_audit_events (
+			event_id, created_at, raw_message
+		) values (
+			$1, $2, $3
+		) on conflict do nothing
+	`)
+	_, err := tx.Exec(stmt, event.GUID, event.CreatedAt, event.RawMessage)
+	return err
+}
+
+// GetEvents returns the RawEvents filtered using RawEventFilter if present
+func (s *Schema) GetEvents(filter store.RawEventFilter) ([]store.RawEvent, error) {
+	if filter.Kind == "" {
+		return nil, fmt.Errorf("you must supply a kind to filter events by")
+	}
+	switch filter.Kind {
+	case "app", "service":
+		return s.getUsageEvents(filter)
+	case "compose":
+		return s.getComposeEvents(filter)
+	}
+	return nil, fmt.Errorf("cannot query events of kind '%s'", filter.Kind)
+}
+
+func (s *Schema) getComposeEvents(filter store.RawEventFilter) ([]store.RawEvent, error) {
+	events := []store.RawEvent{}
+	sortDirection := "desc"
+	if filter.Reverse {
+		sortDirection = "asc"
+	}
+	limit := ""
+	if filter.Limit > 0 {
+		limit = fmt.Sprintf(`limit %d`, filter.Limit)
+	}
+	if filter.Kind != "compose" {
+		return nil, fmt.Errorf("getComposeEvents can not filter events of kind: %s", filter.Kind)
+	}
+	rows, err := s.db.Query(`
+		select
+			event_id,
+			created_at,
+			raw_message
+		from
+			compose_audit_events
+		order by
+			id ` + sortDirection + `
+		` + limit + `
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var event = store.RawEvent{Kind: filter.Kind}
+		err := rows.Scan(
+			&event.GUID,
+			&event.CreatedAt,
+			&event.RawMessage,
+		)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
+
+}
+
+func (s *Schema) getUsageEvents(filter store.RawEventFilter) ([]store.RawEvent, error) {
+	events := []store.RawEvent{}
+	sortDirection := "desc"
+	if filter.Reverse {
+		sortDirection = "asc"
+	}
+	limit := ""
+	if filter.Limit > 0 {
+		limit = fmt.Sprintf(`limit %d`, filter.Limit)
+	}
+	tableName := ""
+	switch filter.Kind {
+	case "service":
+		tableName = "service_usage_events"
+	case "app":
+		tableName = "app_usage_events"
+	default:
+		return nil, fmt.Errorf("getUsageEvents unknown kind: %s", filter.Kind)
+	}
+	rows, err := s.db.Query(`
+		select
+			guid,
+			created_at,
+			raw_message
+		from
+			` + tableName + `
+		order by
+			id ` + sortDirection + `
+		` + limit + `
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		event := store.RawEvent{Kind: filter.Kind}
+		err := rows.Scan(
+			&event.GUID,
+			&event.CreatedAt,
+			&event.RawMessage,
+		)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, event)
+	}
+	return events, nil
 }
 
 func checkVATRates(tx *sql.Tx) error {
