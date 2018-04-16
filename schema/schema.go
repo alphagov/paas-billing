@@ -1,6 +1,7 @@
 package schema
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/alphagov/paas-billing/store"
 	"github.com/lib/pq"
@@ -17,30 +19,44 @@ const (
 	AppUsageTableName     = "app_usage_events"
 	ServiceUsageTableName = "service_usage_events"
 	ComputePlanGUID       = "f4d4b95a-f55e-4593-8d54-3364c25798c4"
+	DefaultInitTimeout    = 5 * time.Minute
+	DefaultRefreshTimeout = 5 * time.Minute
+	DefaultStoreTimeout   = 30 * time.Second
+	DefaultQueryTimeout   = 30 * time.Second
 )
 
 var _ store.EventStorer = &Schema{}
 
+type DB interface {
+	BeginTx(ctx context.Context, opts *sql.TxOptions) (*sql.Tx, error)
+}
+
 type Schema struct {
-	db  *sql.DB
+	db  DB
 	cfg Config
+	ctx context.Context
 }
 
-func New(db *sql.DB, cfg Config) *Schema {
-	return &Schema{db, cfg}
+func New(ctx context.Context, db *sql.DB, cfg Config) *Schema {
+	return &Schema{
+		db:  db,
+		cfg: cfg,
+		ctx: ctx,
+	}
 }
 
-func NewFromConfig(db *sql.DB, filename string) (*Schema, error) {
+func NewFromConfig(ctx context.Context, db *sql.DB, filename string) (*Schema, error) {
 	cfg, err := LoadConfig(filename)
 	if err != nil {
 		return nil, err
 	}
-	return New(db, cfg), nil
+	return New(ctx, db, cfg), nil
 }
 
 // Init initialises the database tables and functions
 func (s *Schema) Init() error {
-	tx, err := s.db.Begin()
+	ctx, _ := context.WithTimeout(s.ctx, DefaultInitTimeout)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -69,7 +85,8 @@ func (s *Schema) Init() error {
 // Refresh triggers regeneration of the cached normalized view of the event dat and rebuilds the
 // billable components. Ideally you should do this once a day
 func (s *Schema) Refresh() error {
-	tx, err := s.db.Begin()
+	ctx, _ := context.WithTimeout(s.ctx, DefaultRefreshTimeout)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -201,7 +218,8 @@ func (s *Schema) initPlans(tx *sql.Tx) (err error) {
 }
 
 func (s *Schema) StoreEvents(events []store.RawEvent) error {
-	tx, err := s.db.Begin()
+	ctx, _ := context.WithTimeout(s.ctx, DefaultStoreTimeout)
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
@@ -292,7 +310,13 @@ func (s *Schema) getComposeEvents(filter store.RawEventFilter) ([]store.RawEvent
 	if filter.Kind != "compose" {
 		return nil, fmt.Errorf("getComposeEvents can not filter events of kind: %s", filter.Kind)
 	}
-	rows, err := s.db.Query(`
+	ctx, _ := context.WithTimeout(s.ctx, DefaultQueryTimeout)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query(`
 		select
 			event_id,
 			created_at,
@@ -342,7 +366,13 @@ func (s *Schema) getUsageEvents(filter store.RawEventFilter) ([]store.RawEvent, 
 	default:
 		return nil, fmt.Errorf("getUsageEvents unknown kind: %s", filter.Kind)
 	}
-	rows, err := s.db.Query(`
+	ctx, _ := context.WithTimeout(s.ctx, DefaultQueryTimeout)
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+	rows, err := tx.Query(`
 		select
 			guid,
 			created_at,

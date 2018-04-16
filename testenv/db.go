@@ -1,6 +1,7 @@
 package testenv
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -75,7 +76,7 @@ func Open(cfg schema.Config) (*TempDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := schema.New(conn, cfg)
+	s := schema.New(context.Background(), conn, cfg)
 	if err := s.Init(); err != nil {
 		return nil, err
 	}
