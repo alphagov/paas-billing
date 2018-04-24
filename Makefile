@@ -1,13 +1,14 @@
 DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
 TEST_DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
+CF_API_ADDRESS ?= https://api.${DEPLOY_ENV}.dev.cloudpipeline.digital
 APP_ROOT ?= $(PWD)
 
-help:
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+bin/paas-billing: clean
+	go build -o $@ .
 
-run-dev:
+run-dev: bin/paas-billing
 	## Runs the application with local credentials
-	$(eval export CF_API_ADDRESS=https://api.${DEPLOY_ENV}.dev.cloudpipeline.digital)
+	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
 	$(eval export CF_CLIENT_ID=paas-billing)
 	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
 	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
@@ -15,42 +16,40 @@ run-dev:
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	go run main.go
+	./bin/paas-billing
 
 .PHONY: test
-test:
+test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_compose_client.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	ginkgo -nodes=6 -r
+	ginkgo -nodes=8 -r
 
-.PHONY: test
-generate-mocks: store/fakes/fake_event_storer.go cloudfoundry/fakes/mock_client.go cloudfoundry/fakes/mock_usage_events_api.go cloudfoundry/fakes/mock_io.go cloudfoundry/fakes/fake_usage_events_api.go collector/fakes/fake_event_fetcher.go compose/fakes/fake_client.go
-	echo "regenerating mocks"
+fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
+	counterfeiter -o $@ $< UsageEventsAPI
 
-cloudfoundry/fakes/mock_usage_events_api.go: cloudfoundry/usage_events_api.go
-	mkdir -p cloudfoundry/fakes
-	mockgen -package fakes -destination=$@ github.com/alphagov/paas-billing/cloudfoundry UsageEventsAPI
-	sed -i.bak 's#github.com/alphagov/paas-billing/vendor/##g' $@
-	rm -f $@.bak
+fakes/fake_cf_client.go: eventfetchers/cffetcher/cf_client.go
+	counterfeiter -o $@ $< UsageEventsClient
 
-cloudfoundry/fakes/mock_client.go: cloudfoundry/client.go
-	mkdir -p cloudfoundry/fakes
-	mockgen -package fakes -destination=$@ github.com/alphagov/paas-billing/cloudfoundry Client
-	sed -i.bak 's#github.com/alphagov/paas-billing/vendor/##g' $@
-	rm -f $@.bak
+fakes/fake_compose_client.go: eventfetchers/composefetcher/compose_client.go
+	counterfeiter -o $@ $< ComposeClient
 
-cloudfoundry/fakes/mock_io.go:
-	mkdir -p cloudfoundry/fakes
-	mockgen -package fakes -destination=$@ -package fakes io ReadCloser
+fakes/fake_event_fetcher.go: eventio/event_fetcher.go
+	counterfeiter -o $@ $< EventFetcher
 
-cloudfoundry/fakes/fake_usage_events_api.go: cloudfoundry/usage_events_api.go
-	go generate cloudfoundry/...
+fakes/fake_event_store.go: eventio/event_store.go
+	counterfeiter -o $@ $< EventStore
 
-collector/fakes/fake_event_fetcher.go: collector/collector.go
-	go generate collector/collector.go
+fakes/fake_authorizer.go: eventserver/auth/authorizer.go
+	counterfeiter -o $@ $< Authorizer
 
-compose/fakes/fake_client.go: compose/compose.go
-	go generate compose/...
+fakes/fake_authenticator.go: eventserver/auth/authenticator.go
+	counterfeiter -o $@ $< Authenticator
 
-store/fakes/fake_event_storer.go: store/store.go
-	go generate store/store.go
+fakes/fake_billable_event_rows.go: eventio/event_billable.go
+	counterfeiter -o $@ $< BillableEventRows
+
+fakes/fake_usage_event_rows.go: eventio/event_usage.go
+	counterfeiter -o $@ $< UsageEventRows
+
+clean:
+	rm -f bin/paas-billing

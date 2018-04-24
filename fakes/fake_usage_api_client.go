@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/alphagov/paas-billing/cloudfoundry"
+	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
 )
 
 type FakeUsageEventsAPI struct {
-	GetStub        func(afterGUID string, count int, minAge time.Duration) (*cloudfoundry.UsageEventList, error)
+	GetStub        func(afterGUID string, count int, minAge time.Duration) (*cffetcher.UsageEventList, error)
 	getMutex       sync.RWMutex
 	getArgsForCall []struct {
 		afterGUID string
@@ -17,11 +17,11 @@ type FakeUsageEventsAPI struct {
 		minAge    time.Duration
 	}
 	getReturns struct {
-		result1 *cloudfoundry.UsageEventList
+		result1 *cffetcher.UsageEventList
 		result2 error
 	}
 	getReturnsOnCall map[int]struct {
-		result1 *cloudfoundry.UsageEventList
+		result1 *cffetcher.UsageEventList
 		result2 error
 	}
 	TypeStub        func() string
@@ -37,7 +37,7 @@ type FakeUsageEventsAPI struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeUsageEventsAPI) Get(afterGUID string, count int, minAge time.Duration) (*cloudfoundry.UsageEventList, error) {
+func (fake *FakeUsageEventsAPI) Get(afterGUID string, count int, minAge time.Duration) (*cffetcher.UsageEventList, error) {
 	fake.getMutex.Lock()
 	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
 	fake.getArgsForCall = append(fake.getArgsForCall, struct {
@@ -68,24 +68,24 @@ func (fake *FakeUsageEventsAPI) GetArgsForCall(i int) (string, int, time.Duratio
 	return fake.getArgsForCall[i].afterGUID, fake.getArgsForCall[i].count, fake.getArgsForCall[i].minAge
 }
 
-func (fake *FakeUsageEventsAPI) GetReturns(result1 *cloudfoundry.UsageEventList, result2 error) {
+func (fake *FakeUsageEventsAPI) GetReturns(result1 *cffetcher.UsageEventList, result2 error) {
 	fake.GetStub = nil
 	fake.getReturns = struct {
-		result1 *cloudfoundry.UsageEventList
+		result1 *cffetcher.UsageEventList
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeUsageEventsAPI) GetReturnsOnCall(i int, result1 *cloudfoundry.UsageEventList, result2 error) {
+func (fake *FakeUsageEventsAPI) GetReturnsOnCall(i int, result1 *cffetcher.UsageEventList, result2 error) {
 	fake.GetStub = nil
 	if fake.getReturnsOnCall == nil {
 		fake.getReturnsOnCall = make(map[int]struct {
-			result1 *cloudfoundry.UsageEventList
+			result1 *cffetcher.UsageEventList
 			result2 error
 		})
 	}
 	fake.getReturnsOnCall[i] = struct {
-		result1 *cloudfoundry.UsageEventList
+		result1 *cffetcher.UsageEventList
 		result2 error
 	}{result1, result2}
 }
@@ -156,4 +156,4 @@ func (fake *FakeUsageEventsAPI) recordInvocation(key string, args []interface{})
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ cloudfoundry.UsageEventsAPI = new(FakeUsageEventsAPI)
+var _ cffetcher.UsageEventsAPI = new(FakeUsageEventsAPI)

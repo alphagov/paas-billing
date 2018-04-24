@@ -4,11 +4,11 @@ package fakes
 import (
 	"sync"
 
-	"github.com/alphagov/paas-billing/compose"
-	"github.com/compose/gocomposeapi"
+	"github.com/alphagov/paas-billing/eventfetchers/composefetcher"
+	composeapi "github.com/compose/gocomposeapi"
 )
 
-type FakeClient struct {
+type FakeComposeClient struct {
 	GetAuditEventsStub        func(params composeapi.AuditEventsParams) (*[]composeapi.AuditEvent, []error)
 	getAuditEventsMutex       sync.RWMutex
 	getAuditEventsArgsForCall []struct {
@@ -26,7 +26,7 @@ type FakeClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeClient) GetAuditEvents(params composeapi.AuditEventsParams) (*[]composeapi.AuditEvent, []error) {
+func (fake *FakeComposeClient) GetAuditEvents(params composeapi.AuditEventsParams) (*[]composeapi.AuditEvent, []error) {
 	fake.getAuditEventsMutex.Lock()
 	ret, specificReturn := fake.getAuditEventsReturnsOnCall[len(fake.getAuditEventsArgsForCall)]
 	fake.getAuditEventsArgsForCall = append(fake.getAuditEventsArgsForCall, struct {
@@ -43,19 +43,19 @@ func (fake *FakeClient) GetAuditEvents(params composeapi.AuditEventsParams) (*[]
 	return fake.getAuditEventsReturns.result1, fake.getAuditEventsReturns.result2
 }
 
-func (fake *FakeClient) GetAuditEventsCallCount() int {
+func (fake *FakeComposeClient) GetAuditEventsCallCount() int {
 	fake.getAuditEventsMutex.RLock()
 	defer fake.getAuditEventsMutex.RUnlock()
 	return len(fake.getAuditEventsArgsForCall)
 }
 
-func (fake *FakeClient) GetAuditEventsArgsForCall(i int) composeapi.AuditEventsParams {
+func (fake *FakeComposeClient) GetAuditEventsArgsForCall(i int) composeapi.AuditEventsParams {
 	fake.getAuditEventsMutex.RLock()
 	defer fake.getAuditEventsMutex.RUnlock()
 	return fake.getAuditEventsArgsForCall[i].params
 }
 
-func (fake *FakeClient) GetAuditEventsReturns(result1 *[]composeapi.AuditEvent, result2 []error) {
+func (fake *FakeComposeClient) GetAuditEventsReturns(result1 *[]composeapi.AuditEvent, result2 []error) {
 	fake.GetAuditEventsStub = nil
 	fake.getAuditEventsReturns = struct {
 		result1 *[]composeapi.AuditEvent
@@ -63,7 +63,7 @@ func (fake *FakeClient) GetAuditEventsReturns(result1 *[]composeapi.AuditEvent, 
 	}{result1, result2}
 }
 
-func (fake *FakeClient) GetAuditEventsReturnsOnCall(i int, result1 *[]composeapi.AuditEvent, result2 []error) {
+func (fake *FakeComposeClient) GetAuditEventsReturnsOnCall(i int, result1 *[]composeapi.AuditEvent, result2 []error) {
 	fake.GetAuditEventsStub = nil
 	if fake.getAuditEventsReturnsOnCall == nil {
 		fake.getAuditEventsReturnsOnCall = make(map[int]struct {
@@ -77,7 +77,7 @@ func (fake *FakeClient) GetAuditEventsReturnsOnCall(i int, result1 *[]composeapi
 	}{result1, result2}
 }
 
-func (fake *FakeClient) Invocations() map[string][][]interface{} {
+func (fake *FakeComposeClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
 	fake.getAuditEventsMutex.RLock()
@@ -89,7 +89,7 @@ func (fake *FakeClient) Invocations() map[string][][]interface{} {
 	return copiedInvocations
 }
 
-func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
+func (fake *FakeComposeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocationsMutex.Lock()
 	defer fake.invocationsMutex.Unlock()
 	if fake.invocations == nil {
@@ -101,4 +101,4 @@ func (fake *FakeClient) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ compose.Client = new(FakeClient)
+var _ composefetcher.ComposeClient = new(FakeComposeClient)

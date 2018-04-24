@@ -2,24 +2,25 @@
 package fakes
 
 import (
+	"context"
 	"sync"
 
-	"github.com/alphagov/paas-billing/collector"
-	"github.com/alphagov/paas-billing/store"
+	"github.com/alphagov/paas-billing/eventio"
 )
 
 type FakeEventFetcher struct {
-	FetchEventsStub        func(lastKnownEvent *store.RawEvent) ([]store.RawEvent, error)
+	FetchEventsStub        func(ctx context.Context, lastKnownEvent *eventio.RawEvent) ([]eventio.RawEvent, error)
 	fetchEventsMutex       sync.RWMutex
 	fetchEventsArgsForCall []struct {
-		lastKnownEvent *store.RawEvent
+		ctx            context.Context
+		lastKnownEvent *eventio.RawEvent
 	}
 	fetchEventsReturns struct {
-		result1 []store.RawEvent
+		result1 []eventio.RawEvent
 		result2 error
 	}
 	fetchEventsReturnsOnCall map[int]struct {
-		result1 []store.RawEvent
+		result1 []eventio.RawEvent
 		result2 error
 	}
 	KindStub        func() string
@@ -35,16 +36,17 @@ type FakeEventFetcher struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeEventFetcher) FetchEvents(lastKnownEvent *store.RawEvent) ([]store.RawEvent, error) {
+func (fake *FakeEventFetcher) FetchEvents(ctx context.Context, lastKnownEvent *eventio.RawEvent) ([]eventio.RawEvent, error) {
 	fake.fetchEventsMutex.Lock()
 	ret, specificReturn := fake.fetchEventsReturnsOnCall[len(fake.fetchEventsArgsForCall)]
 	fake.fetchEventsArgsForCall = append(fake.fetchEventsArgsForCall, struct {
-		lastKnownEvent *store.RawEvent
-	}{lastKnownEvent})
-	fake.recordInvocation("FetchEvents", []interface{}{lastKnownEvent})
+		ctx            context.Context
+		lastKnownEvent *eventio.RawEvent
+	}{ctx, lastKnownEvent})
+	fake.recordInvocation("FetchEvents", []interface{}{ctx, lastKnownEvent})
 	fake.fetchEventsMutex.Unlock()
 	if fake.FetchEventsStub != nil {
-		return fake.FetchEventsStub(lastKnownEvent)
+		return fake.FetchEventsStub(ctx, lastKnownEvent)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -58,30 +60,30 @@ func (fake *FakeEventFetcher) FetchEventsCallCount() int {
 	return len(fake.fetchEventsArgsForCall)
 }
 
-func (fake *FakeEventFetcher) FetchEventsArgsForCall(i int) *store.RawEvent {
+func (fake *FakeEventFetcher) FetchEventsArgsForCall(i int) (context.Context, *eventio.RawEvent) {
 	fake.fetchEventsMutex.RLock()
 	defer fake.fetchEventsMutex.RUnlock()
-	return fake.fetchEventsArgsForCall[i].lastKnownEvent
+	return fake.fetchEventsArgsForCall[i].ctx, fake.fetchEventsArgsForCall[i].lastKnownEvent
 }
 
-func (fake *FakeEventFetcher) FetchEventsReturns(result1 []store.RawEvent, result2 error) {
+func (fake *FakeEventFetcher) FetchEventsReturns(result1 []eventio.RawEvent, result2 error) {
 	fake.FetchEventsStub = nil
 	fake.fetchEventsReturns = struct {
-		result1 []store.RawEvent
+		result1 []eventio.RawEvent
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeEventFetcher) FetchEventsReturnsOnCall(i int, result1 []store.RawEvent, result2 error) {
+func (fake *FakeEventFetcher) FetchEventsReturnsOnCall(i int, result1 []eventio.RawEvent, result2 error) {
 	fake.FetchEventsStub = nil
 	if fake.fetchEventsReturnsOnCall == nil {
 		fake.fetchEventsReturnsOnCall = make(map[int]struct {
-			result1 []store.RawEvent
+			result1 []eventio.RawEvent
 			result2 error
 		})
 	}
 	fake.fetchEventsReturnsOnCall[i] = struct {
-		result1 []store.RawEvent
+		result1 []eventio.RawEvent
 		result2 error
 	}{result1, result2}
 }
@@ -152,4 +154,4 @@ func (fake *FakeEventFetcher) recordInvocation(key string, args []interface{}) {
 	fake.invocations[key] = append(fake.invocations[key], args)
 }
 
-var _ collector.EventFetcher = new(FakeEventFetcher)
+var _ eventio.EventFetcher = new(FakeEventFetcher)
