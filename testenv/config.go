@@ -1,21 +1,21 @@
 package testenv
 
-import "github.com/alphagov/paas-billing/schema"
+import "github.com/alphagov/paas-billing/eventstore"
 
-var BasicConfig = schema.Config{
-	VATRates: []schema.VATRate{
+var BasicConfig = eventstore.Config{
+	VATRates: []eventstore.VATRate{
 		{
 			Code:      "Standard",
 			Rate:      0.2,
 			ValidFrom: "epoch",
 		},
 	},
-	CurrencyRates: []schema.CurrencyRate{
+	CurrencyRates: []eventstore.CurrencyRate{
 		{
 			Code:      "GBP",
 			Rate:      1,
 			ValidFrom: "epoch",
 		},
 	},
-	PricingPlans: []schema.PricingPlan{},
+	PricingPlans: []eventstore.PricingPlan{},
 }

@@ -11,26 +11,29 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alphagov/paas-billing/schema"
+	"code.cloudfoundry.org/lager"
+
+	"github.com/alphagov/paas-billing/eventio"
+	"github.com/alphagov/paas-billing/eventstore"
 	uuid "github.com/satori/go.uuid"
 )
 
 type TempDB struct {
-	masterConnectionString string
-	tempConnectionString   string
-	Schema                 *schema.Schema
+	MasterConnectionString string
+	TempConnectionString   string
+	Schema                 eventio.EventStore
 	Conn                   *sql.DB
 }
 
 // Close drops the database
 func (db *TempDB) Close() error {
 	db.Conn.Close()
-	conn, err := sql.Open("postgres", db.masterConnectionString)
+	conn, err := sql.Open("postgres", db.MasterConnectionString)
 	if err != nil {
 		return err
 	}
 	defer conn.Close()
-	u, err := url.Parse(db.tempConnectionString)
+	u, err := url.Parse(db.TempConnectionString)
 	if err != nil {
 		return err
 	}
@@ -51,8 +54,22 @@ func (db *TempDB) Close() error {
 	}
 }
 
-// Opens creates a new database named test_<uuid> and runs schema.Init() with the given config
-func Open(cfg schema.Config) (*TempDB, error) {
+// Opens creates a new database named test_<uuid> and runs Init() with the given config
+func Open(cfg eventstore.Config) (*TempDB, error) {
+	tdb, err := New()
+	if err != nil {
+		return nil, err
+	}
+	logger := lager.NewLogger("test")
+	s := eventstore.New(context.Background(), tdb.Conn, logger, cfg)
+	if err := s.Init(); err != nil {
+		return nil, err
+	}
+	tdb.Schema = s
+	return tdb, nil
+}
+
+func New() (*TempDB, error) {
 	masterConnectionString := os.Getenv("TEST_DATABASE_URL")
 	if masterConnectionString == "" {
 		return nil, errors.New("TEST_DATABASE_URL environment variable is required")
@@ -76,21 +93,16 @@ func Open(cfg schema.Config) (*TempDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := schema.New(context.Background(), conn, cfg)
-	if err := s.Init(); err != nil {
-		return nil, err
-	}
 	tdb := &TempDB{
-		tempConnectionString:   u.String(),
-		masterConnectionString: masterConnectionString,
-		Conn:   conn,
-		Schema: s,
+		TempConnectionString:   u.String(),
+		MasterConnectionString: masterConnectionString,
+		Conn: conn,
 	}
 	return tdb, nil
 }
 
 // MustOpen is a panicy version of Open
-func MustOpen(cfg schema.Config) *TempDB {
+func MustOpen(cfg eventstore.Config) *TempDB {
 	tdb, err := Open(cfg)
 	if err != nil {
 		panic(err)
