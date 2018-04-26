@@ -86,7 +86,7 @@ func (app *App) StartComposeEventCollector() error {
 }
 
 func (app *App) StartEventServer() error {
-	name := "api-server"
+	name := "api"
 	logger := app.logger.Session(name)
 	uaaConfig, err := auth.CreateConfigFromEnv()
 	if err != nil {
@@ -102,6 +102,7 @@ func (app *App) StartEventServer() error {
 	return app.start(name, logger, func() error {
 		return eventserver.ListenAndServe(
 			app.ctx,
+			logger,
 			apiServer,
 			addr,
 		)
@@ -161,6 +162,11 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	if cfg.Store == nil {
 		return nil, errors.New("cfg.Store is required")
 	}
+
+	go func() {
+		<-ctx.Done()
+		cfg.Logger.Info("stopping")
+	}()
 
 	app := &App{
 		cfg:      cfg,

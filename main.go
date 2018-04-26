@@ -53,13 +53,14 @@ func Main(logger lager.Logger) error {
 		return err
 	}
 
+	logger.Info("started")
 	return app.Wait()
 }
 
 func main() {
 	logger := getDefaultLogger()
 	logger.Info("starting")
-	defer logger.Info("shutdown")
+	defer logger.Info("stopped")
 	if err := Main(logger); err != nil {
 		logger.Error("exit-error", err)
 		os.Exit(1)

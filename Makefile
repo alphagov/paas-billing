@@ -24,6 +24,22 @@ test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fe
 	$(eval export APP_ROOT=${APP_ROOT})
 	ginkgo -nodes=8 -r
 
+.PHONY: smoke
+smoke:
+	## Runs the app/blackbox tests against a dev environment as a smoke test to check
+	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
+	$(eval export CF_CLIENT_ID=paas-billing)
+	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
+	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
+	$(eval export COMPOSE_API_KEY=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/compose-secrets.yml - | awk '/compose_api_key/ {print $$2}'))
+	$(eval export CF_SKIP_SSL_VALIDATION=true)
+	$(eval export APP_ROOT=${APP_ROOT})
+	$(eval export ENABLE_SMOKE_TESTS=true)
+	$(eval export TEST_AUTH_TOKEN=$(shell cf oauth-token))
+	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
+	ginkgo -nodes=2 .
+	
+
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
 	counterfeiter -o $@ $< UsageEventsAPI
 
