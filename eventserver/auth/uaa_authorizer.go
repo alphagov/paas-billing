@@ -155,11 +155,14 @@ func (a *ClientAuthorizer) getVerifiedScopes() ([]string, error) {
 		for _, key := range verified.Keys {
 			if key.Alg == token.Header["alg"] {
 				if key.Alg == "RS256" || key.Alg == "RS512" {
-					return jwt.ParseRSAPublicKeyFromPEM([]byte(key.Public))
+					k, err := jwt.ParseRSAPublicKeyFromPEM([]byte(key.Public))
+					if err == nil {
+						return k, nil
+					}
 				}
 			}
 		}
-		return nil, fmt.Errorf("no key found for", token.Header)
+		return nil, errors.New("unable to verify token")
 	})
 	if err != nil {
 		return nil, err

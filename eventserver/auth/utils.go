@@ -26,7 +26,7 @@ func CreateConfigFromEnv() (*oauth2.Config, error) {
 	httpClient := newHTTPClient()
 	resp, err := httpClient.Get(apiEndpoint + "/v2/info")
 	if err != nil {
-		return nil, fmt.Errorf("failed to request /v2/info", err)
+		return nil, fmt.Errorf("failed to request /v2/info: %s", err)
 	}
 	if resp.StatusCode != 200 {
 		return nil, fmt.Errorf("got status %d from /v2/info", resp.StatusCode)
@@ -36,7 +36,7 @@ func CreateConfigFromEnv() (*oauth2.Config, error) {
 		TokenEndpoint         string `json:"token_endpoint"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&endpoints); err != nil {
-		return nil, fmt.Errorf("failed to decode /v2/info json", err)
+		return nil, fmt.Errorf("failed to decode /v2/info json: %s", err)
 	}
 	return &oauth2.Config{
 		ClientID:     os.Getenv("CF_CLIENT_ID"),
