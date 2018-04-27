@@ -16,7 +16,7 @@ run-dev: bin/paas-billing
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	./bin/paas-billing
+	./bin/paas-billing | ./scripts/colorize
 
 .PHONY: test
 test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_compose_client.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go
