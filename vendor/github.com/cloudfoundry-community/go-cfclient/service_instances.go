@@ -3,6 +3,7 @@ package cfclient
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -18,9 +19,11 @@ type ServiceInstancesResponse struct {
 }
 
 type ServiceInstanceRequest struct {
-	Name            string `json:"name"`
-	SpaceGuid       string `json:"space_guid"`
-	ServicePlanGuid string `json:"service_plan_guid"`
+	Name            string                 `json:"name"`
+	SpaceGuid       string                 `json:"space_guid"`
+	ServicePlanGuid string                 `json:"service_plan_guid"`
+	Parameters      map[string]interface{} `json:"parameters,omitempty"`
+	Tags            []string               `json:"tags,omitempty"`
 }
 
 type ServiceInstanceResource struct {
@@ -156,4 +159,15 @@ func (c *Client) CreateServiceInstance(req ServiceInstanceRequest) (ServiceInsta
 	}
 
 	return c.mergeServiceInstance(sir), nil
+}
+
+func (c *Client) DeleteServiceInstance(guid string, recursive, async bool) error {
+	resp, err := c.DoRequest(c.NewRequest("DELETE", fmt.Sprintf("/v2/service_instances/%s?recursive=%t&async=%t", guid, recursive, async)))
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusAccepted {
+		return errors.Wrapf(err, "Error deleting service instance %s, response code %d", guid, resp.StatusCode)
+	}
+	return nil
 }

@@ -1,0 +1,16 @@
+[
+  {
+    "name": "cloudfront cdn",
+    "valid_from": "2017-01-01",
+    "plan_guid": "e4f39630-e385-410b-972f-6b4cc7aad112",
+    "components": [
+      {
+        "name": "distribution",
+        "formula": "0",
+        "currency_code": "USD",
+        "vat_code": "Standard"
+      }
+    ]
+  }
+]
+

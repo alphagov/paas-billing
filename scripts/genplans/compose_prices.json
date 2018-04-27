@@ -1,0 +1,42 @@
+[
+  {
+    "name": "mongodb tiny",
+    "valid_from": "2017-01-01",
+    "plan_guid": "5d56dd1b-52d5-4ffb-a034-fc5c79794c90",
+    "components": [
+      {
+        "name": "instance",
+        "formula": "ceil($time_in_seconds/2678401)*35.00",
+        "currency_code": "USD",
+        "vat_code": "Standard"
+      }
+    ]
+  },
+  {
+    "name": "redis tiny",
+    "valid_from": "2017-01-01",
+    "plan_guid": "53ca5c56-5474-4d64-9211-fe9aee86d502",
+    "components": [
+      {
+        "name": "instance",
+        "formula": "ceil($time_in_seconds/2678401)*20.00",
+        "currency_code": "USD",
+        "vat_code": "Standard"
+      }
+    ]
+  },
+  {
+    "name": "elasticsearch tiny",
+    "valid_from": "2017-01-01",
+    "plan_guid": "31bb8b32-d5e0-4310-8a8d-3e8bff4b2bbc",
+    "components": [
+      {
+        "name": "instance",
+        "formula": "ceil($time_in_seconds/2678401)*45.00",
+        "currency_code": "USD",
+        "vat_code": "Standard"
+      }
+    ]
+  }
+]
+

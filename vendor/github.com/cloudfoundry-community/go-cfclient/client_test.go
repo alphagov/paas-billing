@@ -21,6 +21,19 @@ func TestDefaultConfig(t *testing.T) {
 	})
 }
 
+func TestRemovalofTrailingSlashOnAPIAddress(t *testing.T) {
+	Convey("Test removal of trailing slash of the API Address", t, func() {
+		setup(MockRoute{"GET", "/v2/organizations", listOrgsPayload, "", 200, "", nil}, t)
+		defer teardown()
+		c := &Config{
+			ApiAddress: server.URL + "/",
+		}
+		client, err := NewClient(c)
+		So(err, ShouldBeNil)
+		So(client.Config.ApiAddress, ShouldNotEndWith, "/")
+	})
+}
+
 func TestMakeRequest(t *testing.T) {
 	Convey("Test making request b", t, func() {
 		setup(MockRoute{"GET", "/v2/organizations", listOrgsPayload, "", 200, "", nil}, t)
@@ -81,6 +94,7 @@ func TestTokenRefresh(t *testing.T) {
 	gomega.RegisterTestingT(t)
 	Convey("Test making request", t, func() {
 		setup(MockRoute{"GET", "/v2/organizations", listOrgsPayload, "", 200, "", nil}, t)
+		fakeUAAServer = FakeUAAServer(1)
 		c := &Config{
 			ApiAddress: server.URL,
 			Username:   "foo",
@@ -93,6 +107,31 @@ func TestTokenRefresh(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		gomega.Consistently(token).Should(gomega.Equal("bearer foobar2"))
-		// gomega.Eventually(client.GetToken(), "3s").Should(gomega.Equal("bearer foobar3"))
+		gomega.Eventually(func() string { token, _ := client.GetToken(); return token }, "2s").Should(gomega.Equal("bearer foobar3"))
+	})
+}
+
+func TestEndpointRefresh(t *testing.T) {
+	gomega.RegisterTestingT(t)
+	Convey("Test expiring endpoint", t, func() {
+		setup(MockRoute{"GET", "/v2/organizations", listOrgsPayload, "", 200, "", nil}, t)
+		fakeUAAServer = FakeUAAServer(0)
+
+		c := &Config{
+			ApiAddress: server.URL,
+			Username:   "foo",
+			Password:   "bar",
+		}
+
+		client, err := NewClient(c)
+		So(err, ShouldBeNil)
+
+		lastTokenSource := client.Config.TokenSource
+		for i := 1; i < 5; i++ {
+			_, err := client.GetToken()
+			So(err, ShouldBeNil)
+			So(client.Config.TokenSource, ShouldNotEqual, lastTokenSource)
+			lastTokenSource = client.Config.TokenSource
+		}
 	})
 }

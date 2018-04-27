@@ -2,181 +2,73 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
-	"strings"
-	"sync"
 	"syscall"
-	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/auth"
-	"github.com/alphagov/paas-billing/cloudfoundry"
-	"github.com/alphagov/paas-billing/collector"
-	collector_cf "github.com/alphagov/paas-billing/collector/cloudfoundry"
-	collector_compose "github.com/alphagov/paas-billing/collector/compose"
-	"github.com/alphagov/paas-billing/compose"
-	"github.com/alphagov/paas-billing/db"
-	"github.com/alphagov/paas-billing/server"
-	"github.com/pkg/errors"
 )
 
-var (
-	logger = createLogger()
-)
+var globalContext context.Context
 
-func createLogger() lager.Logger {
-	logger := lager.NewLogger("paas-billing")
-	logLevel := lager.INFO
-	if strings.ToLower(os.Getenv("LOG_LEVEL")) == "debug" {
-		logLevel = lager.DEBUG
-	}
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, logLevel))
-
-	return logger
-}
-
-func createCFClient() (cloudfoundry.Client, error) {
-	config := cloudfoundry.CreateConfigFromEnv()
-	return cloudfoundry.NewClient(config)
-}
-
-func createComposeClient() (compose.Client, error) {
-	composeApiKey := os.Getenv("COMPOSE_API_KEY")
-	if composeApiKey == "" {
-		return nil, errors.New("you must define COMPOSE_API_KEY")
-	}
-	return compose.NewClient(composeApiKey)
-}
-
-func Main() error {
-
-	sqlClient, err := db.NewPostgresClient(os.Getenv("DATABASE_URL"))
-	if err != nil {
-		return err
-	}
-
-	if err := sqlClient.InitSchema(); err != nil {
-		return errors.Wrap(err, "failed to initialise database schema")
-	}
-
-	cfClient, clientErr := createCFClient()
-	if clientErr != nil {
-		return errors.Wrap(clientErr, "failed to connect to Cloud Foundry")
-	}
-
-	composeClient, err := createComposeClient()
-	if err != nil {
-		return err
-	}
-
-	collectorConfig, err := collector.CreateConfigFromEnv()
-	if err != nil {
-		return errors.Wrap(err, "configuration error")
-	}
-
-	uaaConfig, err := auth.CreateConfigFromEnv()
-	if err != nil {
-		return err
-	}
-	apiAuthenticator := &auth.UAA{uaaConfig}
-
+func init() {
 	ctx, shutdown := context.WithCancel(context.Background())
+	globalContext = ctx
 	go func() {
-		signalChan := make(chan os.Signal, 1)
-		signal.Notify(signalChan, syscall.SIGINT, syscall.SIGTERM)
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
-		<-signalChan
+		<-sigChan
 		shutdown()
 	}()
+}
 
-	var wg sync.WaitGroup
+func Main(logger lager.Logger) error {
+	cfg, err := NewConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	cfg.Logger = logger
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer shutdown()
+	app, err := New(globalContext, cfg)
+	if err != nil {
+		return err
+	}
 
-		appUsageEventsCollector := collector.New(
-			collectorConfig,
-			logger,
-			collector_cf.NewEventFetcher(
-				sqlClient,
-				cloudfoundry.NewAppUsageEventsAPI(cfClient, logger),
-			),
-		)
-		appUsageEventsCollector.Run(ctx)
-	}()
+	if err := app.Init(); err != nil {
+		return err
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer shutdown()
+	if err := app.StartAppEventCollector(); err != nil {
+		return err
+	}
 
-		serviceUsageEventsCollector := collector.New(
-			collectorConfig,
-			logger,
-			collector_cf.NewEventFetcher(
-				sqlClient,
-				cloudfoundry.NewServiceUsageEventsAPI(cfClient, logger),
-			),
-		)
-		serviceUsageEventsCollector.Run(ctx)
-	}()
+	if err := app.StartServiceEventCollector(); err != nil {
+		return err
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer shutdown()
+	if err := app.StartComposeEventCollector(); err != nil {
+		return err
+	}
 
-		composeEventsCollector := collector.New(
-			collectorConfig,
-			logger,
-			collector_compose.NewEventFetcher(sqlClient, composeClient),
-		)
-		composeEventsCollector.Run(ctx)
-	}()
+	if err := app.StartEventProcessor(); err != nil {
+		return err
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer logger.Info("stopped view updater")
-		logger.Info("starting view updater")
-		for {
-			logger.Info("updating views")
-			if err := sqlClient.UpdateViews(); err != nil {
-				logger.Error("update-views", err)
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(1 * time.Hour):
-			}
-		}
-	}()
+	if err := app.StartEventServer(); err != nil {
+		return err
+	}
 
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-		defer logger.Info("stopped api server")
-		logger.Info("starting api server")
-		s := server.New(sqlClient, apiAuthenticator, cfClient)
-		port := os.Getenv("PORT")
-		if port == "" {
-			port = "8881"
-		}
-		server.ListenAndServe(ctx, s, fmt.Sprintf(":%s", port))
-	}()
-
-	wg.Wait()
-	return nil
+	logger.Info("started")
+	return app.Wait()
 }
 
 func main() {
-	if err := Main(); err != nil {
-		logger.Error("main", err)
+	logger := getDefaultLogger()
+	logger.Info("starting")
+	defer logger.Info("stopped")
+	if err := Main(logger); err != nil {
+		logger.Error("exit-error", err)
 		os.Exit(1)
 	}
-	logger.Info("shutdown")
 }

@@ -35,10 +35,6 @@ func setup(mock MockRoute, t *testing.T) {
 	setupMultiple([]MockRoute{mock}, t)
 }
 
-type PostBody struct {
-	Data []map[string]string `json:"data"`
-}
-
 func testQueryString(QueryString string, QueryStringExp string, t *testing.T) {
 	value, _ := url.QueryUnescape(QueryString)
 
@@ -56,14 +52,27 @@ func testUserAgent(UserAgent string, UserAgentExp string, t *testing.T) {
 	}
 }
 
-func testPostQuery(req *http.Request, postFormBody *string, t *testing.T) {
+func testReqBody(req *http.Request, postFormBody *string, t *testing.T) {
 	if postFormBody != nil {
 		if body, err := ioutil.ReadAll(req.Body); err != nil {
 			t.Fatal("No request body but expected one")
 		} else {
 			defer req.Body.Close()
 			if strings.TrimSpace(string(body)) != strings.TrimSpace(*postFormBody) {
-				t.Fatalf("Expected POST body (%s) does not equal POST body (%s)", *postFormBody, body)
+				t.Fatalf("Expected request body (%s) does not equal request body (%s)", *postFormBody, body)
+			}
+		}
+	}
+}
+
+func testBodyContains(req *http.Request, expected *string, t *testing.T) {
+	if expected != nil {
+		if body, err := ioutil.ReadAll(req.Body); err != nil {
+			t.Fatal("No request body but expected one")
+		} else {
+			defer req.Body.Close()
+			if !strings.Contains(string(body), *expected) {
+				t.Fatalf("Expected request body (%s) was not found in actual request body (%s)", *expected, body)
 			}
 		}
 	}
@@ -72,7 +81,7 @@ func testPostQuery(req *http.Request, postFormBody *string, t *testing.T) {
 func setupMultiple(mockEndpoints []MockRoute, t *testing.T) {
 	mux = http.NewServeMux()
 	server = httptest.NewServer(mux)
-	fakeUAAServer = FakeUAAServer()
+	fakeUAAServer = FakeUAAServer(3)
 	m := martini.New()
 	m.Use(render.Renderer())
 	r := martini.NewRouter()
@@ -94,7 +103,7 @@ func setupMultiple(mockEndpoints []MockRoute, t *testing.T) {
 			r.Post(endpoint, func(req *http.Request) (int, string) {
 				testUserAgent(req.Header.Get("User-Agent"), userAgent, t)
 				testQueryString(req.URL.RawQuery, queryString, t)
-				testPostQuery(req, postFormBody, t)
+				testReqBody(req, postFormBody, t)
 				return status, output
 			})
 		} else if method == "DELETE" {
@@ -107,6 +116,13 @@ func setupMultiple(mockEndpoints []MockRoute, t *testing.T) {
 			r.Put(endpoint, func(req *http.Request) (int, string) {
 				testUserAgent(req.Header.Get("User-Agent"), userAgent, t)
 				testQueryString(req.URL.RawQuery, queryString, t)
+				testReqBody(req, postFormBody, t)
+				return status, output
+			})
+		} else if method == "PUT-FILE" {
+			r.Put(endpoint, func(req *http.Request) (int, string) {
+				testUserAgent(req.Header.Get("User-Agent"), userAgent, t)
+				testBodyContains(req, postFormBody, t)
 				return status, output
 			})
 		}
@@ -124,7 +140,7 @@ func setupMultiple(mockEndpoints []MockRoute, t *testing.T) {
 	mux.Handle("/", m)
 }
 
-func FakeUAAServer() *httptest.Server {
+func FakeUAAServer(expiresIn int) *httptest.Server {
 	mux := http.NewServeMux()
 	server := httptest.NewServer(mux)
 	m := martini.New()
@@ -136,7 +152,7 @@ func FakeUAAServer() *httptest.Server {
 			"token_type":    "bearer",
 			"access_token":  "foobar" + strconv.Itoa(count),
 			"refresh_token": "barfoo",
-			"expires_in":    3,
+			"expires_in":    expiresIn,
 		})
 		count = count + 1
 	})

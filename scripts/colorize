@@ -1,0 +1,4 @@
+#!/bin/bash
+
+GREP_COLOR='1;31' grep -E --color=always --line-buffered '^.*error.*$|^.*"log_level":2.*$|$' \
+| (GREP_COLOR='1;30' grep -E --color=always --line-buffered '^{.*$|$')
