@@ -56,7 +56,8 @@ func NewFromConfig(ctx context.Context, db *sql.DB, logger lager.Logger, filenam
 // Init initialises the database tables and functions
 func (s *EventStore) Init() error {
 	s.logger.Info("initializing")
-	ctx, _ := context.WithTimeout(s.ctx, DefaultInitTimeout)
+	ctx, cancel := context.WithTimeout(s.ctx, DefaultInitTimeout)
+	defer cancel()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -87,7 +88,8 @@ func (s *EventStore) Init() error {
 // Refresh triggers regeneration of the cached normalized view of the event dat and rebuilds the
 // billable components. Ideally you should do this once a day
 func (s *EventStore) Refresh() error {
-	ctx, _ := context.WithTimeout(s.ctx, DefaultRefreshTimeout)
+	ctx, cancel := context.WithTimeout(s.ctx, DefaultRefreshTimeout)
+	defer cancel()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -245,7 +247,8 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 }
 
 func (s *EventStore) StoreEvents(events []eventio.RawEvent) error {
-	ctx, _ := context.WithTimeout(s.ctx, DefaultStoreTimeout)
+	ctx, cancel := context.WithTimeout(s.ctx, DefaultStoreTimeout)
+	defer cancel()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
@@ -334,7 +337,8 @@ func (s *EventStore) getComposeEvents(filter eventio.RawEventFilter) ([]eventio.
 	if filter.Kind != "compose" {
 		return nil, fmt.Errorf("getComposeEvents can not filter events of kind: %s", filter.Kind)
 	}
-	ctx, _ := context.WithTimeout(s.ctx, DefaultQueryTimeout)
+	ctx, cancel := context.WithTimeout(s.ctx, DefaultQueryTimeout)
+	defer cancel()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err
@@ -390,7 +394,8 @@ func (s *EventStore) getUsageEvents(filter eventio.RawEventFilter) ([]eventio.Ra
 	default:
 		return nil, fmt.Errorf("getUsageEvents unknown kind: %s", filter.Kind)
 	}
-	ctx, _ := context.WithTimeout(s.ctx, DefaultQueryTimeout)
+	ctx, cancel := context.WithTimeout(s.ctx, DefaultQueryTimeout)
+	defer cancel()
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{ReadOnly: true})
 	if err != nil {
 		return nil, err

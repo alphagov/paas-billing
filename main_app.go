@@ -94,7 +94,9 @@ func (app *App) StartEventServer() error {
 	if err != nil {
 		return err
 	}
-	apiAuthenticator := &auth.UAA{uaaConfig}
+	apiAuthenticator := &auth.UAA{
+		Config: uaaConfig,
+	}
 	apiServer := eventserver.New(eventserver.Config{
 		Store:         app.store,
 		Authenticator: apiAuthenticator,
@@ -158,6 +160,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 	ctx, shutdown := context.WithCancel(ctx)
 
 	go func() {
+		defer shutdown()
 		<-ctx.Done()
 		cfg.Logger.Info("stopping")
 	}()
