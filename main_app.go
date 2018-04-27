@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"sync"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventserver"
 	"github.com/alphagov/paas-billing/eventserver/auth"
+	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/pkg/errors"
 )
 
@@ -155,18 +157,33 @@ func (app *App) Wait() error {
 func New(ctx context.Context, cfg Config) (*App, error) {
 	ctx, shutdown := context.WithCancel(ctx)
 
-	if cfg.Logger == nil {
-		return nil, fmt.Errorf("Logger is required")
-	}
-
-	if cfg.Store == nil {
-		return nil, errors.New("cfg.Store is required")
-	}
-
 	go func() {
 		<-ctx.Done()
 		cfg.Logger.Info("stopping")
 	}()
+
+	if cfg.Logger == nil {
+		cfg.Logger = lager.NewLogger("app")
+	}
+
+	if cfg.Store == nil {
+		if cfg.DatabaseURL == "" {
+			return nil, fmt.Errorf("Store or DatabaseURL must be provided in Config")
+		}
+		db, err := sql.Open("postgres", cfg.DatabaseURL)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to connect to database")
+		}
+		planConfigFile, err := cfg.ConfigFile()
+		if err != nil {
+			return nil, err
+		}
+		store, err := eventstore.NewFromConfig(ctx, db, cfg.Logger.Session("store"), planConfigFile)
+		if err != nil {
+			return nil, err
+		}
+		cfg.Store = store
+	}
 
 	app := &App{
 		cfg:      cfg,
@@ -175,5 +192,6 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		store:    cfg.Store,
 		logger:   cfg.Logger,
 	}
+
 	return app, nil
 }

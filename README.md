@@ -17,7 +17,6 @@ Note: The API lists the events in order but the timestamps on events should not 
 The application handles the following environment variables:
 
  * **DATABASE_URL**: Postgres connection string (postgres://user:pass@host:port)
- * APP_ROOT: absolute path to the application source to discover config/assets (default: $PWD)
  * **CF_API_ADDRESS**: Cloud Foundry API endpoint
  * **CF_CLIENT_ID**: Cloud Foundry client id
  * **CF_CLIENT_SECRET**: Cloud Foundry client secret
@@ -27,10 +26,14 @@ The application handles the following environment variables:
  * CF_SKIP_SSL_VALIDATION: whether the API client should skip the SSL certificate validation (use only for development!)
  * CF_TOKEN: Cloud Foundry OAuth token
  * CF_USER_AGENT: user agent when connecting to Cloud Foundry
- * COLLECTOR_DEFAULT_SCHEDULE (def: 1m): how often to fetch new data from the API
+ * CF_FETCH_LIMIT (def: 50): how many items to fetch from the API in one request, must be a positive integer. Max: 100.
+ * CF_RECORD_MIN_AGE (def: 5m): stop processing records from the API if a record is found with less than a minimum age. This guarantees that we don't miss events from ongoing transactions.
+ * COLLECTOR_SCHEDULE (def: 1m): how often to fetch new data from the API
  * COLLECTOR_MIN_WAIT_TIME (def: 3s): if we are able to fetch the maximum number of items we only wait this much before the next fetch (this allows us to speed up the the processing if necessary)
- * COLLECTOR_FETCH_LIMIT (def: 50): how many items to fetch from the API in one request, must be a positive integer. Max: 100.
- * COLLECTOR_RECORD_MIN_AGE (def: 5m): stop processing records from the API if a record is found with less than a minimum age. This guarantees that we don't miss events from ongoing transactions.
+ * PROCESSOR_SCHEDULE (def: 15m): how often to process the raw events into queryable BillableEvents
+ * COMPOSE_FETCH_LIMIT (def: 50): how many items to fetch from the compose API in one request, must be a positive integer. Max: 100.
+ * COMPOSE_API_KEY: Compose token with access to fetch audit events
+ * APP_ROOT: absolute path to the application source to discover config/assets (default: $PWD)
 
 **Variables in bold are required.**
 

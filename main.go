@@ -24,7 +24,13 @@ func init() {
 }
 
 func Main(logger lager.Logger) error {
-	app, err := NewFromEnv(globalContext, logger)
+	cfg, err := NewConfigFromEnv()
+	if err != nil {
+		return err
+	}
+	cfg.Logger = logger
+
+	app, err := New(globalContext, cfg)
 	if err != nil {
 		return err
 	}

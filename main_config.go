@@ -1,8 +1,6 @@
 package main
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 	"net/http"
 	"os"
@@ -15,7 +13,6 @@ import (
 	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
 	"github.com/alphagov/paas-billing/eventfetchers/composefetcher"
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/eventstore"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pkg/errors"
 
@@ -23,6 +20,7 @@ import (
 )
 
 type Config struct {
+	AppRootDir     string
 	Logger         lager.Logger
 	Store          eventio.EventStore
 	DatabaseURL    string
@@ -33,32 +31,37 @@ type Config struct {
 	Processor      ProcessorConfig
 }
 
+func (cfg Config) ConfigFile() (string, error) {
+	root := cfg.AppRootDir
+	p := filepath.Join(root, "config.json")
+	if _, err := os.Stat(p); os.IsNotExist(err) {
+		return "", fmt.Errorf("%s does not exist", p)
+	}
+	return p, nil
+}
+
 type ProcessorConfig struct {
 	Schedule time.Duration
 }
 
-func NewFromEnv(ctx context.Context, logger lager.Logger) (*App, error) {
-	planConfigFile, err := getConfigFilepath()
-	if err != nil {
-		return nil, err
+func NewConfigFromEnv() (cfg Config, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.New(fmt.Sprintf("%v", r))
+		}
+	}()
+
+	rootDir := os.Getenv("APP_ROOT")
+	if rootDir == "" {
+		rootDir = getwd()
 	}
 
-	connstr := getEnvString("DATABASE_URL")
-	db, err := sql.Open("postgres", connstr)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to connect to database")
-	}
-
-	store, err := eventstore.NewFromConfig(ctx, db, logger.Session("store"), planConfigFile)
-	if err != nil {
-		return nil, err
-	}
-
-	cfg := Config{
-		Logger: logger,
-		Store:  store,
+	cfg = Config{
+		AppRootDir:  rootDir,
+		Logger:      lager.NewLogger("default"),
+		DatabaseURL: getEnvWithDefaultString("DATABASE_URL", "postgres://postgres:@localhost:5432/"),
 		Collector: eventcollector.Config{
-			Schedule:    getEnvWithDefaultDuration("COLLECTOR_DEFAULT_SCHEDULE", 15*time.Minute),
+			Schedule:    getEnvWithDefaultDuration("COLLECTOR_SCHEDULE", 15*time.Minute),
 			MinWaitTime: getEnvWithDefaultDuration("COLLECTOR_MIN_WAIT_TIME", 3*time.Second),
 		},
 		CFFetcher: cffetcher.Config{
@@ -75,19 +78,19 @@ func NewFromEnv(ctx context.Context, logger lager.Logger) (*App, error) {
 					Timeout: 30 * time.Second,
 				},
 			},
-			RecordMinAge: getEnvWithDefaultDuration("COLLECTOR_RECORD_MIN_AGE", 10*time.Minute),
-			FetchLimit:   getEnvWithDefaultInt("COLLECTOR_FETCH_LIMIT", 50),
+			RecordMinAge: getEnvWithDefaultDuration("CF_RECORD_MIN_AGE", 10*time.Minute),
+			FetchLimit:   getEnvWithDefaultInt("CF_FETCH_LIMIT", 50),
 		},
 		ComposeFetcher: composefetcher.Config{
-			APIKey:     getEnvString("COMPOSE_API_KEY"),
-			FetchLimit: getEnvWithDefaultInt("COLLECTOR_FETCH_LIMIT", 100),
+			APIKey:     getEnvWithDefaultString("COMPOSE_API_KEY", ""),
+			FetchLimit: getEnvWithDefaultInt("COMPOSE_FETCH_LIMIT", 50),
 		},
 		Processor: ProcessorConfig{
 			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 30*time.Minute),
 		},
 		ServerPort: getEnvWithDefaultInt("PORT", 8881),
 	}
-	return New(ctx, cfg)
+	return cfg, nil
 }
 
 func getEnvWithDefaultDuration(k string, def time.Duration) time.Duration {
@@ -141,23 +144,10 @@ func getDefaultLogger() lager.Logger {
 	return logger
 }
 
-func appRootDir() string {
-	p := os.Getenv("APP_ROOT")
-	if p != "" {
-		return p
-	}
+func getwd() string {
 	pwd := os.Getenv("PWD")
 	if pwd == "" {
 		pwd, _ = os.Getwd()
 	}
 	return pwd
-}
-
-func getConfigFilepath() (string, error) {
-	root := appRootDir()
-	p := filepath.Join(root, "config.json")
-	if _, err := os.Stat(p); os.IsNotExist(err) {
-		return "", fmt.Errorf("%s does not exist", p)
-	}
-	return p, nil
 }
