@@ -21,6 +21,7 @@ const (
 	AppUsageTableName     = "app_usage_events"
 	ServiceUsageTableName = "service_usage_events"
 	ComputePlanGUID       = "f4d4b95a-f55e-4593-8d54-3364c25798c4"
+	TaskPlanGUID          = "ebfa9453-ef66-450c-8c37-d53dfd931038"
 	DefaultInitTimeout    = 5 * time.Minute
 	DefaultRefreshTimeout = 5 * time.Minute
 	DefaultStoreTimeout   = 45 * time.Second

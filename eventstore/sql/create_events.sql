@@ -66,6 +66,30 @@ INSERT INTO events with
 			where
 				raw_message->>'service_instance_type' = 'managed_service_instance'
 				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+		) union all (
+			select
+				id as event_sequence,
+				guid::uuid as event_guid,
+				created_at,
+				(raw_message->>'task_guid')::uuid as resource_guid,
+				(raw_message->>'task_name') as resource_name,
+				'task'::text as resource_type,                              -- resource_type for task resources
+				(raw_message->>'org_guid')::uuid as org_guid,
+				(raw_message->>'space_guid')::uuid as space_guid,
+				'ebfa9453-ef66-450c-8c37-d53dfd931038'::uuid as plan_guid,  -- plan guid for all task resources
+				'task'::text as plan_name,                                  -- plan name for all task resources
+				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
+				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
+				'0'::numeric as storage_in_mb,
+				(case
+					when (raw_message->>'state') = 'TASK_STARTED' then 'STARTED'
+					when (raw_message->>'state') = 'TASK_STOPPED' then 'STOPPED'
+				end)::resource_state as state
+			from
+				app_usage_events
+			where
+				(raw_message->>'state' = 'TASK_STARTED' or raw_message->>'state' = 'TASK_STOPPED')
+				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		)
 	),
 	event_ranges as (
