@@ -3,7 +3,7 @@ package eventstore_test
 import (
 	"math"
 
-	"github.com/alphagov/paas-billing/eventstore"
+	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/testenv"
 	uuid "github.com/satori/go.uuid"
 
@@ -14,11 +14,11 @@ import (
 var _ = Describe("Pricing Formulae", func() {
 
 	var insert = func(formula string, out interface{}) error {
-		plan := eventstore.PricingPlan{
+		plan := eventio.PricingPlan{
 			Name:      "FormulaTestPlan",
 			PlanGUID:  uuid.NewV4().String(),
 			ValidFrom: "2000-01-01",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "FormulaTestPlanComponent",
 					VATCode:      "Standard",

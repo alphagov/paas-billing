@@ -41,26 +41,26 @@ var _ = Describe("Currency Conversion", func() {
 	----------------------------------------------------------------------------------------*/
 	It("should not affect price when using a GBP rate of 1", func() {
 		cfg = eventstore.Config{
-			VATRates: []eventstore.VATRate{
+			VATRates: []eventio.VATRate{
 				{
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "epoch",
 				},
 			},
-			CurrencyRates: []eventstore.CurrencyRate{
+			CurrencyRates: []eventio.CurrencyRate{
 				{
 					Code:      "GBP",
 					Rate:      1,
 					ValidFrom: "epoch",
 				},
 			},
-			PricingPlans: []eventstore.PricingPlan{
+			PricingPlans: []eventio.PricingPlan{
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "epoch",
 					Name:      "PLAN1",
-					Components: []eventstore.PricingPlanComponent{
+					Components: []eventio.PricingPlanComponent{
 						{
 							Name:         "compute",
 							Formula:      "1",
@@ -109,26 +109,26 @@ var _ = Describe("Currency Conversion", func() {
 	----------------------------------------------------------------------------------------*/
 	It("converts USD at the defined rate", func() {
 		cfg = eventstore.Config{
-			VATRates: []eventstore.VATRate{
+			VATRates: []eventio.VATRate{
 				{
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "epoch",
 				},
 			},
-			CurrencyRates: []eventstore.CurrencyRate{
+			CurrencyRates: []eventio.CurrencyRate{
 				{
 					Code:      "USD",
 					Rate:      0.8,
 					ValidFrom: "epoch",
 				},
 			},
-			PricingPlans: []eventstore.PricingPlan{
+			PricingPlans: []eventio.PricingPlan{
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "epoch",
 					Name:      "PLAN1",
-					Components: []eventstore.PricingPlanComponent{
+					Components: []eventio.PricingPlanComponent{
 						{
 							Name:         "compute",
 							Formula:      "100",
@@ -177,14 +177,14 @@ var _ = Describe("Currency Conversion", func() {
 	----------------------------------------------------------------------------------------*/
 	It("should return one BillableEvent with multiple pricing components when range intercepts changing currency rates", func() {
 		cfg = eventstore.Config{
-			VATRates: []eventstore.VATRate{
+			VATRates: []eventio.VATRate{
 				{
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "epoch",
 				},
 			},
-			CurrencyRates: []eventstore.CurrencyRate{
+			CurrencyRates: []eventio.CurrencyRate{
 				{
 					Code:      "USD",
 					Rate:      2,
@@ -196,12 +196,12 @@ var _ = Describe("Currency Conversion", func() {
 					ValidFrom: "2001-02-01",
 				},
 			},
-			PricingPlans: []eventstore.PricingPlan{
+			PricingPlans: []eventio.PricingPlan{
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "epoch",
 					Name:      "PLAN1",
-					Components: []eventstore.PricingPlanComponent{
+					Components: []eventio.PricingPlanComponent{
 						{
 							Name:         "compute",
 							Formula:      "1",
@@ -256,14 +256,14 @@ var _ = Describe("Currency Conversion", func() {
 	----------------------------------------------------------------------------------------*/
 	It("should return single BillableEvent with two pricing components with different currencies", func() {
 		cfg = eventstore.Config{
-			VATRates: []eventstore.VATRate{
+			VATRates: []eventio.VATRate{
 				{
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "epoch",
 				},
 			},
-			CurrencyRates: []eventstore.CurrencyRate{
+			CurrencyRates: []eventio.CurrencyRate{
 				{
 					Code:      "GBP",
 					Rate:      1,
@@ -275,12 +275,12 @@ var _ = Describe("Currency Conversion", func() {
 					ValidFrom: "2001-01-01",
 				},
 			},
-			PricingPlans: []eventstore.PricingPlan{
+			PricingPlans: []eventio.PricingPlan{
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "2001-01-01",
 					Name:      "PLAN1",
-					Components: []eventstore.PricingPlanComponent{
+					Components: []eventio.PricingPlanComponent{
 						{
 							Name:         "little-price",
 							Formula:      "1",

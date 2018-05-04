@@ -33,11 +33,11 @@ var _ = Describe("Store", func() {
 	})
 
 	It("should normalize *_usage_events tables into a consistant format with durations", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -46,11 +46,11 @@ var _ = Describe("Store", func() {
 				},
 			},
 		})
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 			ValidFrom: "2001-01-01",
 			Name:      "DB_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 1",
@@ -124,11 +124,11 @@ var _ = Describe("Store", func() {
 	})
 
 	It("only outputs a single resource row because the others have zero duration", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -156,11 +156,11 @@ var _ = Describe("Store", func() {
 	})
 
 	It("should ensure plan has unique plan_guid + valid_from", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -169,11 +169,11 @@ var _ = Describe("Store", func() {
 				},
 			},
 		})
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -192,12 +192,12 @@ var _ = Describe("Store", func() {
 	DescribeTable("reject placing plans with valid_from that isn't the start of the month",
 		func(timestamp string) {
 			db, err := testenv.Open(eventstore.Config{
-				PricingPlans: []eventstore.PricingPlan{
+				PricingPlans: []eventio.PricingPlan{
 					{
 						PlanGUID:  uuid.NewV4().String(),
 						ValidFrom: timestamp,
 						Name:      "bad-plan",
-						Components: []eventstore.PricingPlanComponent{
+						Components: []eventio.PricingPlanComponent{
 							{
 								Name:         "compute",
 								Formula:      "1",
@@ -223,7 +223,7 @@ var _ = Describe("Store", func() {
 	DescribeTable("reject vat_rates with valid_from that isn't the start of the month",
 		func(timestamp string) {
 			db, err := testenv.Open(eventstore.Config{
-				VATRates: []eventstore.VATRate{
+				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: timestamp,
 						Code:      "Standard",
@@ -246,7 +246,7 @@ var _ = Describe("Store", func() {
 	DescribeTable("reject currency_rates with valid_from that isn't the start of the month",
 		func(timestamp string) {
 			db, err := testenv.Open(eventstore.Config{
-				CurrencyRates: []eventstore.CurrencyRate{
+				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: timestamp,
 						Code:      "USD",
@@ -269,7 +269,7 @@ var _ = Describe("Store", func() {
 	DescribeTable("allow whitelisted currency codes",
 		func(code string) {
 			db, err := testenv.Open(eventstore.Config{
-				CurrencyRates: []eventstore.CurrencyRate{
+				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: "2001-01-01",
 						Code:      code,
@@ -290,7 +290,7 @@ var _ = Describe("Store", func() {
 	DescribeTable("reject unknown currency_codes",
 		func(code string) {
 			db, err := testenv.Open(eventstore.Config{
-				CurrencyRates: []eventstore.CurrencyRate{
+				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: "2001-01-01",
 						Code:      code,
@@ -312,7 +312,7 @@ var _ = Describe("Store", func() {
 	DescribeTable("allow whitelisted vat_rates",
 		func(code string) {
 			db, err := testenv.Open(eventstore.Config{
-				VATRates: []eventstore.VATRate{
+				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: "2001-01-01",
 						Code:      code,
@@ -333,7 +333,7 @@ var _ = Describe("Store", func() {
 	DescribeTable("reject unknown vat_rates",
 		func(code string) {
 			db, err := testenv.Open(eventstore.Config{
-				VATRates: []eventstore.VATRate{
+				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: "2001-01-01",
 						Code:      code,
