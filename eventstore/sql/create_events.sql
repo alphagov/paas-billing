@@ -15,6 +15,27 @@ CREATE TABLE events (
 	CONSTRAINT duration_must_not_be_empty CHECK (not isempty(duration))
 );
 
+-- FIXME: should be dropped once we'd upgrade postgres version.
+CREATE FUNCTION pg_size_bytes (size text)
+	RETURNS bigint
+AS $$
+  if (size[-1] == 'B'):
+    size = size[:-1]
+  value = size[:-1].strip()
+  unit = size[-1]
+  if (value.isdigit()):
+    b = int(value)
+    if (unit == 'G'):
+      b *= 1073741824
+    elif (unit == 'M'):
+      b *= 1048576
+    elif (unit == 'K'):
+      b *= 1024
+  else:
+    b = 0
+  return b
+$$ LANGUAGE plpythonu;
+
 -- extract useful stuff from usage events
 -- we treat both apps and services as "resources" so normalize the fields
 -- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
@@ -66,6 +87,36 @@ INSERT INTO events with
 			where
 				raw_message->>'service_instance_type' = 'managed_service_instance'
 				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+		) union all (
+			select
+				id as event_sequence,
+				guid::uuid as event_guid,
+				created_at::timestamptz as created_at,
+				substring(
+					raw_message->'data'->>'deployment' 
+					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
+				)::uuid as resource_guid,
+				(sue.raw_message->>'service_instance_name') as resource_name,
+				'compose'::text as resource_type,
+				(sue.raw_message->>'org_guid')::uuid as org_guid,
+				(sue.raw_message->>'space_guid')::uuid as space_guid,
+				'8d3383cf-9477-46cc-a219-ec0c23c020dd'::uuid as plan_guid,
+				'compose'::text as plan_name,
+				'1'::numeric as number_of_nodes,
+				(pg_size_bytes(raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
+				(pg_size_bytes(raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
+				(case
+					when (sue.raw_message->>'state') = 'CREATED' then 'STARTED'
+					when (sue.raw_message->>'state') = 'DELETED' then 'STOPPED'
+				end)::resource_state as state
+			from
+				compose_audit_events
+			left join
+				service_usage_events sue
+			on
+				resource_guid = sue.raw_message->>'service_instance_guid'
+			where
+				sue.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		)
 	),
 	event_ranges as (

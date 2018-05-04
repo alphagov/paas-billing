@@ -89,6 +89,25 @@
 			]
 		},
 		{
+			"name": "compose",
+			"valid_from": "2017-01-01",
+			"plan_guid": "8d3383cf-9477-46cc-a219-ec0c23c020dd",
+			"components": [
+				{
+					"name": "instance",
+					"formula": "$number_of_nodes * ceil($time_in_seconds / 3600) * ($memory_in_mb/1024.0) * 0.01",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "platform",
+					"formula": "($number_of_nodes * ceil($time_in_seconds / 3600) * ($memory_in_mb/1024.0) * 0.01) * 0.40",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
 			"name": "postgres micro",
 			"valid_from": "2017-01-01",
 			"plan_guid": "e264800e-20cb-4bf0-99fc-84bd42681d81",
