@@ -111,6 +111,95 @@ var _ = Describe("GetBillableEvents", func() {
 	})
 
 	/*-----------------------------------------------------------------------------------*
+	.                                                                                    .
+	       00:00       01:00                                                             .
+	         |           |                                                               .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [====tsk1===]   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	       start       stop                                                              .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	<=======================================PLAN1=======================================>.
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	*-----------------------------------------------------------------------------------*/
+	It("Should return one BillingEvent for a task that was running for 1hr", func() {
+		cfg.AddPlan(eventstore.PricingPlan{
+			PlanGUID:  eventstore.TaskPlanGUID,
+			ValidFrom: "2001-01-01",
+			Name:      "PLAN1",
+			Components: []eventstore.PricingPlanComponent{
+				{
+					Name:         "task",
+					Formula:      "ceil($time_in_seconds/3600) * 0.01",
+					CurrencyCode: "GBP",
+					VATCode:      "Standard",
+				},
+			},
+		})
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		task1EventStart := testenv.Row{
+			"guid":        "8c7dc213-6b64-45af-8635-027ca94687c6",
+			"created_at":  "2001-01-01T00:00Z",
+			"raw_message": json.RawMessage(`{"state": "TASK_STARTED", "task_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "task_name": "TSK1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": null, "instance_count": 1, "previous_state": "TASK_STARTED", "memory_in_mb_per_instance": 1024}`),
+		}
+		task1EventStop := testenv.Row{
+			"guid":        "ad1aaa9e-f015-4b33-8fa6-e7bfa74acdc5",
+			"created_at":  "2001-01-01T01:00Z",
+			"raw_message": json.RawMessage(`{"state": "TASK_STOPPED", "task_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "task_name": "TSK1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": null, "instance_count": 1, "previous_state": "TASK_STARTED", "memory_in_mb_per_instance": 1024}`),
+		}
+		Expect(db.Insert("app_usage_events", task1EventStart, task1EventStop)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		rows, err := db.Schema.GetBillableEventRows(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2001-02-01",
+		})
+		Expect(err).ToNot(HaveOccurred())
+		defer rows.Close()
+
+		Expect(rows.Next()).To(BeTrue(), "expected another row")
+		Expect(rows.Event()).To(Equal(&eventio.BillableEvent{
+			EventGUID:     "8c7dc213-6b64-45af-8635-027ca94687c6",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T01:00:00+00:00",
+			ResourceGUID:  "c85e98f0-6d1b-4f45-9368-ea58263165a0",
+			ResourceName:  "TSK1",
+			ResourceType:  "task",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:      "ebfa9453-ef66-450c-8c37-d53dfd931038",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   0,
+			Price: eventio.Price{
+				IncVAT: "0.012",
+				ExVAT:  "0.01",
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "task",
+						PlanName:     "PLAN1",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-01T01:00:00+00:00",
+						VatRate:      "0.2",
+						VatCode:      "Standard",
+						CurrencyCode: "GBP",
+						CurrencyRate: "1",
+						IncVAT:       "0.012",
+						ExVAT:        "0.01",
+					},
+				},
+			},
+		}))
+
+		Expect(rows.Next()).To(BeFalse(), "did not expect any more rows")
+	})
+
+	/*-----------------------------------------------------------------------------------*
 	       00:00       01:00       02:00                                                 .
 	         |           |           |                                                   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
