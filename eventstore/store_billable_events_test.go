@@ -34,11 +34,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
 	It("Should return one BillingEvent for an app that was running for 1hr", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -123,11 +123,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
 	It("Should return one BillingEvent for a task that was running for 1hr", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.TaskPlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "task",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -211,11 +211,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
 	It("Should return two BillingEvent that represent a scaling", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -337,11 +337,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
 	It("should return a BillableEvent for an app without a stop event yet", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -398,11 +398,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .       |__________requested range__________|   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
 	It("should return a BillableEvent with duration cropped to the requeted range", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -455,11 +455,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
 	It("should return one BillingEvent with two pricing components when intersects two plans", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "1",
@@ -468,11 +468,11 @@ var _ = Describe("GetBillableEvents", func() {
 				},
 			},
 		})
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-02-01",
 			Name:      "PLAN2",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "33",
@@ -562,11 +562,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
 	It("should return a single BillingEvent with two pricing components when a single event intersects two VAT rates", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "1",
@@ -575,7 +575,7 @@ var _ = Describe("GetBillableEvents", func() {
 				},
 			},
 		})
-		cfg.AddVATRate(eventstore.VATRate{
+		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Standard",
 			Rate:      0,
 			ValidFrom: "2017-02-01",
@@ -661,11 +661,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
 	It("should return a single BillingEvent with two pricing components when the event intersects two CurrencyRates", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "1",
@@ -674,7 +674,7 @@ var _ = Describe("GetBillableEvents", func() {
 				},
 			},
 		})
-		cfg.AddCurrencyRate(eventstore.CurrencyRate{
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
@@ -765,11 +765,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   |   .  component1.  . | component2 |  component3  |    component4    .  |   .   .
 	----------------------------------------------------------------------------------------*/
 	It("should return a single BillingEvent with four pricing components when the events intersects currency and vate rate changes", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "1",
@@ -778,17 +778,17 @@ var _ = Describe("GetBillableEvents", func() {
 				},
 			},
 		})
-		cfg.AddVATRate(eventstore.VATRate{
+		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Standard",
 			Rate:      0,
 			ValidFrom: "2017-03-01",
 		})
-		cfg.AddCurrencyRate(eventstore.CurrencyRate{
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
 		})
-		cfg.AddCurrencyRate(eventstore.CurrencyRate{
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      4,
 			ValidFrom: "2017-04-01",
@@ -899,11 +899,11 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
 	It("Should round price of BillingEvent to a 1p if it is less than that", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "0.0000000001",

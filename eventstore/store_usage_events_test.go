@@ -35,11 +35,11 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
 	It("should return one UsageEvent for each STARTED/STOPPED pair of RawEvent", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 0.01",
@@ -48,11 +48,11 @@ var _ = Describe("GetUsageEvents", func() {
 				},
 			},
 		})
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 			ValidFrom: "2001-01-01",
 			Name:      "DB_PLAN_1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
 					Formula:      "ceil($time_in_seconds/3600) * 1",

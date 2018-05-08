@@ -35,11 +35,11 @@ var _ = Describe("ForecastBillingEvents", func() {
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
 	It("Should return one BillingEvent for each simulated app UsageEvent", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP-PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "node-cost",
 					Formula:      "($time_in_seconds / 3600) * $number_of_nodes",
@@ -49,11 +49,11 @@ var _ = Describe("ForecastBillingEvents", func() {
 			},
 		})
 		dummyServicePlan := "d77af28f-735f-47d0-8a21-be3163baa0e9"
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  dummyServicePlan,
 			ValidFrom: "2001-01-01",
 			Name:      "SRV-PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "storage-cost",
 					Formula:      "($time_in_seconds / 3600) * $storage_in_mb",
@@ -178,11 +178,11 @@ var _ = Describe("ForecastBillingEvents", func() {
 	})
 
 	It("should never persist simulated events to the store", func() {
-		cfg.AddPlan(eventstore.PricingPlan{
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
 			Name:      "APP-PLAN1",
-			Components: []eventstore.PricingPlanComponent{
+			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "node-cost",
 					Formula:      "($time_in_seconds / 3600) * $number_of_nodes",

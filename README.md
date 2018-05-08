@@ -13,6 +13,7 @@
 	* [GET /usage_events](#get-usage_events)
 	* [GET /billable_events](#get-billable_events)
 	* [GET /forecast_events](#get-forecast_events)
+	* [GET /pricing_plans](#get-pricing_plans)
 * [Development](#development)
 	* [Create a temporary Postgres server](#create-a-temporary-postgres-server)
 	* [Run the application](#run-the-application)
@@ -395,6 +396,67 @@ curl -s -G 'http://localhost:8881/forecast_events' \
 				},
 			},
 		}
+	}
+	...
+]
+```
+
+### `GET /pricing_plans`
+
+PricingPlans define how the costs for resources are applied. The PricingPlans are setup in the configuraiton json file. Each UsageEvent's PlanGUID should have a matching PricingPlan for a given point in time.
+
+Each PricingPlan may be made up of multiple PricingComponents (for example a database service may have components for the CPU/VM instance and also for the storage used).
+
+You can fetch the available PricingPlans for a given time period to see what resources are available and how the costs are calculated.
+
+**Authorization:**
+
+Authorization is not required for this endpoint.
+
+**Query parameters:**
+
+| Name | Type | Example | Notes |
+|---|---|---|---|
+| range_start | timestamp | 2001-01-01 | **required** start of period to query |
+| range_stop | timestamp | 2017-01-01 | **required** end of period to query |
+
+**Example:**
+
+```
+RANGE_START="2018-01-01"
+RANGE_STOP="2018-02-01"
+
+curl -s -G 'http://localhost:8881/pricing_plans' \
+	--data-urlencode "range_start=${RANGE_START}" \
+	--data-urlencode "range_stop=${RANGE_STOP}"
+```
+
+**Returns:**
+
+```javascript
+[
+	...
+	{
+		"name": "PLAN2",
+		"plan_guid": "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+		"valid_from": "2002-01-01",
+		"components": [
+			{
+				"name": "cpu-usage",
+				"formula": "$number_of_nodes * 0.001 * $time_in_seconds",
+				"vat_code": "Standard",
+				"currency_code": "GBP"
+			},
+			{
+				"name": "storage-usage",
+				"formula": "$storage_in_mb * 0.0001 * $time_in_seconds",
+				"vat_code": "Standard",
+				"currency_code": "GBP"
+			}
+		],
+		"memory_in_mb": 264,
+		"storage_in_mb": 265,
+		"number_of_nodes": 2
 	}
 	...
 ]

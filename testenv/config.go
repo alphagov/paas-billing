@@ -1,21 +1,24 @@
 package testenv
 
-import "github.com/alphagov/paas-billing/eventstore"
+import (
+	"github.com/alphagov/paas-billing/eventio"
+	"github.com/alphagov/paas-billing/eventstore"
+)
 
 var BasicConfig = eventstore.Config{
-	VATRates: []eventstore.VATRate{
+	VATRates: []eventio.VATRate{
 		{
 			Code:      "Standard",
 			Rate:      0.2,
 			ValidFrom: "epoch",
 		},
 	},
-	CurrencyRates: []eventstore.CurrencyRate{
+	CurrencyRates: []eventio.CurrencyRate{
 		{
 			Code:      "GBP",
 			Rate:      1,
 			ValidFrom: "epoch",
 		},
 	},
-	PricingPlans: []eventstore.PricingPlan{},
+	PricingPlans: []eventio.PricingPlan{},
 }

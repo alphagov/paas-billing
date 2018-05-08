@@ -26,6 +26,19 @@ type FakeEventStore struct {
 	refreshReturnsOnCall map[int]struct {
 		result1 error
 	}
+	GetPricingPlansStub        func(filter eventio.PricingPlanFilter) ([]eventio.PricingPlan, error)
+	getPricingPlansMutex       sync.RWMutex
+	getPricingPlansArgsForCall []struct {
+		filter eventio.PricingPlanFilter
+	}
+	getPricingPlansReturns struct {
+		result1 []eventio.PricingPlan
+		result2 error
+	}
+	getPricingPlansReturnsOnCall map[int]struct {
+		result1 []eventio.PricingPlan
+		result2 error
+	}
 	StoreEventsStub        func(events []eventio.RawEvent) error
 	storeEventsMutex       sync.RWMutex
 	storeEventsArgsForCall []struct {
@@ -212,6 +225,57 @@ func (fake *FakeEventStore) RefreshReturnsOnCall(i int, result1 error) {
 	fake.refreshReturnsOnCall[i] = struct {
 		result1 error
 	}{result1}
+}
+
+func (fake *FakeEventStore) GetPricingPlans(filter eventio.PricingPlanFilter) ([]eventio.PricingPlan, error) {
+	fake.getPricingPlansMutex.Lock()
+	ret, specificReturn := fake.getPricingPlansReturnsOnCall[len(fake.getPricingPlansArgsForCall)]
+	fake.getPricingPlansArgsForCall = append(fake.getPricingPlansArgsForCall, struct {
+		filter eventio.PricingPlanFilter
+	}{filter})
+	fake.recordInvocation("GetPricingPlans", []interface{}{filter})
+	fake.getPricingPlansMutex.Unlock()
+	if fake.GetPricingPlansStub != nil {
+		return fake.GetPricingPlansStub(filter)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getPricingPlansReturns.result1, fake.getPricingPlansReturns.result2
+}
+
+func (fake *FakeEventStore) GetPricingPlansCallCount() int {
+	fake.getPricingPlansMutex.RLock()
+	defer fake.getPricingPlansMutex.RUnlock()
+	return len(fake.getPricingPlansArgsForCall)
+}
+
+func (fake *FakeEventStore) GetPricingPlansArgsForCall(i int) eventio.PricingPlanFilter {
+	fake.getPricingPlansMutex.RLock()
+	defer fake.getPricingPlansMutex.RUnlock()
+	return fake.getPricingPlansArgsForCall[i].filter
+}
+
+func (fake *FakeEventStore) GetPricingPlansReturns(result1 []eventio.PricingPlan, result2 error) {
+	fake.GetPricingPlansStub = nil
+	fake.getPricingPlansReturns = struct {
+		result1 []eventio.PricingPlan
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) GetPricingPlansReturnsOnCall(i int, result1 []eventio.PricingPlan, result2 error) {
+	fake.GetPricingPlansStub = nil
+	if fake.getPricingPlansReturnsOnCall == nil {
+		fake.getPricingPlansReturnsOnCall = make(map[int]struct {
+			result1 []eventio.PricingPlan
+			result2 error
+		})
+	}
+	fake.getPricingPlansReturnsOnCall[i] = struct {
+		result1 []eventio.PricingPlan
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeEventStore) StoreEvents(events []eventio.RawEvent) error {
@@ -643,6 +707,8 @@ func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	defer fake.initMutex.RUnlock()
 	fake.refreshMutex.RLock()
 	defer fake.refreshMutex.RUnlock()
+	fake.getPricingPlansMutex.RLock()
+	defer fake.getPricingPlansMutex.RUnlock()
 	fake.storeEventsMutex.RLock()
 	defer fake.storeEventsMutex.RUnlock()
 	fake.getEventsMutex.RLock()
