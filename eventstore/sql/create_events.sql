@@ -34,7 +34,8 @@ AS $$
   else:
     b = 0
   return b
-$$ LANGUAGE plpythonu;
+$$ LANGUAGE plv8;
+-- FIXME: END
 
 -- extract useful stuff from usage events
 -- we treat both apps and services as "resources" so normalize the fields
@@ -97,11 +98,11 @@ INSERT INTO events with
 					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
 				)::uuid as resource_guid,
 				(sue.raw_message->>'service_instance_name') as resource_name,
-				'compose'::text as resource_type,
+				'service'::text as resource_type,
 				(sue.raw_message->>'org_guid')::uuid as org_guid,
 				(sue.raw_message->>'space_guid')::uuid as space_guid,
 				'8d3383cf-9477-46cc-a219-ec0c23c020dd'::uuid as plan_guid,
-				'compose'::text as plan_name,
+				'service'::text as plan_name,
 				'1'::numeric as number_of_nodes,
 				(pg_size_bytes(raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
 				(pg_size_bytes(raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
