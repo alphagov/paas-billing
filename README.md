@@ -204,9 +204,9 @@ The `Authorization` header must contain a valid Cloudfoundy bearer token with pe
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| range_start | timestamp | 2001-01-01 | **required** start of period to query |
-| range_stop | timestamp | 2017-01-01 | **required** end of period to query |
-| org_guid | timestamp | 2018-05-01 | can specify this param multiple times to request multiple orgs |
+| `range_start` | timestamp | 2001-01-01 | **required** start of period to query |
+| `range_stop` | timestamp | 2017-01-01 | **required** end of period to query |
+| `org_guid` | uuid | "2884b2bc-f74b-4aaa-956d-f679ca498dce" | can specify this param multiple times to request multiple orgs |
 
 **Example:**
 
@@ -256,9 +256,9 @@ The `Authorization` header must contain a valid Cloudfoundy bearer token with pe
 
 | Name | Type | Example | Notes |
 |---|---|---|---|
-| range_start | timestamp | 2001-01-01 | **required** start of period to query |
-| range_stop | timestamp | 2017-01-01 | **required** end of period to query |
-| org_guid | timestamp | 2018-05-01 | can specify this param multiple times to request multiple orgs |
+| `range_start` | timestamp | 2001-01-01 | **required** start of period to query |
+| `range_stop` | timestamp | 2017-01-01 | **required** end of period to query |
+| `org_guid` | uuid | "2884b2bc-f74b-4aaa-956d-f679ca498dce" | can specify this param multiple times to request multiple orgs |
 
 **Example:**
 
@@ -328,7 +328,7 @@ This endpoint can be used without an authorization token so long as you only use
 |---|---|---|---|
 | `range_start` | timestamp | 2001-01-01 | **required** start of period to query |
 | `range_stop` | timestamp | 2017-01-01 | **required** end of period to query |
-| `org_guid` | timestamp | 2018-05-01 | can specify this param multiple times to request multiple orgs |
+| `org_guid` | uuid | "00000001-0000-0000-0000-000000000000" | dummy organization guid |
 | `events` | JSON | `[{event1,event2}]` | Use dummy org_guid `00000001-0000-0000-0000-000000000000` and dummy space_guid `00000001-0001-0000-0000-000000000000` |
 
 **Example:**
