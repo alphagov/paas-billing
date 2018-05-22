@@ -129,7 +129,10 @@ INSERT INTO events with
 			left join
 				service_usage_events sue
 			on
-				resource_guid = sue.raw_message->>'service_instance_guid'
+				sue.raw_message->>'service_instance_guid' = substring(
+					raw_message->'data'->>'deployment'
+					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
+				)
 			where
 				sue.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		)
