@@ -115,8 +115,6 @@ var _ = Describe("GetBillableEvents", func() {
 	       00:00       01:00                                                             .
 	         |           |                                                               .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-	 .   .   [====app1===]   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
-	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	 .   .   [====ibm1===]   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	       start       stop                                                              .
@@ -143,22 +141,11 @@ var _ = Describe("GetBillableEvents", func() {
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
-		app1EventStart := testenv.Row{
-			"guid":        "ee28a570-f485-48e1-87d0-98b7b8b66dfa",
-			"created_at":  "2001-01-01T00:00Z",
-			"raw_message": json.RawMessage(`{"state": "STARTED", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "IBM1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 1, "previous_state": "STARTED", "memory_in_mb_per_instance": 1024}`),
-		}
-		app1EventStop := testenv.Row{
-			"guid":        "8d9036c5-8367-497d-bb56-94bfcac6621a",
-			"created_at":  "2001-01-01T01:00Z",
-			"raw_message": json.RawMessage(`{"state": "STOPPED", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "IBM1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 1, "previous_state": "STARTED", "memory_in_mb_per_instance": 1024}`),
-		}
 		service1EventStart := testenv.Row{
 			"event_id":    "c497eb13-f48a-4859-be53-5569f302b516",
 			"created_at":  time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
 			"raw_message": json.RawMessage(` {"id": "5aba15474a64fd00141f4263", "ip": "", "data": {"units": "3", "memory": "306 MB", "cluster": "gds-eu-west1-c00", "storage": "3 GB", "deployment": "prod-8b361bfe-c5a4-4c41-bb05-6a627bff8656"}, "event": "deployment.scale.members", "_links": {"alerts": {"href": "", "templated": false}, "backups": {"href": "", "templated": false}, "cluster": {"href": "", "templated": false}, "scalings": {"href": "", "templated": false}, "portal_users": {"href": "", "templated": false}, "compose_web_ui": {"href": "", "templated": false}}, "user_id": "", "account_id": "58d3e39c0045bb00135ee6ad", "cluster_id": "5941cf9f859d2c0015000021", "created_at": "2018-03-27T09:56:23.363Z", "user_agent": "", "deployment_id": "59de3e8cc9ecc40010324fc6"}`),
 		}
-		Expect(db.Insert("app_usage_events", app1EventStart, app1EventStop)).To(Succeed())
 		Expect(db.Insert("compose_audit_events", service1EventStart)).To(Succeed())
 
 		Expect(db.Schema.Refresh()).To(Succeed())
