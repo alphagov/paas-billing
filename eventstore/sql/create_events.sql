@@ -104,37 +104,37 @@ INSERT INTO events with
 				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		) union all (
 			select
-				cae.id as event_sequence,
-				cae.event_id::uuid as event_guid,
-				cae.created_at::timestamptz as created_at,
+				c.id as event_sequence,
+				c.event_id::uuid as event_guid,
+				c.created_at::timestamptz as created_at,
 				substring(
-					cae.raw_message->'data'->>'deployment'
+					c.raw_message->'data'->>'deployment'
 					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
 				)::uuid as resource_guid,
-				(sue.raw_message->>'service_instance_name') as resource_name,
+				(s.raw_message->>'service_instance_name') as resource_name,
 				'service'::text as resource_type,
-				(sue.raw_message->>'org_guid')::uuid as org_guid,
-				(sue.raw_message->>'space_guid')::uuid as space_guid,
+				(s.raw_message->>'org_guid')::uuid as org_guid,
+				(s.raw_message->>'space_guid')::uuid as space_guid,
 				'8d3383cf-9477-46cc-a219-ec0c23c020dd'::uuid as plan_guid,
 				'service'::text as plan_name,
 				'1'::numeric as number_of_nodes,
-				(pg_size_bytes(cae.raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
-				(pg_size_bytes(cae.raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
+				(pg_size_bytes(c.raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
+				(pg_size_bytes(c.raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
 				(case
-					when (sue.raw_message->>'state') = 'CREATED' then 'STARTED'
-					when (sue.raw_message->>'state') = 'DELETED' then 'STOPPED'
+					when (s.raw_message->>'state') = 'CREATED' then 'STARTED'
+					when (s.raw_message->>'state') = 'DELETED' then 'STOPPED'
 				end)::resource_state as state
 			from
-				compose_audit_events cae
+				compose_audit_events c
 			left join
-				service_usage_events sue
+				service_usage_events s
 			on
-				sue.raw_message->>'service_instance_guid' = substring(
-					cae.raw_message->'data'->>'deployment'
+				s.raw_message->>'service_instance_guid' = substring(
+					c.raw_message->'data'->>'deployment'
 					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
 				)
 			where
-				sue.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		)
 	),
 	event_ranges as (
