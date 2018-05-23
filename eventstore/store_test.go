@@ -639,4 +639,89 @@ var _ = Describe("Store", func() {
 		Entry("compose event", "compose"),
 	)
 
+	Describe("pg_size_bytes", func() {
+		var db *testenv.TempDB
+
+		BeforeEach(func() {
+			var err error
+			db, err = testenv.Open(cfg)
+			Expect(err).ToNot(HaveOccurred())
+		})
+		AfterEach(func() {
+			db.Close()
+		})
+
+		DescribeTable("valid inputs",
+			func(input string, expected int) {
+				var output int
+				err := db.Conn.QueryRow(`select pg_size_bytes('` + input + `')`).Scan(&output)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(output).To(Equal(expected))
+			},
+			Entry("1", "1", 1),
+			Entry("123bytes", "123bytes", 123),
+			Entry("1kB", "1kB", 1024),
+			Entry("1MB", "1MB", 1048576),
+			Entry(" 1 GB", " 1 GB", 1073741824),
+			Entry("1.5 GB", "1.5 GB", 1610612736),
+			Entry("1TB", "1TB", 1099511627776),
+			Entry("3000 TB", "3000 TB", 3298534883328000),
+			Entry("1e6 MB", "1e6 MB", 1048576000000),
+
+			// case-insensitive units are supported
+			Entry("1", "1", 1),
+			Entry("123bYteS", "123bYteS", 123),
+			Entry("1kb", "1kb", 1024),
+			Entry("1mb", "1mb", 1048576),
+			Entry(" 1 Gb", " 1 Gb", 1073741824),
+			Entry("1.5 gB", "1.5 gB", 1610612736),
+			Entry("1tb", "1tb", 1099511627776),
+			Entry("3000 tb", "3000 tb", 3298534883328000),
+			Entry("1e6 mb", "1e6 mb", 1048576000000),
+
+			// negative numbers are supported
+			Entry("-1", "-1", -1),
+			Entry("-123bytes", "-123bytes", -123),
+			Entry("-1kb", "-1kb", -1024),
+			Entry("-1mb", "-1mb", -1048576),
+			Entry(" -1 Gb", " -1 Gb", -1073741824),
+			Entry("-1.5 gB", "-1.5 gB", -1610612736),
+			Entry("-1tb", "-1tb", -1099511627776),
+			Entry("-3000 TB", "-3000 TB", -3298534883328000),
+			Entry("-10e-1 MB", "-10e-1 MB", -1048576),
+
+			// different cases with allowed points
+			Entry("-1.", "-1.", -1),
+			Entry("-1.kb", "-1.kb", -1024),
+			Entry("-1. kb", "-1. kb", -1024),
+			Entry("-0. gb", "-0. gb", 0),
+			Entry("-.1", "-.1", 0),
+			Entry("-.1kb", "-.1kb", -102),
+			Entry("-.1 kb", "-.1 kb", -102),
+			Entry("-.0 gb", "-.0 gb", 0),
+		)
+
+		DescribeTable("invalid inputs",
+			func(input string) {
+				_, err := db.Conn.Query(`select pg_size_bytes('` + input + `')`)
+				Expect(err).To(HaveOccurred())
+			},
+			Entry("1 AB", "1 AB"),
+			Entry("1 AB A", "1 AB A"),
+			Entry("1 AB A    ", "1 AB A    "),
+			Entry("9223372036854775807.9", "9223372036854775807.9"),
+			Entry("1e100", "1e100"),
+			Entry("1e1000000000000000000", "1e1000000000000000000"),
+			Entry("1 byte", "1 byte"), // the singular "byte" is not supported
+			Entry("", ""),
+			Entry("kb", "kb"),
+			Entry("..", ".."),
+			Entry("-.", "-."),
+			Entry("-.kb", "-.kb"),
+			Entry("-. kb", "-. kb"),
+			Entry(".+912", ".+912"),
+			Entry("+912+ kB", "+912+ kB"),
+			Entry("++123 kB", "++123 kB"),
+		)
+	})
 })
