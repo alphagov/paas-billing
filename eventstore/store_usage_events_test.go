@@ -129,7 +129,7 @@ var _ = Describe("GetUsageEvents", func() {
 			EventStop:     "2001-01-01T01:00:00+00:00",
 			ResourceGUID:  "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
 			ResourceName:  "DB1",
-			ResourceType:  "postgres",
+			ResourceType:  "service",
 			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
 			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",

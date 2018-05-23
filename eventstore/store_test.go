@@ -116,7 +116,7 @@ var _ = Describe("Store", func() {
 				"plan_name":       "Free",
 				"resource_guid":   "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
 				"resource_name":   "ja-rails-postgres",
-				"resource_type":   "postgres",
+				"resource_type":   "service",
 				"space_guid":      "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
 				"storage_in_mb":   nil,
 			},

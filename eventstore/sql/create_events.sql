@@ -48,7 +48,7 @@ INSERT INTO events with
 				created_at,
 				(raw_message->>'service_instance_guid')::uuid as resource_guid,
 				(raw_message->>'service_instance_name') as resource_name,
-				(raw_message->>'service_label') as resource_type,
+				'service' as resource_type,
 				(raw_message->>'org_guid')::uuid as org_guid,
 				(raw_message->>'space_guid')::uuid as space_guid,
 				(raw_message->>'service_plan_guid')::uuid as plan_guid,
