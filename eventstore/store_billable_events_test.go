@@ -143,12 +143,12 @@ var _ = Describe("GetBillableEvents", func() {
 		service1EventStart := testenv.Row{
 			"guid":        "aa30fa3c-725d-4272-9052-c7186d4968a6",
 			"created_at":  "2001-01-01T00:00Z",
-			"raw_message": json.RawMessage(`{"state": "CREATED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "compose", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "PLAN1", "service_instance_guid": "8b361bfe-c5a4-4c41-bb05-6a627bff8656", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
+			"raw_message": json.RawMessage(`{"state": "CREATED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "compose", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "PLAN1", "service_instance_guid": "8b361bfe-c5a4-4c41-bb05-6a627bff8656", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
 		}
 		service1EventStop := testenv.Row{
 			"guid":        "cd9036c5-8367-497d-bb56-94bfcac6621a",
 			"created_at":  "2001-01-01T02:00Z",
-			"raw_message": json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "compose", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "PLAN1", "service_instance_guid": "8b361bfe-c5a4-4c41-bb05-6a627bff8656", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
+			"raw_message": json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "compose", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "PLAN1", "service_instance_guid": "8b361bfe-c5a4-4c41-bb05-6a627bff8656", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
 		}
 		Expect(db.Insert("service_usage_events", service1EventStart, service1EventStop)).To(Succeed())
 		service1EventScale := testenv.Row{
@@ -169,15 +169,15 @@ var _ = Describe("GetBillableEvents", func() {
 
 		Expect(rows.Next()).To(BeTrue(), "expected another row")
 		Expect(rows.Event()).To(Equal(&eventio.BillableEvent{
-			EventGUID:     "ee28a570-f485-48e1-87d0-98b7b8b66dfa",
+			EventGUID:     "aa30fa3c-725d-4272-9052-c7186d4968a6",
 			EventStart:    "2001-01-01T00:00:00+00:00",
 			EventStop:     "2001-01-01T01:00:00+00:00",
-			ResourceGUID:  "c85e98f0-6d1b-4f45-9368-ea58263165a0",
-			ResourceName:  "IBM1",
-			ResourceType:  "task",
+			ResourceGUID:  "8b361bfe-c5a4-4c41-bb05-6a627bff8656",
+			ResourceName:  "db1",
+			ResourceType:  "compose",
 			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "8d3383cf-9477-46cc-a219-ec0c23c020dd",
+			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
 			StorageInMB:   0,
