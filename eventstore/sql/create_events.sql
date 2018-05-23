@@ -114,16 +114,92 @@ INSERT INTO events with
 			where
 				(raw_message->>'state' = 'STAGING_STARTED' or raw_message->>'state' = 'STAGING_STOPPED')
 				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+		) union all (
+			select
+				s.id as event_sequence,
+				uuid_generate_v4() as event_guid,
+				c.created_at::timestamptz as created_at,
+				substring(
+					c.raw_message->'data'->>'deployment'
+					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
+				)::uuid as resource_guid,
+				NULL as resource_name,
+				'service'::text as resource_type,
+				(s.raw_message->>'org_guid')::uuid as org_guid,
+				(s.raw_message->>'space_guid')::uuid as space_guid,
+				(s.raw_message->>'service_plan_guid')::uuid as plan_guid,
+				(s.raw_message->>'service_plan_name') as plan_name,
+				NULL::numeric as number_of_nodes,
+				(pg_size_bytes(c.raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
+				(pg_size_bytes(c.raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
+				'STARTED'::resource_state as state
+			from
+				compose_audit_events c
+			left join
+				service_usage_events s
+			on
+				s.raw_message->>'service_instance_guid' = substring(
+					c.raw_message->'data'->>'deployment'
+					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
+				) AND s.raw_message->>'state' = 'CREATED'
+			where
+				s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		)
+	),
+	raw_events_with_injected_values as (
+		select
+			event_sequence,
+			event_guid,
+			created_at,
+			resource_guid,
+			coalesce(
+				resource_name,
+				(array_remove(
+					array_agg(resource_name) over prev_events
+				, NULL))[1]
+			) as resource_name,
+			resource_type,
+			org_guid,
+			space_guid,
+			plan_guid,
+			plan_name,
+			number_of_nodes,
+			coalesce(
+				memory_in_mb,
+				(array_remove(
+						array_agg(memory_in_mb) over prev_events
+				, NULL))[1]
+			) as memory_in_mb,
+			coalesce(
+				storage_in_mb,
+				(array_remove(
+						array_agg(storage_in_mb) over prev_events
+				, NULL))[1]
+			) as storage_in_mb,
+			state
+		from
+			raw_events
+		window
+			prev_events as (
+				partition by resource_guid
+				order by created_at desc, event_sequence desc
+				rows between current row and unbounded following
+			)
+		order by
+			created_at, event_sequence
 	),
 	event_ranges as (
 		select
 			*,
 			tstzrange(created_at, lead(created_at, 1, now()) over resource_states) as duration
 		from
-			raw_events
+			raw_events_with_injected_values
 		window
-			resource_states as (partition by resource_guid order by event_sequence rows between current row and 1 following)
+			resource_states as (
+				partition by resource_guid
+				order by created_at, event_sequence
+				rows between current row and 1 following
+			)
 		order by
 			event_sequence
 	)
