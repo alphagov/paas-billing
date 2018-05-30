@@ -237,6 +237,6 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 	})
 
 	By("Waiting until the process exits cleanly", func() {
-		Eventually(session, 30*time.Second).Should(Exit(0))
+		Eventually(session, 60*time.Second).Should(Exit(0))
 	})
 })
