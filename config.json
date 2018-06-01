@@ -108,7 +108,7 @@
 			]
 		},
 		{
-			"name": "postgres micro",
+			"name": "postgres tiny-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "e264800e-20cb-4bf0-99fc-84bd42681d81",
 			"storage_in_mb": 5120,
@@ -129,7 +129,7 @@
 			]
 		},
 		{
-			"name": "postgres S-dedicated-9.5",
+			"name": "postgres small-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "4b47d304-003d-4771-a8ba-281adc90b2a6",
 			"storage_in_mb": 20480,
@@ -150,7 +150,28 @@
 			]
 		},
 		{
-			"name": "postgres S-HA-dedicated-9.5",
+			"name": "postgres small-9.5",
+			"valid_from": "2017-01-01",
+			"plan_guid": "3a50a98f-316b-459c-a2de-3c5616ee77e3",
+			"storage_in_mb": 20480,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.039",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "postgres small-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "dbd330b0-13e7-47b5-aec2-6303430c4776",
 			"storage_in_mb": 20480,
@@ -171,7 +192,7 @@
 			]
 		},
 		{
-			"name": "postgres S-HA-enc-dedicated-9.5",
+			"name": "postgres small-ha-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "1f4439d4-5010-480e-8fe0-9e7a2be6fe90",
 			"storage_in_mb": 20480,
@@ -192,7 +213,7 @@
 			]
 		},
 		{
-			"name": "postgres M-dedicated-9.5",
+			"name": "postgres medium-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "7bbefbf0-70c1-4ae4-88af-fc2170c0b4d6",
 			"storage_in_mb": 102400,
@@ -213,7 +234,28 @@
 			]
 		},
 		{
-			"name": "postgres M-HA-dedicated-9.5",
+			"name": "postgres medium-9.5",
+			"valid_from": "2017-01-01",
+			"plan_guid": "a203ff49-bbab-411b-8a3e-89df586ab696",
+			"storage_in_mb": 102400,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.201",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "postgres medium-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "ef9ee73a-7e82-47e6-9f1b-126cdb9ef49c",
 			"storage_in_mb": 102400,
@@ -234,7 +276,7 @@
 			]
 		},
 		{
-			"name": "postgres M-HA-enc-dedicated-9.5",
+			"name": "postgres medium-ha-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "3de5429b-424a-412b-b3a7-b6b08688ce5c",
 			"storage_in_mb": 102400,
@@ -255,7 +297,7 @@
 			]
 		},
 		{
-			"name": "postgres L-dedicated-9.5",
+			"name": "postgres large-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "8a7346f9-2c91-473c-aaba-e1a5ed8ce036",
 			"storage_in_mb": 524288,
@@ -276,7 +318,28 @@
 			]
 		},
 		{
-			"name": "postgres L-HA-dedicated-9.5",
+			"name": "postgres large-9.5",
+			"valid_from": "2017-01-01",
+			"plan_guid": "f6b802ba-2c35-4e9a-84e3-4e71876c2290",
+			"storage_in_mb": 524288,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.806",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "postgres large-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "5ca3b793-9a59-4447-8bbe-64e052102bb6",
 			"storage_in_mb": 524288,
@@ -297,7 +360,7 @@
 			]
 		},
 		{
-			"name": "postgres L-HA-enc-dedicated-9.5",
+			"name": "postgres large-ha-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "1bc93270-3d89-4ddd-a916-53e1b1d899e9",
 			"storage_in_mb": 524288,
@@ -318,7 +381,7 @@
 			]
 		},
 		{
-			"name": "postgres XL-dedicated-9.5",
+			"name": "postgres xlarge-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "82278904-9e0a-4ed3-9089-f94b0304f89a",
 			"storage_in_mb": 2097152,
@@ -339,7 +402,28 @@
 			]
 		},
 		{
-			"name": "postgres XL-HA-dedicated-9.5",
+			"name": "postgres xlarge-9.5",
+			"valid_from": "2017-01-01",
+			"plan_guid": "31d4c25c-1a36-4fd9-869b-c0e4a3a745da",
+			"storage_in_mb": 2097152,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 1.612",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "postgres xlarge-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "7ae6a962-50f2-4fbd-acd1-f8f3dc5b1301",
 			"storage_in_mb": 2097152,
@@ -360,7 +444,7 @@
 			]
 		},
 		{
-			"name": "postgres XL-HA-enc-dedicated-9.5",
+			"name": "postgres xlarge-ha-9.5",
 			"valid_from": "2017-01-01",
 			"plan_guid": "ab7b6626-4500-4df0-a3ff-280190573a30",
 			"storage_in_mb": 2097152,
@@ -381,7 +465,7 @@
 			]
 		},
 		{
-			"name": "mysql micro",
+			"name": "mysql tiny-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "c03510d2-54bd-4fb0-9d9a-1e5ffb82aa39",
 			"storage_in_mb": 5120,
@@ -402,7 +486,7 @@
 			]
 		},
 		{
-			"name": "mysql S-dedicated-5.7",
+			"name": "mysql small-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "7ecc2e37-905d-4d61-9c11-b747c2317b90",
 			"storage_in_mb": 20480,
@@ -423,7 +507,28 @@
 			]
 		},
 		{
-			"name": "mysql S-HA-dedicated-5.7",
+			"name": "mysql small-5.7",
+			"valid_from": "2017-01-01",
+			"plan_guid": "e4db2b8c-b247-41dd-8cb8-9b6c0d15d7a1",
+			"storage_in_mb": 20480,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.036",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "mysql small-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "6839c764-9f4c-48e2-8219-4a2c4fb687fb",
 			"storage_in_mb": 20480,
@@ -444,7 +549,7 @@
 			]
 		},
 		{
-			"name": "mysql S-HA-enc-dedicated-5.7",
+			"name": "mysql small-ha-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "a093b624-0547-4483-aeab-df200a08ca42",
 			"storage_in_mb": 20480,
@@ -465,7 +570,7 @@
 			]
 		},
 		{
-			"name": "mysql M-dedicated-5.7",
+			"name": "mysql medium-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "76f54dfc-9f6f-4a01-a538-b354091cfed8",
 			"storage_in_mb": 102400,
@@ -486,7 +591,28 @@
 			]
 		},
 		{
-			"name": "mysql M-HA-dedicated-5.7",
+			"name": "mysql medium-5.7",
+			"valid_from": "2017-01-01",
+			"plan_guid": "d68d322c-18d5-40a4-adcf-44eea4f6054b",
+			"storage_in_mb": 102400,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.193",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "mysql medium-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "60f51688-aba3-4789-b5e1-06ad243600ba",
 			"storage_in_mb": 102400,
@@ -507,7 +633,7 @@
 			]
 		},
 		{
-			"name": "mysql M-HA-enc-dedicated-5.7",
+			"name": "mysql medium-ha-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "d76c2a54-a921-4833-839e-6ffff23a1034",
 			"storage_in_mb": 102400,
@@ -528,7 +654,7 @@
 			]
 		},
 		{
-			"name": "mysql L-dedicated-5.7",
+			"name": "mysql large-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "55466bc0-cb3f-497c-bed7-43b95d4b0dab",
 			"storage_in_mb": 524288,
@@ -549,7 +675,28 @@
 			]
 		},
 		{
-			"name": "mysql L-HA-dedicated-5.7",
+			"name": "mysql large-5.7",
+			"valid_from": "2017-01-01",
+			"plan_guid": "7e14cdc6-5de1-40dc-8d86-535149a59300",
+			"storage_in_mb": 524288,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.772",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "mysql large-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "be7c7124-6d08-4856-a311-d9912110cb9e",
 			"storage_in_mb": 524288,
@@ -570,7 +717,7 @@
 			]
 		},
 		{
-			"name": "mysql L-HA-enc-dedicated-5.7",
+			"name": "mysql large-ha-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "2ee14c9f-a66d-440c-bddb-233c31a1a4b2",
 			"storage_in_mb": 524288,
@@ -591,7 +738,7 @@
 			]
 		},
 		{
-			"name": "mysql XL-dedicated-5.7",
+			"name": "mysql xlarge-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "6c7ef397-0f8b-4157-a566-d4e7b580417b",
 			"storage_in_mb": 2097152,
@@ -612,7 +759,28 @@
 			]
 		},
 		{
-			"name": "mysql XL-HA-dedicated-5.7",
+			"name": "mysql xlarge-5.7",
+			"valid_from": "2017-01-01",
+			"plan_guid": "b7618d38-452e-47f1-b43e-dc44c4969d70",
+			"storage_in_mb": 2097152,
+			"memory_in_mb": 0,
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 1.545",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				},
+				{
+					"name": "storage",
+					"formula": "($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "mysql xlarge-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "004592ae-8856-4124-9fb1-8af8e54d14f3",
 			"storage_in_mb": 2097152,
@@ -633,7 +801,7 @@
 			]
 		},
 		{
-			"name": "mysql XL-HA-enc-dedicated-5.7",
+			"name": "mysql xlarge-ha-5.7",
 			"valid_from": "2017-01-01",
 			"plan_guid": "8bf361e0-4cc5-4da0-a5de-be934fac96bf",
 			"storage_in_mb": 2097152,
@@ -654,7 +822,7 @@
 			]
 		},
 		{
-			"name": "redis tiny clustered",
+			"name": "redis tiny-clustered-3.2",
 			"valid_from": "2017-01-01",
 			"plan_guid": "957e6177-323c-4eeb-8630-c4bfa979a86c",
 			"components": [
@@ -668,7 +836,7 @@
 			]
 		},
 		{
-			"name": "redis tiny unclustered",
+			"name": "redis tiny-unclustered-3.2",
 			"valid_from": "2017-01-01",
 			"plan_guid": "ffa2f099-e416-4632-b936-32ab0c0c0166",
 			"components": [
@@ -682,7 +850,7 @@
 			]
 		},
 		{
-			"name": "cloudfront cdn",
+			"name": "cloudfront cdn-route",
 			"valid_from": "2017-01-01",
 			"plan_guid": "e4f39630-e385-410b-972f-6b4cc7aad112",
 			"components": [
