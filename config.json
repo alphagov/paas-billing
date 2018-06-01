@@ -822,7 +822,7 @@
 			]
 		},
 		{
-			"name": "redis tiny clustered",
+			"name": "redis tiny-clustered-3.2",
 			"valid_from": "2017-01-01",
 			"plan_guid": "957e6177-323c-4eeb-8630-c4bfa979a86c",
 			"components": [
@@ -836,7 +836,7 @@
 			]
 		},
 		{
-			"name": "redis tiny unclustered",
+			"name": "redis tiny-unclustered-3.2",
 			"valid_from": "2017-01-01",
 			"plan_guid": "ffa2f099-e416-4632-b936-32ab0c0c0166",
 			"components": [
@@ -850,7 +850,7 @@
 			]
 		},
 		{
-			"name": "cloudfront cdn",
+			"name": "cloudfront cdn-route",
 			"valid_from": "2017-01-01",
 			"plan_guid": "e4f39630-e385-410b-972f-6b4cc7aad112",
 			"components": [
