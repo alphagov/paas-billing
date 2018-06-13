@@ -123,7 +123,10 @@ INSERT INTO events with
 					c.raw_message->'data'->>'deployment'
 					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
 				)::uuid as resource_guid,
-				NULL as resource_name,
+				(case
+				 when s.created_at > c.created_at then (s.raw_message->>'service_instance_name')
+				 else NULL::text
+				end) as resource_name,
 				'service'::text as resource_type,
 				(s.raw_message->>'org_guid')::uuid as org_guid,
 				(s.raw_message->>'space_guid')::uuid as space_guid,
@@ -167,13 +170,13 @@ INSERT INTO events with
 			coalesce(
 				memory_in_mb,
 				(array_remove(
-						array_agg(memory_in_mb) over prev_events
+					array_agg(memory_in_mb) over prev_events
 				, NULL))[1]
 			) as memory_in_mb,
 			coalesce(
 				storage_in_mb,
 				(array_remove(
-						array_agg(storage_in_mb) over prev_events
+					array_agg(storage_in_mb) over prev_events
 				, NULL))[1]
 			) as storage_in_mb,
 			state
