@@ -67,5 +67,8 @@ fakes/fake_billable_event_rows.go: eventio/event_billable.go
 fakes/fake_usage_event_rows.go: eventio/event_usage.go
 	counterfeiter -o $@ $< UsageEventRows
 
+fakes/fake_cf_data_client.go: cfstore/cfstore_client.go
+	counterfeiter -o $@ $< CFDataClient
+
 clean:
 	rm -f bin/paas-billing

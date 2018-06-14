@@ -57,15 +57,28 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		cmd := exec.Command(CMD)
 		session, err = Start(cmd, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
-		Eventually(session.Out).Should(Say("paas-billing.starting"))
+		Eventually(session.Out, 10*time.Second).Should(Say("paas-billing.starting"))
 	})
 
 	defer By("Killing the app (if it hasn't already been shutdown)", func() {
 		session.Kill()
 	})
 
+	By("Waiting for the HistoricDataStore to report it has been initialized", func() {
+		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.historic-data-store.initialized"))
+	})
+
+	By("Ensuring Service/ServicePlan data exists after HistoricDataStore.Init", func() {
+		Expect(
+			tempDB.Get(`select count(*) from service_plans`),
+		).To(BeNumerically(">", 0), "expected some service_plans to be collected during init")
+		Expect(
+			tempDB.Get(`select count(*) from services`),
+		).To(BeNumerically(">", 0), "expected some services to be collected during init")
+	})
+
 	By("Waiting for the EventStore to report it has been initialized", func() {
-		Eventually(session.Out).Should(Say("paas-billing.store.initializing"))
+		Eventually(session.Out, 5*time.Second).Should(Say("paas-billing.store.initializing"))
 		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.store.initialized"))
 	})
 

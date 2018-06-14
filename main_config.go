@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/alphagov/paas-billing/cfstore"
 	"github.com/alphagov/paas-billing/eventcollector"
 	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
 	"github.com/alphagov/paas-billing/eventfetchers/composefetcher"
@@ -20,15 +21,16 @@ import (
 )
 
 type Config struct {
-	AppRootDir     string
-	Logger         lager.Logger
-	Store          eventio.EventStore
-	DatabaseURL    string
-	Collector      eventcollector.Config
-	CFFetcher      cffetcher.Config
-	ComposeFetcher composefetcher.Config
-	ServerPort     int
-	Processor      ProcessorConfig
+	AppRootDir            string
+	Logger                lager.Logger
+	Store                 eventio.EventStore
+	DatabaseURL           string
+	Collector             eventcollector.Config
+	CFFetcher             cffetcher.Config
+	ComposeFetcher        composefetcher.Config
+	ServerPort            int
+	Processor             ProcessorConfig
+	HistoricDataCollector cfstore.Config
 }
 
 func (cfg Config) ConfigFile() (string, error) {
@@ -60,6 +62,22 @@ func NewConfigFromEnv() (cfg Config, err error) {
 		AppRootDir:  rootDir,
 		Logger:      lager.NewLogger("default"),
 		DatabaseURL: getEnvWithDefaultString("DATABASE_URL", "postgres://postgres:@localhost:5432/"),
+		HistoricDataCollector: cfstore.Config{
+			ClientConfig: &cfclient.Config{
+				ApiAddress:        os.Getenv("CF_API_ADDRESS"),
+				Username:          os.Getenv("CF_USERNAME"),
+				Password:          os.Getenv("CF_PASSWORD"),
+				ClientID:          os.Getenv("CF_CLIENT_ID"),
+				ClientSecret:      os.Getenv("CF_CLIENT_SECRET"),
+				SkipSslValidation: os.Getenv("CF_SKIP_SSL_VALIDATION") == "true",
+				Token:             os.Getenv("CF_TOKEN"),
+				UserAgent:         os.Getenv("CF_USER_AGENT"),
+				HttpClient: &http.Client{
+					Timeout: 30 * time.Second,
+				},
+			},
+			Schedule: getEnvWithDefaultDuration("COLLECTOR_SCHEDULE", 15*time.Minute),
+		},
 		Collector: eventcollector.Config{
 			Schedule:    getEnvWithDefaultDuration("COLLECTOR_SCHEDULE", 15*time.Minute),
 			MinWaitTime: getEnvWithDefaultDuration("COLLECTOR_MIN_WAIT_TIME", 3*time.Second),
