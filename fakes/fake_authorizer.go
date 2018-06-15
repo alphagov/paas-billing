@@ -8,17 +8,6 @@ import (
 )
 
 type FakeAuthorizer struct {
-	SpacesStub        func() ([]string, error)
-	spacesMutex       sync.RWMutex
-	spacesArgsForCall []struct{}
-	spacesReturns     struct {
-		result1 []string
-		result2 error
-	}
-	spacesReturnsOnCall map[int]struct {
-		result1 []string
-		result2 error
-	}
 	AdminStub        func() (bool, error)
 	adminMutex       sync.RWMutex
 	adminArgsForCall []struct{}
@@ -30,51 +19,21 @@ type FakeAuthorizer struct {
 		result1 bool
 		result2 error
 	}
+	OrganisationsStub        func([]string) (bool, error)
+	organisationsMutex       sync.RWMutex
+	organisationsArgsForCall []struct {
+		arg1 []string
+	}
+	organisationsReturns struct {
+		result1 bool
+		result2 error
+	}
+	organisationsReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeAuthorizer) Spaces() ([]string, error) {
-	fake.spacesMutex.Lock()
-	ret, specificReturn := fake.spacesReturnsOnCall[len(fake.spacesArgsForCall)]
-	fake.spacesArgsForCall = append(fake.spacesArgsForCall, struct{}{})
-	fake.recordInvocation("Spaces", []interface{}{})
-	fake.spacesMutex.Unlock()
-	if fake.SpacesStub != nil {
-		return fake.SpacesStub()
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.spacesReturns.result1, fake.spacesReturns.result2
-}
-
-func (fake *FakeAuthorizer) SpacesCallCount() int {
-	fake.spacesMutex.RLock()
-	defer fake.spacesMutex.RUnlock()
-	return len(fake.spacesArgsForCall)
-}
-
-func (fake *FakeAuthorizer) SpacesReturns(result1 []string, result2 error) {
-	fake.SpacesStub = nil
-	fake.spacesReturns = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeAuthorizer) SpacesReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.SpacesStub = nil
-	if fake.spacesReturnsOnCall == nil {
-		fake.spacesReturnsOnCall = make(map[int]struct {
-			result1 []string
-			result2 error
-		})
-	}
-	fake.spacesReturnsOnCall[i] = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
 }
 
 func (fake *FakeAuthorizer) Admin() (bool, error) {
@@ -120,13 +79,69 @@ func (fake *FakeAuthorizer) AdminReturnsOnCall(i int, result1 bool, result2 erro
 	}{result1, result2}
 }
 
+func (fake *FakeAuthorizer) Organisations(arg1 []string) (bool, error) {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.organisationsMutex.Lock()
+	ret, specificReturn := fake.organisationsReturnsOnCall[len(fake.organisationsArgsForCall)]
+	fake.organisationsArgsForCall = append(fake.organisationsArgsForCall, struct {
+		arg1 []string
+	}{arg1Copy})
+	fake.recordInvocation("Organisations", []interface{}{arg1Copy})
+	fake.organisationsMutex.Unlock()
+	if fake.OrganisationsStub != nil {
+		return fake.OrganisationsStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.organisationsReturns.result1, fake.organisationsReturns.result2
+}
+
+func (fake *FakeAuthorizer) OrganisationsCallCount() int {
+	fake.organisationsMutex.RLock()
+	defer fake.organisationsMutex.RUnlock()
+	return len(fake.organisationsArgsForCall)
+}
+
+func (fake *FakeAuthorizer) OrganisationsArgsForCall(i int) []string {
+	fake.organisationsMutex.RLock()
+	defer fake.organisationsMutex.RUnlock()
+	return fake.organisationsArgsForCall[i].arg1
+}
+
+func (fake *FakeAuthorizer) OrganisationsReturns(result1 bool, result2 error) {
+	fake.OrganisationsStub = nil
+	fake.organisationsReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeAuthorizer) OrganisationsReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.OrganisationsStub = nil
+	if fake.organisationsReturnsOnCall == nil {
+		fake.organisationsReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.organisationsReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeAuthorizer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.spacesMutex.RLock()
-	defer fake.spacesMutex.RUnlock()
 	fake.adminMutex.RLock()
 	defer fake.adminMutex.RUnlock()
+	fake.organisationsMutex.RLock()
+	defer fake.organisationsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
