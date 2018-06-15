@@ -863,14 +863,15 @@
 			]
 		},
 		{
-			"name": "mongodb tiny",
+			"name": "mongodb tiny (compose)",
 			"valid_from": "2017-01-01",
 			"plan_guid": "5d56dd1b-52d5-4ffb-a034-fc5c79794c90",
+			"memory_in_mb": 1024,
 			"components": [
 				{
 					"name": "instance",
-					"formula": "ceil($time_in_seconds/2678401)*35.00",
-					"currency_code": "USD",
+					"formula": "((1936.57/(48*1024))/30/24) * $memory_in_mb * ceil($time_in_seconds / 3600)",
+					"currency_code": "GBP",
 					"vat_code": "Standard"
 				}
 			]
@@ -879,24 +880,26 @@
 			"name": "redis tiny (compose)",
 			"valid_from": "2017-01-01",
 			"plan_guid": "53ca5c56-5474-4d64-9211-fe9aee86d502",
+			"memory_in_mb": 256,
 			"components": [
 				{
 					"name": "instance",
-					"formula": "ceil($time_in_seconds/2678401)*20.00",
-					"currency_code": "USD",
+					"formula": "((1936.57/(48*1024))/30/24) * $memory_in_mb * ceil($time_in_seconds / 3600)",
+					"currency_code": "GBP",
 					"vat_code": "Standard"
 				}
 			]
 		},
 		{
-			"name": "elasticsearch tiny",
+			"name": "elasticsearch tiny (compose)",
 			"valid_from": "2017-01-01",
 			"plan_guid": "31bb8b32-d5e0-4310-8a8d-3e8bff4b2bbc",
+			"memory_in_mb": 2048,
 			"components": [
 				{
 					"name": "instance",
-					"formula": "ceil($time_in_seconds/2678401)*45.00",
-					"currency_code": "USD",
+					"formula": "((1936.57/(48*1024))/30/24) * $memory_in_mb * ceil($time_in_seconds / 3600)",
+					"currency_code": "GBP",
 					"vat_code": "Standard"
 				}
 			]
