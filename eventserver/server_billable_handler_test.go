@@ -96,9 +96,10 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
 
-	It("should require admin scope (for now)", func() {
+	It("should require admin scope or org billing permissions", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
+		fakeAuthorizer.OrganisationsReturns(false, nil)
 		u := url.URL{}
 		u.Path = "/billable_events"
 		q := u.Query()
@@ -121,9 +122,59 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
 
-	It("should fetch BillableEvents from the store", func() {
+	It("should fetch BillableEvents from the store when admin", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(true, nil)
+		fakeAuthorizer.OrganisationsReturns(false, nil)
+		fakeRows := &fakes.FakeBillableEventRows{}
+		fakeRows.CloseReturns(nil)
+		fakeRows.NextReturnsOnCall(0, true)
+		fakeRows.NextReturnsOnCall(1, true)
+		fakeRows.NextReturnsOnCall(2, false)
+		event1JSON := `{
+			"event_guid": "raw-json-guid-1"
+		}`
+		event2JSON := `{
+			"event_guid": "raw-json-guid-2"
+		}`
+		fakeRows.EventJSONReturnsOnCall(0, []byte(event1JSON), nil)
+		fakeRows.EventJSONReturnsOnCall(1, []byte(event2JSON), nil)
+		fakeStore.GetBillableEventRowsReturns(fakeRows, nil)
+
+		u := url.URL{}
+		u.Path = "/billable_events"
+		q := u.Query()
+		q.Set("org_guid", orgGUID1)
+		q.Set("range_start", "2001-01-01")
+		q.Set("range_stop", "2001-01-02")
+		u.RawQuery = q.Encode()
+		req := httptest.NewRequest(echo.GET, u.String(), nil)
+		req.Header.Set("Authorization", "bearer "+token)
+		res := httptest.NewRecorder()
+
+		e := New(cfg)
+		e.ServeHTTP(res, req)
+		defer e.Shutdown(ctx)
+
+		Expect(fakeStore.GetBillableEventRowsCallCount()).To(Equal(1))
+		filter := fakeStore.GetBillableEventRowsArgsForCall(0)
+		Expect(filter.RangeStart).To(Equal("2001-01-01"))
+		Expect(filter.RangeStop).To(Equal("2001-01-02"))
+		Expect(filter.OrgGUIDs).To(Equal([]string{orgGUID1}))
+
+		Expect(fakeRows.NextCallCount()).To(Equal(3))
+		Expect(fakeRows.EventJSONCallCount()).To(Equal(2))
+		Expect(fakeRows.CloseCallCount()).To(Equal(1))
+
+		Expect(res.Body).To(MatchJSON("[" + event1JSON + "," + event2JSON + "]"))
+		Expect(res.Code).To(Equal(200))
+		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
+	})
+
+	It("should fetch BillableEvents from the store when manager", func() {
+		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
+		fakeAuthorizer.AdminReturns(false, nil)
+		fakeAuthorizer.OrganisationsReturns(true, nil)
 		fakeRows := &fakes.FakeBillableEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
