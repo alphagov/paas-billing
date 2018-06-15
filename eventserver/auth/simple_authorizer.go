@@ -10,12 +10,16 @@ import (
 var FakeBearerToken = "Bearer FAKE_TOKEN"
 
 type SimpleAuthorizer struct {
-	admin                bool
-	authorizedSpaceGUIDs []string
+	admin              bool
+	authorizedOrgGUIDs []string
 }
 
-func (sa *SimpleAuthorizer) Spaces() ([]string, error) {
-	return sa.authorizedSpaceGUIDs, nil
+func (sa *SimpleAuthorizer) Organisations(orgs []string) (bool, error) {
+	if ok, missmatch := SliceMatches(orgs, sa.authorizedOrgGUIDs); !ok {
+		return false, fmt.Errorf("authorizer: no access to organisation: %s", missmatch)
+	}
+
+	return true, nil
 }
 
 func (sa *SimpleAuthorizer) Admin() (bool, error) {
@@ -23,9 +27,9 @@ func (sa *SimpleAuthorizer) Admin() (bool, error) {
 }
 
 type SimpleAuthenticator struct {
-	admin                bool
-	authorizedSpaceGUIDs []string
-	authorizationError   error
+	admin              bool
+	authorizedOrgGUIDs []string
+	authorizationError error
 }
 
 func (sa *SimpleAuthenticator) Authorize(c echo.Context) error {
@@ -42,17 +46,17 @@ func (sa *SimpleAuthenticator) NewAuthorizer(token string) (Authorizer, error) {
 		return nil, fmt.Errorf("SimpleAuthenticator failed: expected '%s' got '%s'", exp, token)
 	}
 	return &SimpleAuthorizer{
-		authorizedSpaceGUIDs: sa.authorizedSpaceGUIDs,
-		admin:                sa.admin,
+		authorizedOrgGUIDs: sa.authorizedOrgGUIDs,
+		admin:              sa.admin,
 	}, nil
 }
 
 var AuthenticatedNonAdmin = &SimpleAuthenticator{
 	admin: false,
-	authorizedSpaceGUIDs: []string{
-		"space_guid",
-		"space_guid1",
-		"space_guid2",
+	authorizedOrgGUIDs: []string{
+		"org_guid",
+		"org_guid1",
+		"org_guid2",
 		"00000001-0001-0000-0000-000000000000",
 		"00000001-0002-0000-0000-000000000000",
 		"00000001-0003-0000-0000-000000000000",
@@ -65,12 +69,12 @@ var AuthenticatedNonAdmin = &SimpleAuthenticator{
 }
 
 var AuthenticatedAdmin = &SimpleAuthenticator{
-	admin:                true,
-	authorizedSpaceGUIDs: []string{},
+	admin:              true,
+	authorizedOrgGUIDs: []string{},
 }
 
 var NonAuthenticated = &SimpleAuthenticator{
-	admin:                false,
-	authorizedSpaceGUIDs: []string{},
-	authorizationError:   nil,
+	admin:              false,
+	authorizedOrgGUIDs: []string{},
+	authorizationError: nil,
 }
