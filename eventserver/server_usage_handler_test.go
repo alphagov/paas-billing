@@ -115,7 +115,7 @@ var _ = Describe("UsageEventsHandler", func() {
 		defer e.Shutdown(ctx)
 
 		Expect(res.Body).To(MatchJSON(`{
-			"error": "billing data currently requires cloud_controller.admin or cloud_controller.global_auditor scope"
+			"error": "you need to be billing_manager or an administrator to retreive the billing data"
 		}`))
 		Expect(res.Code).To(Equal(401))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))

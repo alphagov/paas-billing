@@ -70,20 +70,36 @@ func (a ClientAuthorizer) client() (*cfclient.Client, error) {
 	})
 }
 
-func (a *ClientAuthorizer) Spaces() ([]string, error) {
+func (a *ClientAuthorizer) Organisations(requestedOrgs []string) (bool, error) {
+	err := a.composeClaims()
+	if err != nil {
+		return false, err
+	}
 	cf, err := a.client()
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	spaces, err := cf.ListSpaces()
+	billingManagerOrganisations, err := cf.ListUserBillingManagedOrgs(a.claims.UserID)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	spaceGUIDs := []string{}
-	for _, space := range spaces {
-		spaceGUIDs = append(spaceGUIDs, space.Guid)
+	managerOrganisations, err := cf.ListUserManagedOrgs(a.claims.UserID)
+	if err != nil {
+		return false, err
 	}
-	return spaceGUIDs, nil
+	orgGUIDs := []string{}
+	for _, org := range billingManagerOrganisations {
+		orgGUIDs = append(orgGUIDs, org.Guid)
+	}
+	for _, org := range managerOrganisations {
+		orgGUIDs = append(orgGUIDs, org.Guid)
+	}
+
+	if ok, missmatch := SliceMatches(requestedOrgs, orgGUIDs); !ok {
+		return false, fmt.Errorf("authorizer: no access to organisation: %s", missmatch)
+	}
+
+	return true, nil
 }
 
 func (a *ClientAuthorizer) Admin() (bool, error) {
