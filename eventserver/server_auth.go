@@ -27,11 +27,11 @@ func authorize(c echo.Context, uaa auth.Authenticator, orgs []string) (bool, err
 		return false, err
 	}
 	isAdmin, errA := authorizer.Admin()
-	isManager, errM := authorizer.Organisations(orgs)
+	hasBillingAccess, errM := authorizer.HasBillingAccess(orgs)
 	if errA != nil && errM != nil {
 		return false, ErrInvalidCredentials
 	}
-	if !isAdmin && !isManager {
+	if !isAdmin && !hasBillingAccess {
 		return false, ErrBillingAccess
 	}
 	return true, nil
