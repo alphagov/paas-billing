@@ -70,7 +70,7 @@ func (a ClientAuthorizer) client() (*cfclient.Client, error) {
 	})
 }
 
-func (a *ClientAuthorizer) Organisations(requestedOrgs []string) (bool, error) {
+func (a *ClientAuthorizer) HasBillingAccess(requestedOrgs []string) (bool, error) {
 	err := a.composeClaims()
 	if err != nil {
 		return false, err

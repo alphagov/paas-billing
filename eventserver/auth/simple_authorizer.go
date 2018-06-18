@@ -14,7 +14,7 @@ type SimpleAuthorizer struct {
 	authorizedOrgGUIDs []string
 }
 
-func (sa *SimpleAuthorizer) Organisations(orgs []string) (bool, error) {
+func (sa *SimpleAuthorizer) HasBillingAccess(orgs []string) (bool, error) {
 	if ok, missmatch := SliceMatches(orgs, sa.authorizedOrgGUIDs); !ok {
 		return false, fmt.Errorf("authorizer: no access to organisation: %s", missmatch)
 	}
