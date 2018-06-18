@@ -99,7 +99,7 @@ var _ = Describe("BillableEventsHandler", func() {
 	It("should require admin scope or org billing permissions", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
-		fakeAuthorizer.OrganisationsReturns(false, nil)
+		fakeAuthorizer.HasBillingAccessReturns(false, nil)
 		u := url.URL{}
 		u.Path = "/billable_events"
 		q := u.Query()
@@ -125,7 +125,7 @@ var _ = Describe("BillableEventsHandler", func() {
 	It("should fetch BillableEvents from the store when admin", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(true, nil)
-		fakeAuthorizer.OrganisationsReturns(false, nil)
+		fakeAuthorizer.HasBillingAccessReturns(false, nil)
 		fakeRows := &fakes.FakeBillableEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
@@ -174,7 +174,7 @@ var _ = Describe("BillableEventsHandler", func() {
 	It("should fetch BillableEvents from the store when manager", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
-		fakeAuthorizer.OrganisationsReturns(true, nil)
+		fakeAuthorizer.HasBillingAccessReturns(true, nil)
 		fakeRows := &fakes.FakeBillableEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)

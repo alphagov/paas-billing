@@ -124,7 +124,7 @@ var _ = Describe("UsageEventsHandler", func() {
 	It("should fetch UsageEvents from the store when admin", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(true, nil)
-		fakeAuthorizer.OrganisationsReturns(false, nil)
+		fakeAuthorizer.HasBillingAccessReturns(false, nil)
 		fakeRows := &fakes.FakeUsageEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
@@ -173,7 +173,7 @@ var _ = Describe("UsageEventsHandler", func() {
 	It("should fetch UsageEvents from the store when manager", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
-		fakeAuthorizer.OrganisationsReturns(true, nil)
+		fakeAuthorizer.HasBillingAccessReturns(true, nil)
 		fakeRows := &fakes.FakeUsageEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
