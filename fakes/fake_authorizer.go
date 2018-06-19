@@ -8,17 +8,6 @@ import (
 )
 
 type FakeAuthorizer struct {
-	SpacesStub        func() ([]string, error)
-	spacesMutex       sync.RWMutex
-	spacesArgsForCall []struct{}
-	spacesReturns     struct {
-		result1 []string
-		result2 error
-	}
-	spacesReturnsOnCall map[int]struct {
-		result1 []string
-		result2 error
-	}
 	AdminStub        func() (bool, error)
 	adminMutex       sync.RWMutex
 	adminArgsForCall []struct{}
@@ -30,51 +19,21 @@ type FakeAuthorizer struct {
 		result1 bool
 		result2 error
 	}
+	HasBillingAccessStub        func([]string) (bool, error)
+	hasBillingAccessMutex       sync.RWMutex
+	hasBillingAccessArgsForCall []struct {
+		arg1 []string
+	}
+	hasBillingAccessReturns struct {
+		result1 bool
+		result2 error
+	}
+	hasBillingAccessReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
-}
-
-func (fake *FakeAuthorizer) Spaces() ([]string, error) {
-	fake.spacesMutex.Lock()
-	ret, specificReturn := fake.spacesReturnsOnCall[len(fake.spacesArgsForCall)]
-	fake.spacesArgsForCall = append(fake.spacesArgsForCall, struct{}{})
-	fake.recordInvocation("Spaces", []interface{}{})
-	fake.spacesMutex.Unlock()
-	if fake.SpacesStub != nil {
-		return fake.SpacesStub()
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	return fake.spacesReturns.result1, fake.spacesReturns.result2
-}
-
-func (fake *FakeAuthorizer) SpacesCallCount() int {
-	fake.spacesMutex.RLock()
-	defer fake.spacesMutex.RUnlock()
-	return len(fake.spacesArgsForCall)
-}
-
-func (fake *FakeAuthorizer) SpacesReturns(result1 []string, result2 error) {
-	fake.SpacesStub = nil
-	fake.spacesReturns = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeAuthorizer) SpacesReturnsOnCall(i int, result1 []string, result2 error) {
-	fake.SpacesStub = nil
-	if fake.spacesReturnsOnCall == nil {
-		fake.spacesReturnsOnCall = make(map[int]struct {
-			result1 []string
-			result2 error
-		})
-	}
-	fake.spacesReturnsOnCall[i] = struct {
-		result1 []string
-		result2 error
-	}{result1, result2}
 }
 
 func (fake *FakeAuthorizer) Admin() (bool, error) {
@@ -120,13 +79,69 @@ func (fake *FakeAuthorizer) AdminReturnsOnCall(i int, result1 bool, result2 erro
 	}{result1, result2}
 }
 
+func (fake *FakeAuthorizer) HasBillingAccess(arg1 []string) (bool, error) {
+	var arg1Copy []string
+	if arg1 != nil {
+		arg1Copy = make([]string, len(arg1))
+		copy(arg1Copy, arg1)
+	}
+	fake.hasBillingAccessMutex.Lock()
+	ret, specificReturn := fake.hasBillingAccessReturnsOnCall[len(fake.hasBillingAccessArgsForCall)]
+	fake.hasBillingAccessArgsForCall = append(fake.hasBillingAccessArgsForCall, struct {
+		arg1 []string
+	}{arg1Copy})
+	fake.recordInvocation("HasBillingAccess", []interface{}{arg1Copy})
+	fake.hasBillingAccessMutex.Unlock()
+	if fake.HasBillingAccessStub != nil {
+		return fake.HasBillingAccessStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.hasBillingAccessReturns.result1, fake.hasBillingAccessReturns.result2
+}
+
+func (fake *FakeAuthorizer) HasBillingAccessCallCount() int {
+	fake.hasBillingAccessMutex.RLock()
+	defer fake.hasBillingAccessMutex.RUnlock()
+	return len(fake.hasBillingAccessArgsForCall)
+}
+
+func (fake *FakeAuthorizer) HasBillingAccessArgsForCall(i int) []string {
+	fake.hasBillingAccessMutex.RLock()
+	defer fake.hasBillingAccessMutex.RUnlock()
+	return fake.hasBillingAccessArgsForCall[i].arg1
+}
+
+func (fake *FakeAuthorizer) HasBillingAccessReturns(result1 bool, result2 error) {
+	fake.HasBillingAccessStub = nil
+	fake.hasBillingAccessReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeAuthorizer) HasBillingAccessReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.HasBillingAccessStub = nil
+	if fake.hasBillingAccessReturnsOnCall == nil {
+		fake.hasBillingAccessReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.hasBillingAccessReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeAuthorizer) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
-	fake.spacesMutex.RLock()
-	defer fake.spacesMutex.RUnlock()
 	fake.adminMutex.RLock()
 	defer fake.adminMutex.RUnlock()
+	fake.hasBillingAccessMutex.RLock()
+	defer fake.hasBillingAccessMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

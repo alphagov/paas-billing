@@ -56,6 +56,7 @@ func (claims *UAAClaims) Valid() error {
 }
 
 type ClientAuthorizer struct {
+	claims   *UAAClaims
 	endpoint string
 	token    string
 	scopes   []string
@@ -69,20 +70,36 @@ func (a ClientAuthorizer) client() (*cfclient.Client, error) {
 	})
 }
 
-func (a *ClientAuthorizer) Spaces() ([]string, error) {
+func (a *ClientAuthorizer) HasBillingAccess(requestedOrgs []string) (bool, error) {
+	err := a.composeClaims()
+	if err != nil {
+		return false, err
+	}
 	cf, err := a.client()
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	spaces, err := cf.ListSpaces()
+	billingManagerOrganisations, err := cf.ListUserBillingManagedOrgs(a.claims.UserID)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
-	spaceGUIDs := []string{}
-	for _, space := range spaces {
-		spaceGUIDs = append(spaceGUIDs, space.Guid)
+	managerOrganisations, err := cf.ListUserManagedOrgs(a.claims.UserID)
+	if err != nil {
+		return false, err
 	}
-	return spaceGUIDs, nil
+	orgGUIDs := []string{}
+	for _, org := range billingManagerOrganisations {
+		orgGUIDs = append(orgGUIDs, org.Guid)
+	}
+	for _, org := range managerOrganisations {
+		orgGUIDs = append(orgGUIDs, org.Guid)
+	}
+
+	if ok, missmatch := SliceMatches(requestedOrgs, orgGUIDs); !ok {
+		return false, fmt.Errorf("authorizer: no access to organisation: %s", missmatch)
+	}
+
+	return true, nil
 }
 
 func (a *ClientAuthorizer) Admin() (bool, error) {
@@ -120,26 +137,31 @@ func (a *ClientAuthorizer) hasScope(scope string) (bool, error) {
 	return false, nil
 }
 
-func (a *ClientAuthorizer) getVerifiedScopes() ([]string, error) {
+func (a *ClientAuthorizer) composeClaims() error {
+	// See if we've already performed all this actions.
+	if a.claims != nil {
+		return nil
+	}
+
 	tokenEndpoint, err := url.Parse(a.endpoint)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tokenEndpoint.Path = "/token_keys"
 	v := url.Values{}
 	v.Set("token", a.token)
 	req, err := http.NewRequest("GET", tokenEndpoint.String(), strings.NewReader(v.Encode()))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationForm)
 	req.SetBasicAuth(os.Getenv("CF_CLIENT_ID"), os.Getenv("CF_CLIENT_SECRET"))
 	resp, err := newHTTPClient().Do(req) // FIXME: token_keys could be cached, that's kinda the point
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if resp.StatusCode != 200 {
-		return nil, fmt.Errorf("got status code %d while fetching token_keys", resp.StatusCode)
+		return fmt.Errorf("got status code %d while fetching token_keys", resp.StatusCode)
 	}
 	var verified struct {
 		Keys []struct {
@@ -149,7 +171,7 @@ func (a *ClientAuthorizer) getVerifiedScopes() ([]string, error) {
 	}
 	err = json.NewDecoder(resp.Body).Decode(&verified)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	token, err := jwt.ParseWithClaims(a.token, &UAAClaims{}, func(token *jwt.Token) (interface{}, error) {
 		for _, key := range verified.Keys {
@@ -165,14 +187,26 @@ func (a *ClientAuthorizer) getVerifiedScopes() ([]string, error) {
 		return nil, errors.New("unable to verify token")
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if !token.Valid {
-		return nil, fmt.Errorf("token invalid")
+		return fmt.Errorf("token invalid")
 	}
 	claims, ok := token.Claims.(*UAAClaims)
 	if !ok {
-		return nil, fmt.Errorf("token claims type")
+		return fmt.Errorf("token claims type")
 	}
-	return claims.Scope, nil
+
+	a.claims = claims
+
+	return nil
+}
+
+func (a *ClientAuthorizer) getVerifiedScopes() ([]string, error) {
+	err := a.composeClaims()
+	if err != nil {
+		return nil, err
+	}
+
+	return a.claims.Scope, nil
 }

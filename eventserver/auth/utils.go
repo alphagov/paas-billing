@@ -49,3 +49,25 @@ func CreateConfigFromEnv() (*oauth2.Config, error) {
 		RedirectURL: os.Getenv("CF_CLIENT_REDIRECT_URL"),
 	}, nil
 }
+
+// SliceMatches will iterate throug both slices to find any incompatibilities in
+// order to determine if the requested access is indeed allowed.
+func SliceMatches(requested, allowed []string) (bool, string) {
+	for _, r := range requested {
+		if !inSlice(allowed, r) {
+			return false, r
+		}
+	}
+
+	return true, ""
+}
+
+func inSlice(slice []string, entry string) bool {
+	for _, s := range slice {
+		if s == entry {
+			return true
+		}
+	}
+
+	return false
+}

@@ -10,7 +10,8 @@ import (
 
 func BillableEventsHandler(store eventio.BillableEventReader, uaa auth.Authenticator) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		if ok, err := authorize(c, uaa); err != nil {
+		requestedOrgs := c.Request().URL.Query()["org_guid"]
+		if ok, err := authorize(c, uaa, requestedOrgs); err != nil {
 			return echo.NewHTTPError(http.StatusUnauthorized, err)
 		} else if !ok {
 			return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
@@ -19,7 +20,7 @@ func BillableEventsHandler(store eventio.BillableEventReader, uaa auth.Authentic
 		filter := eventio.EventFilter{
 			RangeStart: c.QueryParam("range_start"),
 			RangeStop:  c.QueryParam("range_stop"),
-			OrgGUIDs:   c.Request().URL.Query()["org_guid"],
+			OrgGUIDs:   requestedOrgs,
 		}
 		if err := filter.Validate(); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
