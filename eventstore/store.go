@@ -21,6 +21,7 @@ const (
 	AppUsageTableName     = "app_usage_events"
 	ServiceUsageTableName = "service_usage_events"
 	ComputePlanGUID       = "f4d4b95a-f55e-4593-8d54-3364c25798c4"
+	ComputeServiceGUID    = "4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b"
 	TaskPlanGUID          = "ebfa9453-ef66-450c-8c37-d53dfd931038"
 	DefaultInitTimeout    = 5 * time.Minute
 	DefaultRefreshTimeout = 5 * time.Minute
@@ -61,6 +62,12 @@ func (s *EventStore) Init() error {
 	defer cancel()
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
+		return err
+	}
+	if err := s.execFile(tx, "create_services.sql"); err != nil {
+		return err
+	}
+	if err := s.execFile(tx, "create_service_plans.sql"); err != nil {
 		return err
 	}
 	if err := s.execFile(tx, "drop_ephemeral_objects.sql"); err != nil {

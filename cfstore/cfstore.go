@@ -3,15 +3,10 @@ package cfstore
 import (
 	"context"
 	"database/sql"
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
-	"github.com/lib/pq"
 )
 
 const (
@@ -46,12 +41,6 @@ func (s *Store) Init() error {
 		return err
 	}
 	defer tx.Rollback()
-	if err := s.execFile(tx, "create_services.sql"); err != nil {
-		return err
-	}
-	if err := s.execFile(tx, "create_service_plans.sql"); err != nil {
-		return err
-	}
 	if err := s.collectServices(tx); err != nil {
 		return err
 	}
@@ -60,22 +49,6 @@ func (s *Store) Init() error {
 	}
 	s.logger.Info("initialized")
 	return tx.Commit()
-}
-
-func (s *Store) execFile(tx *sql.Tx, filename string) error {
-	schemaFilename := schemaFile(filename)
-	sql, err := ioutil.ReadFile(schemaFilename)
-	if err != nil {
-		return fmt.Errorf("failed to execute sql file %s: %s", schemaFilename, err)
-	}
-	s.logger.Info("executing-sql", lager.Data{
-		"filename": filename,
-	})
-	_, err = tx.Exec(string(sql))
-	if err != nil {
-		return wrapPqError(err, schemaFilename)
-	}
-	return nil
 }
 
 func (s *Store) CollectServicePlans() error {
@@ -216,38 +189,6 @@ func (s *Store) collectServices(tx *sql.Tx) error {
 		}
 	}
 	return nil
-}
-
-func wrapPqError(err error, prefix string) error {
-	msg := err.Error()
-	if err, ok := err.(*pq.Error); ok {
-		msg = err.Message
-		if err.Detail != "" {
-			msg += ": " + err.Detail
-		}
-		if err.Hint != "" {
-			msg += ": " + err.Hint
-		}
-		if err.Where != "" {
-			msg += ": " + err.Where
-		}
-	}
-	return fmt.Errorf("%s: %s", prefix, msg)
-}
-
-func schemaDir() string {
-	root := os.Getenv("APP_ROOT")
-	if root == "" {
-		root = os.Getenv("PWD")
-	}
-	if root == "" {
-		root, _ = os.Getwd()
-	}
-	return filepath.Join(root, "cfstore", "sql")
-}
-
-func schemaFile(filename string) string {
-	return filepath.Join(schemaDir(), filename)
 }
 
 func New(cfg Config) (*Store, error) {

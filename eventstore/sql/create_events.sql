@@ -8,6 +8,8 @@ CREATE TABLE events (
 	duration tstzrange NOT NULL,
 	plan_guid uuid NOT NULL,
 	plan_name text NOT NULL,
+	service_guid uuid,
+	service_name text,
 	number_of_nodes integer,
 	memory_in_mb integer,
 	storage_in_mb integer,
@@ -32,6 +34,8 @@ INSERT INTO events with
 				(raw_message->>'space_guid')::uuid as space_guid,
 				'f4d4b95a-f55e-4593-8d54-3364c25798c4'::uuid as plan_guid, -- plan guid for all compute resources
 				'app'::text as plan_name,                                  -- plan name for all compute resources
+				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
+				'app'::text as service_name,
 				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
@@ -53,6 +57,8 @@ INSERT INTO events with
 				(raw_message->>'space_guid')::uuid as space_guid,
 				(raw_message->>'service_plan_guid')::uuid as plan_guid,
 				(raw_message->>'service_plan_name') as plan_name,
+				(raw_message->>'service_guid')::uuid as service_guid,
+				(raw_message->>'service_label') as service_name,
 				NULL::numeric as number_of_nodes,
 				NULL::numeric as memory_in_mb,
 				NULL::numeric as storage_in_mb,
@@ -78,6 +84,8 @@ INSERT INTO events with
 				(raw_message->>'space_guid')::uuid as space_guid,
 				'ebfa9453-ef66-450c-8c37-d53dfd931038'::uuid as plan_guid,  -- plan guid for all task resources
 				'task'::text as plan_name,                                  -- plan name for all task resources
+				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
+				'app'::text as service_name,
 				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
@@ -102,6 +110,8 @@ INSERT INTO events with
 				(raw_message->>'space_guid')::uuid as space_guid,
 				'f4d4b95a-f55e-4593-8d54-3364c25798c4'::uuid as plan_guid,  -- plan guid for all staging of resources
 				'app'::text as plan_name,                                  -- plan name for all staging of resources
+				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
+				'app'::text as service_name,
 				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
@@ -132,6 +142,8 @@ INSERT INTO events with
 				(s.raw_message->>'space_guid')::uuid as space_guid,
 				(s.raw_message->>'service_plan_guid')::uuid as plan_guid,
 				(s.raw_message->>'service_plan_name') as plan_name,
+				(s.raw_message->>'service_guid')::uuid as service_guid,
+				(s.raw_message->>'service_label') as service_name,
 				NULL::numeric as number_of_nodes,
 				(pg_size_bytes(c.raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
 				(pg_size_bytes(c.raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
@@ -166,6 +178,8 @@ INSERT INTO events with
 			space_guid,
 			plan_guid,
 			plan_name,
+			service_guid,
+			service_name,
 			number_of_nodes,
 			coalesce(
 				memory_in_mb,
@@ -203,8 +217,24 @@ INSERT INTO events with
 				order by created_at, event_sequence
 				rows between current row and 1 following
 			)
-		order by
-			event_sequence
+	),
+	valid_service_plans as (
+		select
+			*,
+			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
+				partition by guid order by valid_from rows between current row and 1 following
+			)) as valid_for
+		from
+			service_plans
+	),
+	valid_services as (
+		select
+			*,
+			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
+				partition by guid order by valid_from rows between current row and 1 following
+			)) as valid_for
+		from
+			services
 	)
 	select
 		event_guid,
@@ -215,15 +245,25 @@ INSERT INTO events with
 		space_guid,
 		duration,
 		plan_guid,
-		plan_name,
+		coalesce(vsp.name, plan_name) as plan_name,
+		coalesce(vs.guid, ev.service_guid) as service_guid,
+		coalesce(vs.label, ev.service_name) as service_name,
 		number_of_nodes,
 		memory_in_mb,
 		storage_in_mb
 	from
-		event_ranges
+		event_ranges ev
+	left join
+		valid_service_plans vsp on ev.plan_guid = vsp.guid
+		and upper(ev.duration) <@ vsp.valid_for
+	left join
+		valid_services vs on vsp.service_guid = vs.guid
+		and upper(ev.duration) <@ vs.valid_for
 	where
 		state = 'STARTED'
 		and not isempty(duration)
+	order by
+		event_sequence, event_guid
 ;
 
 CREATE INDEX events_org_idx ON events (org_guid);

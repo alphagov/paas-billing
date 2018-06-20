@@ -118,6 +118,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:      eventstore.ComputePlanGUID,
+			PlanName:      "app",
+			ServiceGUID:   "4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b",
+			ServiceName:   "app",
 			NumberOfNodes: 10,
 			MemoryInMB:    1000,
 			StorageInMB:   0,
@@ -133,6 +136,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
 			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:      "Free",
+			ServiceGUID:   "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:   "postgres",
 			NumberOfNodes: 0,
 			MemoryInMB:    0,
 			StorageInMB:   0,
@@ -226,6 +232,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "compose-db",
 		}))
 
 		events[1].EventGUID = "randomly-generated-event-1"
@@ -239,6 +248,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "compose-db",
 		}))
 
 		events[2].EventGUID = "randomly-generated-event-2"
@@ -252,6 +264,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "compose-db",
 			MemoryInMB:   2048,
 			StorageInMB:  4096,
 		}))
@@ -267,6 +282,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "compose-db",
 			MemoryInMB:   2048,
 			StorageInMB:  4096,
 		}))
@@ -351,6 +369,9 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "compose-db",
 			MemoryInMB:   2048,
 			StorageInMB:  4096,
 		}))
@@ -365,8 +386,117 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "compose-db",
 			MemoryInMB:   2048,
 			StorageInMB:  4096,
+		}))
+
+	})
+
+	/*-----------------------------------------------------------------------------------*
+	     2001-01-01                                                      2002-01-01      .
+	       00:00           01:00                                           00:00         .
+	         |               |                                               |           .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   |   .   .   .
+	 .   .   [======DB1======]   .   .   .   .   .   .   .   .   .   .   .   |   .   .   .
+	 .   .   |   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   |   .   .   .
+	 .   .   |   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   |   :   .   .
+	 .   .   |_____________________ request range ___________________________|   .   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	*-----------------------------------------------------------------------------------*/
+	It("should use the service_name from the historic service/service_plans data if available", func() {
+		cfg.AddPlan(eventio.PricingPlan{
+			PlanGUID:  "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			ValidFrom: "2001-01-01",
+			Name:      "DB_PLAN_1",
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compute",
+					Formula:      "ceil($time_in_seconds/3600) * 1",
+					CurrencyCode: "GBP",
+					VATCode:      "Standard",
+				},
+			},
+		})
+
+		service1EventStart := eventio.RawEvent{
+			GUID:       "c497eb13-f48a-4859-be53-5569f302b516",
+			Kind:       "service",
+			CreatedAt:  time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"state": "CREATED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "DB1", "service_instance_type": "managed_service_instance"}`),
+		}
+		service1EventStop := eventio.RawEvent{
+			GUID:       "dd52b4f4-9e33-4504-8fca-fd9e33af11a6",
+			Kind:       "service",
+			CreatedAt:  time.Date(2001, 1, 1, 1, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "DB1", "service_instance_type": "managed_service_instance"}`),
+		}
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+		store := db.Schema
+
+		Expect(db.Insert("services", testenv.Row{
+			"guid":                "6c3d1a25-0fbc-45e5-9076-d940390a3bc0",
+			"valid_from":          "2000-01-01T00:00:00Z",
+			"created_at":          "2000-01-01T00:00:00Z",
+			"updated_at":          "2018-06-14T16:32:38Z",
+			"label":               "AWESOME_SERVICE_NAME",
+			"description":         "the test service service",
+			"active":              true,
+			"bindable":            true,
+			"service_broker_guid": "879d7b06-642d-4bf6-b5e8-1a52451c849a",
+		})).To(Succeed())
+
+		Expect(db.Insert("service_plans", testenv.Row{
+			"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			"valid_from":         "2000-01-01T00:00:00Z",
+			"created_at":         "2000-01-01T00:00:00Z",
+			"updated_at":         "2018-06-14T16:32:38Z",
+			"name":               "AWESOME_SERVICE_PLAN_NAME",
+			"description":        "the test service service",
+			"service_guid":       "6c3d1a25-0fbc-45e5-9076-d940390a3bc0",
+			"service_valid_from": "2000-01-01T00:00:00Z",
+			"unique_id":          "c6221308-b7bb-46d2-9d79-a357f5a3837b",
+			"active":             true,
+			"public":             true,
+			"free":               false,
+			"extra":              "",
+		})).To(Succeed())
+
+		Expect(store.StoreEvents([]eventio.RawEvent{
+			service1EventStart,
+			service1EventStop,
+		})).To(Succeed())
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		usageEvents, err := store.GetUsageEvents(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2002-01-01",
+			OrgGUIDs:   []string{"51ba75ef-edc0-47ad-a633-a8f6e8770944"},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(usageEvents).To(HaveLen(1))
+
+		Expect(usageEvents[0]).To(Equal(eventio.UsageEvent{
+			EventGUID:     "c497eb13-f48a-4859-be53-5569f302b516",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T01:00:00+00:00",
+			ResourceGUID:  "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
+			ResourceName:  "DB1",
+			ResourceType:  "service",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanName:      "AWESOME_SERVICE_PLAN_NAME",
+			ServiceGUID:   "6c3d1a25-0fbc-45e5-9076-d940390a3bc0",
+			ServiceName:   "AWESOME_SERVICE_NAME",
+			NumberOfNodes: 0,
+			MemoryInMB:    0,
+			StorageInMB:   0,
 		}))
 
 	})
