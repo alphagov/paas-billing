@@ -68,20 +68,20 @@ func (c *Client) ListServicePlans() ([]ServicePlan, error) {
 			return nil, errors.Wrap(err, "Error unmarshaling service plans")
 		}
 		for _, servicePlanResource := range servicePlansResp.Resources {
-			servicePlan := ServicePlan{}
-			servicePlan.Guid = servicePlanResource.Meta.Guid
-			servicePlan.CreatedAt = servicePlanResource.Meta.CreatedAt
-			servicePlan.UpdatedAt = servicePlanResource.Meta.UpdatedAt
-			servicePlan.Free = servicePlanResource.Entity.Free
-			servicePlan.Name = servicePlanResource.Entity.Name
-			servicePlan.Description = servicePlanResource.Entity.Description
-			servicePlan.ServiceGuid = servicePlanResource.Entity.ServiceGuid
-			servicePlan.Extra = servicePlanResource.Entity.Extra
-			servicePlan.UniqueId = servicePlanResource.Entity.UniqueId
-			servicePlan.Public = servicePlanResource.Entity.Public
-			servicePlan.Active = servicePlanResource.Entity.Active
-			servicePlan.Bindable = servicePlanResource.Entity.Bindable
-			servicePlans = append(servicePlans, servicePlan)
+			servicePlans = append(servicePlans, ServicePlan{
+				Guid:        servicePlanResource.Meta.Guid,
+				CreatedAt:   servicePlanResource.Meta.CreatedAt,
+				UpdatedAt:   servicePlanResource.Meta.UpdatedAt,
+				Free:        servicePlanResource.Entity.Free,
+				Name:        servicePlanResource.Entity.Name,
+				Description: servicePlanResource.Entity.Description,
+				ServiceGuid: servicePlanResource.Entity.ServiceGuid,
+				Extra:       servicePlanResource.Entity.Extra,
+				UniqueId:    servicePlanResource.Entity.UniqueId,
+				Public:      servicePlanResource.Entity.Public,
+				Active:      servicePlanResource.Entity.Active,
+				Bindable:    servicePlanResource.Entity.Bindable,
+			})
 		}
 		requestUrl = servicePlansResp.NextUrl
 		if requestUrl == "" {
@@ -110,18 +110,18 @@ func (c *Client) ListServices() ([]Service, error) {
 			return nil, errors.Wrap(err, "Error unmarshaling services")
 		}
 		for _, serviceResource := range servicesResp.Resources {
-			service := Service{}
-			service.Guid = serviceResource.Meta.Guid
-			service.CreatedAt = serviceResource.Meta.CreatedAt
-			service.UpdatedAt = serviceResource.Meta.UpdatedAt
-			service.Label = serviceResource.Entity.Label
-			service.Description = serviceResource.Entity.Description
-			service.Active = serviceResource.Entity.Active
-			service.Bindable = serviceResource.Entity.Bindable
-			service.PlanUpdateable = serviceResource.Entity.PlanUpdateable
-			service.ServiceBrokerGuid = serviceResource.Entity.ServiceBrokerGuid
-			service.Tags = serviceResource.Entity.Tags
-			services = append(services, service)
+			services = append(services, Service{
+				Guid:              serviceResource.Meta.Guid,
+				CreatedAt:         serviceResource.Meta.CreatedAt,
+				UpdatedAt:         serviceResource.Meta.UpdatedAt,
+				Label:             serviceResource.Entity.Label,
+				Description:       serviceResource.Entity.Description,
+				Active:            serviceResource.Entity.Active,
+				Bindable:          serviceResource.Entity.Bindable,
+				PlanUpdateable:    serviceResource.Entity.PlanUpdateable,
+				ServiceBrokerGuid: serviceResource.Entity.ServiceBrokerGuid,
+				Tags:              serviceResource.Entity.Tags,
+			})
 		}
 		requestUrl = servicesResp.NextUrl
 		if requestUrl == "" {
