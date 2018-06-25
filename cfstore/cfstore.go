@@ -3,6 +3,7 @@ package cfstore
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -94,7 +95,8 @@ func (s *Store) collectServicePlans(tx *sql.Tx) error {
 			limit 1
 		`, plan.ServiceGuid).Scan(&serviceValidFrom)
 		if err == sql.ErrNoRows {
-			panic("meh dunno what to do")
+			s.logger.Error("service-not-found", fmt.Errorf("failed to find service '%s' for service_plan '%s'... skipping", plan.ServiceGuid, plan.Guid))
+			continue
 		} else if err != nil {
 			return err
 		}
