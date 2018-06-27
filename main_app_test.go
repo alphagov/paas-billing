@@ -64,6 +64,11 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		session.Kill()
 	})
 
+	By("Waiting for the EventStore to report it has been initialized", func() {
+		Eventually(session.Out, 5*time.Second).Should(Say("paas-billing.store.initializing"))
+		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.store.initialized"))
+	})
+
 	By("Waiting for the HistoricDataStore to report it has been initialized", func() {
 		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.historic-data-store.initialized"))
 	})
@@ -75,11 +80,6 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(
 			tempDB.Get(`select count(*) from services`),
 		).To(BeNumerically(">", 0), "expected some services to be collected during init")
-	})
-
-	By("Waiting for the EventStore to report it has been initialized", func() {
-		Eventually(session.Out, 5*time.Second).Should(Say("paas-billing.store.initializing"))
-		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.store.initialized"))
 	})
 
 	By("Waiting for the EventServer to report it has started", func() {

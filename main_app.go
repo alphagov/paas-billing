@@ -32,10 +32,13 @@ type App struct {
 }
 
 func (app *App) Init() error {
+	if err := app.store.Init(); err != nil {
+		return err
+	}
 	if err := app.historicDataStore.Init(); err != nil {
 		return err
 	}
-	return app.store.Init()
+	return nil
 }
 
 func (app *App) StartAppEventCollector() error {
