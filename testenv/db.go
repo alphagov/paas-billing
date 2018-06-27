@@ -135,6 +135,9 @@ func (db *TempDB) Query(q string, args ...interface{}) Rows {
 	if err != nil {
 		panic(err)
 	}
+	if b == nil || string(b) == "" {
+		return Rows([]Row{})
+	}
 	var v []Row
 	if err := json.Unmarshal(b, &v); err != nil {
 		panic(err)

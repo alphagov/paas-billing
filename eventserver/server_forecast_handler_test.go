@@ -59,6 +59,9 @@ var _ = Describe("ForecastEventsHandler", func() {
 			"event_start": "2001-01-01T00:00",
 			"event_stop": "2001-01-01T01:00",
 			"plan_guid": "` + eventstore.ComputePlanGUID + `",
+			"plan_name": "instance",
+			"service_name": "app",
+			"service_guid": "` + eventstore.ComputeServiceGUID + `",
 			"number_of_nodes": 2,
 			"memory_in_mb": 64,
 			"storage_in_mb": 1024
@@ -73,6 +76,9 @@ var _ = Describe("ForecastEventsHandler", func() {
 			"event_start": "2001-01-01T00:00",
 			"event_stop": "2001-01-01T05:00",
 			"plan_guid": "` + eventstore.ComputePlanGUID + `",
+			"plan_name": "instance",
+			"service_name": "app",
+			"service_guid": "` + eventstore.ComputeServiceGUID + `",
 			"number_of_nodes": 1,
 			"memory_in_mb": 64,
 			"storage_in_mb": 1024

@@ -52,6 +52,9 @@ type BillableEvent struct {
 	OrgGUID       string `json:"org_guid"`
 	SpaceGUID     string `json:"space_guid"`
 	PlanGUID      string `json:"plan_guid"`
+	PlanName      string `json:"plan_name"`
+	ServiceGUID   string `json:"service_guid"`
+	ServiceName   string `json:"service_name"`
 	NumberOfNodes int64  `json:"number_of_nodes"`
 	MemoryInMB    int64  `json:"memory_in_mb"`
 	StorageInMB   int64  `json:"storage_in_mb"`

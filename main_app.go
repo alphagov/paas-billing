@@ -7,6 +7,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alphagov/paas-billing/cfstore"
+
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventcollector"
 	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
@@ -15,20 +17,28 @@ import (
 	"github.com/alphagov/paas-billing/eventserver"
 	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/alphagov/paas-billing/eventstore"
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pkg/errors"
 )
 
 type App struct {
-	wg       sync.WaitGroup
-	ctx      context.Context
-	store    eventio.EventStore
-	logger   lager.Logger
-	cfg      Config
-	Shutdown context.CancelFunc
+	wg                sync.WaitGroup
+	ctx               context.Context
+	store             eventio.EventStore
+	historicDataStore *cfstore.Store
+	logger            lager.Logger
+	cfg               Config
+	Shutdown          context.CancelFunc
 }
 
 func (app *App) Init() error {
-	return app.store.Init()
+	if err := app.store.Init(); err != nil {
+		return err
+	}
+	if err := app.historicDataStore.Init(); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (app *App) StartAppEventCollector() error {
@@ -137,6 +147,25 @@ func (app *App) StartEventProcessor() error {
 	})
 }
 
+func (app *App) StartHistoricDataCollector() error {
+	name := "historic-data-collector"
+	logger := app.logger.Session(name)
+	go func() {
+		for {
+			if err := app.historicDataStore.CollectServices(); err != nil {
+				logger.Error("collect-services", err)
+				continue
+			}
+			if err := app.historicDataStore.CollectServicePlans(); err != nil {
+				logger.Error("collect-service-plans", err)
+				continue
+			}
+			time.Sleep(app.cfg.HistoricDataCollector.Schedule)
+		}
+	}()
+	return nil
+}
+
 func (app *App) start(name string, logger lager.Logger, fn func() error) error {
 	app.wg.Add(1)
 	go func() {
@@ -188,12 +217,30 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		cfg.Store = store
 	}
 
+	client, err := cfclient.NewClient(cfg.HistoricDataCollector.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("postgres", cfg.DatabaseURL)
+	if err != nil {
+		return nil, err
+	}
+	historicDataStore, err := cfstore.New(cfstore.Config{
+		Client: &cfstore.Client{Client: client},
+		DB:     db,
+		Logger: cfg.Logger.Session("historic-data-store"),
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	app := &App{
-		cfg:      cfg,
-		ctx:      ctx,
-		Shutdown: shutdown,
-		store:    cfg.Store,
-		logger:   cfg.Logger,
+		cfg:               cfg,
+		ctx:               ctx,
+		Shutdown:          shutdown,
+		store:             cfg.Store,
+		historicDataStore: historicDataStore,
+		logger:            cfg.Logger,
 	}
 
 	return app, nil

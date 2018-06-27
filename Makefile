@@ -19,7 +19,7 @@ run-dev: bin/paas-billing
 	./bin/paas-billing | ./scripts/colorize
 
 .PHONY: test
-test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_compose_client.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go
+test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_compose_client.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go fakes/fake_cf_data_client.go
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
 	ginkgo -nodes=8 -r
@@ -67,5 +67,15 @@ fakes/fake_billable_event_rows.go: eventio/event_billable.go
 fakes/fake_usage_event_rows.go: eventio/event_usage.go
 	counterfeiter -o $@ $< UsageEventRows
 
+fakes/fake_cf_data_client.go: cfstore/cfstore_client.go
+	counterfeiter -o $@ $< CFDataClient
+
 clean:
 	rm -f bin/paas-billing
+
+start_postgres_docker:
+	docker run --rm -p 5432:5432 --name postgres -e POSTGRES_PASSWORD= -d postgres:9.5
+
+stop_postgres_docker:
+	docker stop postgres
+	docker rm postgres
