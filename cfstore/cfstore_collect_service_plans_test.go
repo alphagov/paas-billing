@@ -87,14 +87,6 @@ var _ = Describe("ServicePlans", func() {
 			UpdatedAt:   "2002-02-02T02:02:02+00:00",
 			ServiceGuid: testService.Guid,
 		}),
-		Entry("bad UniqueId", `invalid input syntax for uuid: "bad-unique-id"`, cfstore.ServicePlan{
-			Guid:        uuid.NewV4().String(),
-			UniqueId:    "bad-unique-id",
-			Name:        "my-service-plan",
-			CreatedAt:   "2001-01-01T01:01:01+00:00",
-			UpdatedAt:   "2002-02-02T02:02:02+00:00",
-			ServiceGuid: testService.Guid,
-		}),
 	)
 
 	It("should collect service plans from client", func() {

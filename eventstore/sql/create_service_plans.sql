@@ -16,3 +16,5 @@ create table if not exists service_plans (
 	foreign key (service_guid, service_valid_from) references services (guid, valid_from),
 	primary key (guid, valid_from)
 );
+
+alter table service_plans alter column unique_id type text using unique_id::text;
