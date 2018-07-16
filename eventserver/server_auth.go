@@ -2,14 +2,10 @@ package eventserver
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/labstack/echo"
-)
-
-var (
-	ErrInvalidCredentials = errors.New("invalid credentials")
-	ErrBillingAccess      = errors.New("you need to be billing_manager or an administrator to retreive the billing data")
 )
 
 // isAdmin checks if there is a token in the request with an operator scope
@@ -26,13 +22,16 @@ func authorize(c echo.Context, uaa auth.Authenticator, orgs []string) (bool, err
 	if err != nil {
 		return false, err
 	}
-	isAdmin, errA := authorizer.Admin()
-	hasBillingAccess, errM := authorizer.HasBillingAccess(orgs)
-	if errA != nil && errM != nil {
-		return false, ErrInvalidCredentials
+	isAdmin, err := authorizer.Admin()
+	if err != nil {
+		return false, fmt.Errorf("invalid credentials: %v", err)
+	}
+	hasBillingAccess, err := authorizer.HasBillingAccess(orgs)
+	if err != nil {
+		return false, fmt.Errorf("invalid credentials: %v", err)
 	}
 	if !isAdmin && !hasBillingAccess {
-		return false, ErrBillingAccess
+		return false, errors.New("you need to be billing_manager or an administrator to retreive the billing data")
 	}
 	return true, nil
 }
