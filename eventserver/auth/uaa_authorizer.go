@@ -167,6 +167,7 @@ func (a *ClientAuthorizer) composeClaims() error {
 		Keys []struct {
 			Public string `json:"value"`
 			Alg    string `json:"alg"`
+			Kid    string `json:"kid"`
 		} `json:"keys"`
 	}
 	err = json.NewDecoder(resp.Body).Decode(&verified)
@@ -177,9 +178,8 @@ func (a *ClientAuthorizer) composeClaims() error {
 		for _, key := range verified.Keys {
 			if key.Alg == token.Header["alg"] {
 				if key.Alg == "RS256" || key.Alg == "RS512" {
-					k, err := jwt.ParseRSAPublicKeyFromPEM([]byte(key.Public))
-					if err == nil {
-						return k, nil
+					if key.Kid == token.Header["kid"] {
+						return jwt.ParseRSAPublicKeyFromPEM([]byte(key.Public))
 					}
 				}
 			}
