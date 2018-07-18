@@ -903,6 +903,32 @@
 					"vat_code": "Standard"
 				}
 			]
+		},
+		{
+			"name": " small-ha-es5",
+			"valid_from": "2017-01-01",
+			"plan_guid": "6c35a479-9622-4852-b80e-b21b40e0378f",
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.548",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": " small-ha-es6",
+			"valid_from": "2017-01-01",
+			"plan_guid": "99c6c41e-5f7a-4422-a7f2-95e7d8f88b30",
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.548",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
 		}
 	]
 }
