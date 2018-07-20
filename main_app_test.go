@@ -65,7 +65,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 	})
 
 	By("Waiting for the EventStore to report it has been initialized", func() {
-		Eventually(session.Out, 5*time.Second).Should(Say("paas-billing.store.initializing"))
+		Eventually(session.Out, 20*time.Second).Should(Say("paas-billing.store.initializing"))
 		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.store.initialized"))
 	})
 

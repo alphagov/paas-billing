@@ -71,7 +71,7 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 			duration && $1::tstzrange
 			%s
 		order by
-			lower(duration)
+			lower(duration), event_guid
 	`, filterQuery), args...)
 	if err != nil {
 		return nil, err

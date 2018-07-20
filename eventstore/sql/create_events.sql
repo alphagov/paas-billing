@@ -108,11 +108,11 @@ INSERT INTO events with
 				'app'::text as resource_type,                              -- resource_type for staging of resources
 				(raw_message->>'org_guid')::uuid as org_guid,
 				(raw_message->>'space_guid')::uuid as space_guid,
-				'f4d4b95a-f55e-4593-8d54-3364c25798c4'::uuid as plan_guid,  -- plan guid for all staging of resources
-				'app'::text as plan_name,                                  -- plan name for all staging of resources
+				'9d071c77-7a68-4346-9981-e8dafac95b6f'::uuid as plan_guid,  -- plan guid for all staging of resources
+				'staging'::text as plan_name,                                  -- plan name for all staging of resources
 				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
 				'app'::text as service_name,
-				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
+				'1'::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
 				(case
@@ -213,7 +213,7 @@ INSERT INTO events with
 			raw_events_with_injected_values
 		window
 			resource_states as (
-				partition by resource_guid
+				partition by resource_guid, plan_guid
 				order by created_at, event_sequence
 				rows between current row and 1 following
 			)
