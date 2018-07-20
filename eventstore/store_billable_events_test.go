@@ -36,9 +36,9 @@ var _ = Describe("GetBillableEvents", func() {
 	*-----------------------------------------------------------------------------------*/
 	It("Should return one BillingEvent for an app in staging state", func() {
 		cfg.AddPlan(eventio.PricingPlan{
-			PlanGUID:  eventstore.ComputePlanGUID,
+			PlanGUID:  eventstore.StagingPlanGUID,
 			ValidFrom: "2001-01-01",
-			Name:      "PLAN1",
+			Name:      "STAGING_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
@@ -84,7 +84,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ResourceType:  "app",
 			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+			PlanGUID:      eventstore.StagingPlanGUID,
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
 			StorageInMB:   0,
@@ -94,7 +94,7 @@ var _ = Describe("GetBillableEvents", func() {
 				Details: []eventio.PriceComponent{
 					{
 						Name:         "compute",
-						PlanName:     "PLAN1",
+						PlanName:     "STAGING_PLAN_1",
 						Start:        "2001-01-01T00:00:00+00:00",
 						Stop:         "2001-01-01T00:01:00+00:00",
 						VatRate:      "0.2",

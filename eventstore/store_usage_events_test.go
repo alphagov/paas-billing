@@ -49,6 +49,19 @@ var _ = Describe("GetUsageEvents", func() {
 			},
 		})
 		cfg.AddPlan(eventio.PricingPlan{
+			PlanGUID:  eventstore.StagingPlanGUID,
+			ValidFrom: "2001-01-01",
+			Name:      "STAGING_PLAN_1",
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compute",
+					Formula:      "ceil($time_in_seconds/3600) * 0.03",
+					CurrencyCode: "GBP",
+					VATCode:      "Standard",
+				},
+			},
+		})
+		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 			ValidFrom: "2001-01-01",
 			Name:      "DB_PLAN_1",
@@ -62,11 +75,29 @@ var _ = Describe("GetUsageEvents", func() {
 			},
 		})
 
-		app1EventStart := eventio.RawEvent{
+		app1EventBuildpackSet := eventio.RawEvent{
 			GUID:       "ae28a570-f485-48e1-87d0-98b7b8b66dfa",
 			Kind:       "app",
 			CreatedAt:  time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"state": "BUILDPACK_SET", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 10, "previous_state": "STARTED", "memory_in_mb_per_instance": 1000}`),
+		}
+		app1EventStagingStart := eventio.RawEvent{
+			GUID:       "ae28a571-f485-48e1-87d0-98b7b8b66dfa",
+			Kind:       "app",
+			CreatedAt:  time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"state": "STAGING_STARTED", "parent_app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "parent_app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 10, "previous_state": "STARTED", "memory_in_mb_per_instance": 1000}`),
+		}
+		app1EventStart := eventio.RawEvent{
+			GUID:       "ae28a572-f485-48e1-87d0-98b7b8b66dfa",
+			Kind:       "app",
+			CreatedAt:  time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
 			RawMessage: json.RawMessage(`{"state": "STARTED", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 10, "previous_state": "STARTED", "memory_in_mb_per_instance": 1000}`),
+		}
+		app1EventStagingStop := eventio.RawEvent{
+			GUID:       "ae28a573-f485-48e1-87d0-98b7b8b66dfa",
+			Kind:       "app",
+			CreatedAt:  time.Date(2001, 1, 1, 0, 1, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{"state": "STAGING_STOPPED", "parent_app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "parent_app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 10, "previous_state": "STARTED", "memory_in_mb_per_instance": 1000}`),
 		}
 		app1EventStop := eventio.RawEvent{
 			GUID:       "bd9036c5-8367-497d-bb56-94bfcac6621a",
@@ -93,7 +124,10 @@ var _ = Describe("GetUsageEvents", func() {
 		store := db.Schema
 
 		Expect(store.StoreEvents([]eventio.RawEvent{
+			app1EventBuildpackSet,
+			app1EventStagingStart,
 			app1EventStart,
+			app1EventStagingStop,
 			app1EventStop,
 			service1EventStart,
 			service1EventStop,
@@ -106,10 +140,27 @@ var _ = Describe("GetUsageEvents", func() {
 			OrgGUIDs:   []string{"51ba75ef-edc0-47ad-a633-a8f6e8770944"},
 		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(len(usageEvents)).To(Equal(2))
+		Expect(usageEvents).To(HaveLen(3))
 
 		Expect(usageEvents[0]).To(Equal(eventio.UsageEvent{
-			EventGUID:     "ae28a570-f485-48e1-87d0-98b7b8b66dfa",
+			EventGUID:     "ae28a571-f485-48e1-87d0-98b7b8b66dfa",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T00:01:00+00:00",
+			ResourceGUID:  "c85e98f0-6d1b-4f45-9368-ea58263165a0",
+			ResourceName:  "APP1",
+			ResourceType:  "app",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:      eventstore.StagingPlanGUID,
+			PlanName:      "staging",
+			ServiceGUID:   eventstore.ComputeServiceGUID,
+			ServiceName:   "app",
+			NumberOfNodes: 1,
+			MemoryInMB:    1000,
+			StorageInMB:   0,
+		}))
+		Expect(usageEvents[1]).To(Equal(eventio.UsageEvent{
+			EventGUID:     "ae28a572-f485-48e1-87d0-98b7b8b66dfa",
 			EventStart:    "2001-01-01T00:00:00+00:00",
 			EventStop:     "2001-01-01T01:00:00+00:00",
 			ResourceGUID:  "c85e98f0-6d1b-4f45-9368-ea58263165a0",
@@ -119,14 +170,14 @@ var _ = Describe("GetUsageEvents", func() {
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			PlanGUID:      eventstore.ComputePlanGUID,
 			PlanName:      "app",
-			ServiceGUID:   "4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b",
+			ServiceGUID:   eventstore.ComputeServiceGUID,
 			ServiceName:   "app",
 			NumberOfNodes: 10,
 			MemoryInMB:    1000,
 			StorageInMB:   0,
 		}))
 
-		Expect(usageEvents[1]).To(Equal(eventio.UsageEvent{
+		Expect(usageEvents[2]).To(Equal(eventio.UsageEvent{
 			EventGUID:     "c497eb13-f48a-4859-be53-5569f302b516",
 			EventStart:    "2001-01-01T00:00:00+00:00",
 			EventStop:     "2001-01-01T01:00:00+00:00",
