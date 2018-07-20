@@ -1,6 +1,6 @@
 DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
 TEST_DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
-CF_API_ADDRESS ?= https://api.${DEPLOY_ENV}.dev.cloudpipeline.digital
+CF_API_ADDRESS ?= $(shell cf target | awk '/api endpoint/ {print $$3}')
 APP_ROOT ?= $(PWD)
 
 bin/paas-billing: clean
@@ -10,7 +10,7 @@ run-dev: bin/paas-billing
 	## Runs the application with local credentials
 	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
 	$(eval export CF_CLIENT_ID=paas-billing)
-	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
+	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
 	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
 	$(eval export COMPOSE_API_KEY=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/compose-secrets.yml - | awk '/compose_api_key/ {print $$2}'))
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
@@ -29,7 +29,7 @@ smoke:
 	## Runs the app/blackbox tests against a dev environment as a smoke test to check
 	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
 	$(eval export CF_CLIENT_ID=paas-billing)
-	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-secrets.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
+	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
 	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
 	$(eval export COMPOSE_API_KEY=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/compose-secrets.yml - | awk '/compose_api_key/ {print $$2}'))
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
@@ -37,6 +37,7 @@ smoke:
 	$(eval export ENABLE_SMOKE_TESTS=true)
 	$(eval export TEST_AUTH_TOKEN=$(shell cf oauth-token))
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
+	echo "smoke test enabled against ${CF_API_ADDRESS}"
 	ginkgo -nodes=2 .
 	
 
