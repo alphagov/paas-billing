@@ -924,7 +924,7 @@
 			]
 		},
 		{
-			"name": " small-ha-es5",
+			"name": "elasticsearch small-ha-5.x",
 			"valid_from": "2017-01-01",
 			"plan_guid": "6c35a479-9622-4852-b80e-b21b40e0378f",
 			"components": [
@@ -937,7 +937,7 @@
 			]
 		},
 		{
-			"name": " small-ha-es6",
+			"name": "elasticsearch small-ha-6.x",
 			"valid_from": "2017-01-01",
 			"plan_guid": "99c6c41e-5f7a-4422-a7f2-95e7d8f88b30",
 			"components": [
