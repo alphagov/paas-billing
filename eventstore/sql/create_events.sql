@@ -116,9 +116,9 @@ INSERT INTO events with
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
 				(case
-				 when (raw_message->>'state') = 'STAGING_STARTED' then 'STARTED'
-				 when (raw_message->>'state') = 'STAGING_STOPPED' then 'STOPPED'
-				 end)::resource_state as state
+					when (raw_message->>'state') = 'STAGING_STARTED' then 'STARTED'
+					when (raw_message->>'state') = 'STAGING_STOPPED' then 'STOPPED'
+				end)::resource_state as state
 			from
 				app_usage_events
 			where
@@ -134,8 +134,8 @@ INSERT INTO events with
 					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
 				)::uuid as resource_guid,
 				(case
-				 when s.created_at > c.created_at then (s.raw_message->>'service_instance_name')
-				 else NULL::text
+					when s.created_at > c.created_at then (s.raw_message->>'service_instance_name')
+					else NULL::text
 				end) as resource_name,
 				'service'::text as resource_type,
 				(s.raw_message->>'org_guid')::uuid as org_guid,
