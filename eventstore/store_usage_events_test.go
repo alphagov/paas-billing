@@ -342,6 +342,121 @@ var _ = Describe("GetUsageEvents", func() {
 	})
 
 	/*-----------------------------------------------------------------------------------*
+	       00:00       01:00       02:00                                                 .
+	         |           |           |                                                   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [==========db1==========]   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   |   .   .   |   .   .   |   .   .   .   .   .   .   .   .   .   .   .   .   .
+	       start    update plan    stop                                                  .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	<=======================================PLAN1=======================================>.
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	-------------------------------------------------------------------------------------*/
+	It("should handle service UPDATE events that change the plan", func() {
+		cfg.AddVATRate(eventio.VATRate{
+			Code:      "Zero",
+			Rate:      0,
+			ValidFrom: "epoch",
+		})
+		plan1 := eventio.PricingPlan{
+			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-000000000001",
+			ValidFrom:     "2001-01-01",
+			Name:          "PLAN1",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compose",
+					Formula:      "ceil($time_in_seconds/3600) * $memory_in_mb * $storage_in_mb * $number_of_nodes",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		}
+		plan2 := eventio.PricingPlan{
+			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-000000000002",
+			ValidFrom:     "2001-01-01",
+			Name:          "PLAN2",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compose",
+					Formula:      "ceil($time_in_seconds/3600) * $memory_in_mb * $storage_in_mb * $number_of_nodes",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		}
+		cfg.AddPlan(plan1)
+		cfg.AddPlan(plan2)
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		service1EventStart := testenv.Row{
+			"guid":        "00000000-0000-0000-0000-000000000001",
+			"created_at":  "2001-01-01T00:00Z",
+			"raw_message": json.RawMessage(`{"state": "CREATED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-000000000001", "service_plan_name": "PLAN1", "service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
+		}
+		service1EventUpdatePlan := testenv.Row{
+			"guid":        "00000000-0000-0000-0000-000000000002",
+			"created_at":  "2001-01-01T01:00Z",
+			"raw_message": json.RawMessage(`{"state": "UPDATED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-000000000002", "service_plan_name": "PLAN2", "service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
+		}
+		service1EventStop := testenv.Row{
+			"guid":        "00000000-0000-0000-0000-000000000003",
+			"created_at":  "2001-01-01T02:00Z",
+			"raw_message": json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-000000000002", "service_plan_name": "PLAN2", "service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001", "service_instance_name": "db1-renamed-again", "service_instance_type": "managed_service_instance"}`),
+		}
+
+		Expect(db.Insert("service_usage_events", service1EventStart, service1EventUpdatePlan, service1EventStop)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		events, err := db.Schema.GetUsageEvents(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2001-02-01",
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(events).To(HaveLen(2))
+
+		Expect(events[0]).To(Equal(eventio.UsageEvent{
+			EventGUID:    "00000000-0000-0000-0000-000000000001",
+			EventStart:   "2001-01-01T00:00:00+00:00",
+			EventStop:    "2001-01-01T01:00:00+00:00",
+			ResourceGUID: "aaaaaaaa-0000-0000-0000-000000000001",
+			ResourceName: "db1",
+			ResourceType: "service",
+			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-000000000001",
+			PlanName:     "PLAN1",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "postgres",
+		}))
+
+		Expect(events[1]).To(Equal(eventio.UsageEvent{
+			EventGUID:    "00000000-0000-0000-0000-000000000002",
+			EventStart:   "2001-01-01T01:00:00+00:00",
+			EventStop:    "2001-01-01T02:00:00+00:00",
+			ResourceGUID: "aaaaaaaa-0000-0000-0000-000000000001",
+			ResourceName: "db1",
+			ResourceType: "service",
+			OrgGUID:      "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:    "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:     "efb5f1ce-0a8a-435d-a8b2-000000000002",
+			PlanName:     "PLAN2",
+			ServiceGUID:  "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:  "postgres",
+		}))
+
+	})
+
+	/*-----------------------------------------------------------------------------------*
 	       00:00                   01:00               02:00                             .
 	         |                       |                   |                               .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
