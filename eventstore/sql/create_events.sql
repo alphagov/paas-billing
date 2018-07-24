@@ -26,6 +26,7 @@ INSERT INTO events with
 			select
 				id as event_sequence,
 				guid::uuid as event_guid,
+				'app' as event_type,
 				created_at,
 				(raw_message->>'app_guid')::uuid as resource_guid,
 				(raw_message->>'app_name') as resource_name,
@@ -49,6 +50,7 @@ INSERT INTO events with
 			select
 				id as event_sequence,
 				guid::uuid as event_guid,
+				'service' as event_type,
 				created_at,
 				(raw_message->>'service_instance_guid')::uuid as resource_guid,
 				(raw_message->>'service_instance_name') as resource_name,
@@ -76,6 +78,7 @@ INSERT INTO events with
 			select
 				id as event_sequence,
 				guid::uuid as event_guid,
+				'task' as event_type,
 				created_at,
 				(raw_message->>'task_guid')::uuid as resource_guid,
 				(raw_message->>'task_name') as resource_name,
@@ -102,6 +105,7 @@ INSERT INTO events with
 			select
 				id as event_sequence,
 				guid::uuid as event_guid,
+				'staging' as event_type,
 				created_at,
 				(raw_message->>'parent_app_guid')::uuid as resource_guid,
 				(raw_message->>'parent_app_name') as resource_name,
@@ -128,6 +132,7 @@ INSERT INTO events with
 			select
 				s.id as event_sequence,
 				uuid_generate_v4() as event_guid,
+				'service' as event_type,
 				c.created_at::timestamptz as created_at,
 				substring(
 					c.raw_message->'data'->>'deployment'
@@ -165,6 +170,7 @@ INSERT INTO events with
 		select
 			event_sequence,
 			event_guid,
+			event_type,
 			created_at,
 			resource_guid,
 			coalesce(
@@ -198,7 +204,7 @@ INSERT INTO events with
 			raw_events
 		window
 			prev_events as (
-				partition by resource_guid
+				partition by resource_guid, event_type
 				order by created_at desc, event_sequence desc
 				rows between current row and unbounded following
 			)
@@ -213,7 +219,7 @@ INSERT INTO events with
 			raw_events_with_injected_values
 		window
 			resource_states as (
-				partition by resource_guid, plan_guid
+				partition by resource_guid, event_type
 				order by created_at, event_sequence
 				rows between current row and 1 following
 			)
