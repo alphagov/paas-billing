@@ -38,9 +38,31 @@ type Service struct {
 	Tags              []string `json:"tags"`
 }
 
+type Spaces struct {
+	Guid                 string `json:"guid"`
+	CreatedAt            string `json:"created_at"`
+	UpdatedAt            string `json:"updated_at"`
+	Name                 string `json:"name"`
+	OrganizationGuid     string `json:"organization_guid"`
+	OrgURL               string `json:"organization_url"`
+	QuotaDefinitionGuid  string `json:"space_quota_definition_guid"`
+	IsolationSegmentGuid string `json:"isolation_segment_guid"`
+}
+
+type Orgs struct {
+	Guid                        string `json:"guid"`
+	CreatedAt                   string `json:"created_at"`
+	UpdatedAt                   string `json:"updated_at"`
+	Name                        string `json:"name"`
+	QuotaDefinitionGuid         string `json:"quota_definition_guid"`
+	DefaultIsolationSegmentGuid string `json:"default_isolation_segment_guid"`
+}
+
 type CFDataClient interface {
 	ListServicePlans() ([]ServicePlan, error)
 	ListServices() ([]Service, error)
+	ListSpaces() ([]Spaces, error)
+	ListOrgs() ([]Orgs, error)
 }
 
 var _ CFDataClient = &Client{}
@@ -129,4 +151,78 @@ func (c *Client) ListServices() ([]Service, error) {
 		}
 	}
 	return services, nil
+}
+
+func (c *Client) ListSpaces() ([]Spaces, error) {
+	var spaces []Spaces
+	requestUrl := "/v2/spaces"
+	for {
+		var spacesResp cfclient.SpaceResponse
+		r := c.Client.NewRequest("GET", requestUrl)
+		resp, err := c.Client.DoRequest(r)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error requesting spaces")
+		}
+		resBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error reading spaces request:")
+		}
+		err = json.Unmarshal(resBody, &spacesResp)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error unmarshaling spaces")
+		}
+		for _, spaceResource := range spacesResp.Resources {
+			spaces = append(spaces, Spaces{
+				Guid:                 spaceResource.Meta.Guid,
+				CreatedAt:            spaceResource.Meta.CreatedAt,
+				UpdatedAt:            spaceResource.Meta.UpdatedAt,
+				Name:                 spaceResource.Entity.Name,
+				OrganizationGuid:     spaceResource.Entity.OrganizationGuid,
+				OrgURL:               spaceResource.Entity.OrgURL,
+				QuotaDefinitionGuid:  spaceResource.Entity.QuotaDefinitionGuid,
+				IsolationSegmentGuid: spaceResource.Entity.IsolationSegmentGuid,
+			})
+		}
+		requestUrl = spacesResp.NextUrl
+		if requestUrl == "" {
+			break
+		}
+	}
+	return spaces, nil
+}
+
+func (c *Client) ListOrgs() ([]Orgs, error) {
+	var orgs []Orgs
+	requestUrl := "/v2/orgs"
+	for {
+		var orgResp cfclient.OrgResponse
+		r := c.Client.NewRequest("GET", requestUrl)
+		resp, err := c.Client.DoRequest(r)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error requesting orgs")
+		}
+		resBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error reading orgs request:")
+		}
+		err = json.Unmarshal(resBody, &orgResp)
+		if err != nil {
+			return nil, errors.Wrap(err, "Error unmarshaling orgs")
+		}
+		for _, orgResource := range orgResp.Resources {
+			orgs = append(orgs, Orgs{
+				Guid:                 orgResource.Meta.Guid,
+				CreatedAt:            orgResource.Meta.CreatedAt,
+				UpdatedAt:            orgResource.Meta.UpdatedAt,
+				Name:                 orgResource.Entity.Name,
+				QuotaDefinitionGuid:  orgResource.Entity.QuotaDefinitionGuid,
+				DefaultIsolationSegmentGuid: orgResource.Entity.DefaultIsolationSegmentGuid,
+			})
+		}
+		requestUrl = orgResp.NextUrl
+		if requestUrl == "" {
+			break
+		}
+	}
+	return orgs, nil
 }

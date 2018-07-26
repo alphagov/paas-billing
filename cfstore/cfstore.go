@@ -193,6 +193,125 @@ func (s *Store) collectServices(tx *sql.Tx) error {
 	return nil
 }
 
+func (s *Store) CollectSpaces() error {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.collectSpaces(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) collectSpaces(tx *sql.Tx) error {
+	spaces, err := s.client.ListSpaces()
+	if err != nil {
+		return err
+	}
+	for _, spaces := range spaces {
+		validFrom := spaces.UpdatedAt
+		var serviceCount int
+		err := tx.QueryRow(`
+			select count(*)
+			from spaces
+			where guid = $1
+		`, spaces.Guid).Scan(&serviceCount)
+		if err != nil {
+			return err
+		}
+		if serviceCount == 0 {
+			validFrom = spaces.CreatedAt
+		}
+
+		_, err = tx.Exec(`
+			insert into spaces (
+				guid, valid_from,
+				space_name, organization_guid,
+				org_url, quota_definition_guid,
+				isolation_segment_guid,
+				created_at, updated_at
+			) values (
+				$1, $2,
+				$3, $4,
+				$5, $6,
+				$7,
+				$8, $9
+			) on conflict (guid, valid_from) do nothing
+		`, spaces.Guid, validFrom,
+			spaces.Name, spaces.OrganizationGuid,
+			spaces.OrgURL, spaces.QuotaDefinitionGuid,
+			spaces.IsolationSegmentGuid,
+			spaces.CreatedAt, spaces.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) CollectOrgs() error {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.collectOrgs(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) collectOrgs(tx *sql.Tx) error {
+	orgs, err := s.client.ListOrgs()
+	if err != nil {
+		return err
+	}
+	for _, orgs := range orgs {
+		validFrom := orgs.UpdatedAt
+		var serviceCount int
+		err := tx.QueryRow(`
+			select count(*)
+			from orgs
+			where guid = $1
+		`, orgs.Guid).Scan(&serviceCount)
+		if err != nil {
+			return err
+		}
+		if serviceCount == 0 {
+			validFrom = orgs.CreatedAt
+		}
+
+		_, err = tx.Exec(`
+			insert into orgs (
+				guid, valid_from,
+				org_name, quota_definition_guid,
+				quota_definition_guid,
+				default_isolation_segment_guid,
+				created_at, updated_at
+			) values (
+				$1, $2,
+				$3, $4,
+				$5, $6,
+				$7, $8
+			) on conflict (guid, valid_from) do nothing
+		`, orgs.Guid, validFrom,
+			orgs.Name, orgs.QuotaDefinitionGuid,
+			orgs.QuotaDefinitionGuid,
+			orgs.DefaultIsolationSegmentGuid,
+			orgs.CreatedAt, orgs.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func New(cfg Config) (*Store, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = lager.NewLogger("historic-data-store")
