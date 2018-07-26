@@ -84,6 +84,12 @@ func (s *EventStore) Init() error {
 	if err := s.execFile(tx, "create_compose_audit_events.sql"); err != nil {
 		return err
 	}
+	if err := s.execFile(tx, "create_orgs.sql"); err != nil {
+		return err
+	}
+	if err := s.execFile(tx, "create_spaces.sql"); err != nil {
+		return err
+	}
 	if err := s.refresh(tx); err != nil {
 		return err
 	}
