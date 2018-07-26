@@ -63,7 +63,7 @@ var _ = Describe("Orgs", func() {
 			QuotaDefinitionGuid:         uuid.NewV4().String(),
 			DefaultIsolationSegmentGuid: uuid.NewV4().String(),
 		}),
-		Entry("bad Label", `violates check constraint "services_label_check"`, cfstore.Orgs{
+		Entry("bad Label", `violates check constraint "orgs_org_name_check"`, cfstore.Orgs{
 			Guid:                        uuid.NewV4().String(),
 			Name:                        "",
 			CreatedAt:                   "2001-01-01T01:01:01+00:00",
@@ -94,7 +94,7 @@ var _ = Describe("Orgs", func() {
 		).To(MatchJSON(testenv.Rows{
 			{
 				"guid":                           org1.Guid,
-				"name":                           "my-org",
+				"org_name":                           "my-org",
 				"updated_at":                     "2002-02-02T02:02:02+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2001-01-01T01:01:01+00:00",
@@ -132,7 +132,7 @@ var _ = Describe("Orgs", func() {
 		).To(MatchJSON(testenv.Rows{
 			{
 				"guid":                           OrgVersion1.Guid,
-				"name":                           "my-Org",
+				"org_name":                           "my-Org",
 				"updated_at":                     "2001-01-01T01:01:01+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2001-01-01T01:01:01+00:00",
@@ -141,7 +141,7 @@ var _ = Describe("Orgs", func() {
 			},
 			{
 				"guid":                           OrgVersion2.Guid,
-				"name":                           "my-Org-renamed",
+				"org_name":                           "my-Org-renamed",
 				"updated_at":                     "2002-02-02T02:02:02+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2002-02-02T02:02:02+00:00",
@@ -184,7 +184,7 @@ var _ = Describe("Orgs", func() {
 		).To(MatchJSON(testenv.Rows{
 			{
 				"guid":                           OrgVersion1.Guid,
-				"name":                           "my-Org",
+				"org_name":                           "my-Org",
 				"updated_at":                     "2001-01-01T01:01:01+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2001-01-01T01:01:01+00:00",
@@ -193,8 +193,7 @@ var _ = Describe("Orgs", func() {
 			},
 			{
 				"guid":                           OrgVersion2.Guid,
-				"Name":                           "my-Org-renamed",
-				"description":                    "my-org_url",
+				"org_name":                           "my-Org-renamed",
 				"updated_at":                     "2002-02-02T02:02:02+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2002-02-02T02:02:02+00:00",

@@ -50,6 +50,8 @@ var _ = Describe("Spaces", func() {
 		Entry("bad CreatedAt", `invalid input syntax for type timestamp with time zone: "bad-created-at"`, cfstore.Spaces{
 			Guid:             uuid.NewV4().String(),
 			OrganizationGuid: uuid.NewV4().String(),
+			IsolationSegmentGuid: uuid.NewV4().String(),
+			QuotaDefinitionGuid:  uuid.NewV4().String(),
 			Name:             "my-space",
 			OrgURL:           "my-org_url",
 			CreatedAt:        "bad-created-at",
@@ -58,14 +60,18 @@ var _ = Describe("Spaces", func() {
 		Entry("bad UpdatedAt", `invalid input syntax for type timestamp with time zone: "bad-updated-at"`, cfstore.Spaces{
 			Guid:             uuid.NewV4().String(),
 			OrganizationGuid: uuid.NewV4().String(),
+			IsolationSegmentGuid: uuid.NewV4().String(),
+			QuotaDefinitionGuid:  uuid.NewV4().String(),
 			Name:             "my-space",
 			OrgURL:           "mmy-org_url",
 			CreatedAt:        "2001-01-01T01:01:01+00:00",
 			UpdatedAt:        "bad-updated-at",
 		}),
-		Entry("bad Name", `violates check constraint "org_name_check"`, cfstore.Spaces{
+		Entry("bad Name", `violates check constraint "spaces_space_name_check"`, cfstore.Spaces{
 			Guid:             uuid.NewV4().String(),
 			OrganizationGuid: uuid.NewV4().String(),
+			IsolationSegmentGuid: uuid.NewV4().String(),
+			QuotaDefinitionGuid:  uuid.NewV4().String(),
 			Name:             "",
 			OrgURL:           "my-org_url",
 			CreatedAt:        "2001-01-01T01:01:01+00:00",
@@ -75,12 +81,12 @@ var _ = Describe("Spaces", func() {
 
 	It("should collect spaces from client", func() {
 		service1 := cfstore.Spaces{
-			Guid:             uuid.NewV4().String(),
-			OrganizationGuid: uuid.NewV4().String(),
-			Name:             "my-org",
-			OrgURL:           "my-org_url",
-			UpdatedAt:        "2002-02-02T02:02:02+00:00",
-			CreatedAt:        "2001-01-01T01:01:01+00:00",
+			Guid:                 uuid.NewV4().String(),
+			OrganizationGuid:     uuid.NewV4().String(),
+			Name:                 "my-space",
+			OrgURL:               "my-org_url",
+			UpdatedAt:            "2002-02-02T02:02:02+00:00",
+			CreatedAt:            "2001-01-01T01:01:01+00:00",
 			QuotaDefinitionGuid:  uuid.NewV4().String(),
 			IsolationSegmentGuid: uuid.NewV4().String(),
 		}
@@ -95,20 +101,20 @@ var _ = Describe("Spaces", func() {
 			tempdb.Query(`select * from spaces`),
 		).To(MatchJSON(testenv.Rows{
 			{
-				"guid":                service1.Guid,
-				"service_broker_guid": service1.OrganizationGuid,
-				"name":                "my-org",
-				"organization_url":    "my-org_url",
-				"updated_at":          "2002-02-02T02:02:02+00:00",
-				"created_at":          "2001-01-01T01:01:01+00:00",
-				"valid_from":          "2001-01-01T01:01:01+00:00",
-				"space_quota_definition_guid":              service1.QuotaDefinitionGuid,
-				"isolation_segment_guid":            service1.IsolationSegmentGuid,
+				"guid":                        service1.Guid,
+				"organization_guid":         service1.OrganizationGuid,
+				"space_name":                  "my-space",
+				"org_url":            "my-org_url",
+				"updated_at":                  "2002-02-02T02:02:02+00:00",
+				"created_at":                  "2001-01-01T01:01:01+00:00",
+				"valid_from":                  "2001-01-01T01:01:01+00:00",
+				"quota_definition_guid": service1.QuotaDefinitionGuid,
+				"isolation_segment_guid":      service1.IsolationSegmentGuid,
 			},
 		}))
 	})
 
-	It("should create a new version of service when it has changed", func() {
+	It("should create a new version of space when it has changed", func() {
 		spaceVersion1 := cfstore.Spaces{
 			Guid:                 uuid.NewV4().String(),
 			OrganizationGuid:     uuid.NewV4().String(),
@@ -139,23 +145,23 @@ var _ = Describe("Spaces", func() {
 			{
 				"guid":                        spaceVersion1.Guid,
 				"organization_guid":           spaceVersion1.OrganizationGuid,
-				"name":                        "my-space",
-				"organization_url":            "my-org_url",
+				"space_name":                  "my-space",
+				"org_url":                     "my-org_url",
 				"updated_at":                  "2001-01-01T01:01:01+00:00",
 				"created_at":                  "2001-01-01T01:01:01+00:00",
 				"valid_from":                  "2001-01-01T01:01:01+00:00",
-				"space_quota_definition_guid": spaceVersion1.QuotaDefinitionGuid,
+				"quota_definition_guid": spaceVersion1.QuotaDefinitionGuid,
 				"isolation_segment_guid":      spaceVersion1.IsolationSegmentGuid,
 			},
 			{
 				"guid":                        spaceVersion2.Guid,
 				"organization_guid":           spaceVersion2.OrganizationGuid,
-				"name":                        "my-space-renamed",
-				"organization_url":            "my-org_url",
+				"space_name":                  "my-space-renamed",
+				"org_url":                     "my-org_url",
 				"updated_at":                  "2002-02-02T02:02:02+00:00",
 				"created_at":                  "2001-01-01T01:01:01+00:00",
 				"valid_from":                  "2002-02-02T02:02:02+00:00",
-				"space_quota_definition_guid": spaceVersion2.QuotaDefinitionGuid,
+				"quota_definition_guid": spaceVersion2.QuotaDefinitionGuid,
 				"isolation_segment_guid":      spaceVersion2.IsolationSegmentGuid,
 			},
 		}))
@@ -165,7 +171,7 @@ var _ = Describe("Spaces", func() {
 		spaceVersion1 := cfstore.Spaces{
 			Guid:                 uuid.NewV4().String(),
 			OrganizationGuid:     uuid.NewV4().String(),
-			Name:                 "my-service",
+			Name:                 "my-space",
 			OrgURL:               "my-org_url",
 			UpdatedAt:            "2001-01-01T01:01:01+00:00",
 			CreatedAt:            "2001-01-01T01:01:01+00:00",
@@ -183,7 +189,7 @@ var _ = Describe("Spaces", func() {
 		Expect(store.CollectSpaces()).To(Succeed())
 
 		spaceVersion2 := spaceVersion1
-		spaceVersion2.Name = "my-org-renamed"
+		spaceVersion2.Name = "my-space-renamed"
 		spaceVersion2.UpdatedAt = "2002-02-02T02:02:02+00:00"
 		spaceVersion2.QuotaDefinitionGuid = uuid.NewV4().String()
 		fakeClient.ListSpacesReturnsOnCall(3, []cfstore.Spaces{
@@ -197,23 +203,23 @@ var _ = Describe("Spaces", func() {
 			{
 				"guid":                        spaceVersion1.Guid,
 				"organization_guid":           spaceVersion1.OrganizationGuid,
-				"name":                        "my-space",
-				"organization_url":            "my-org_url",
+				"space_name":                  "my-space",
+				"org_url":                     "my-org_url",
 				"updated_at":                  "2001-01-01T01:01:01+00:00",
 				"created_at":                  "2001-01-01T01:01:01+00:00",
 				"valid_from":                  "2001-01-01T01:01:01+00:00",
-				"space_quota_definition_guid": spaceVersion1.QuotaDefinitionGuid,
+				"quota_definition_guid": spaceVersion1.QuotaDefinitionGuid,
 				"isolation_segment_guid":      spaceVersion1.IsolationSegmentGuid,
 			},
 			{
 				"guid":                        spaceVersion2.Guid,
-				"service_broker_guid":         spaceVersion2.OrganizationGuid,
-				"name":                       "my-org-renamed",
-				"organization_url":                 "my-org_url",
+				"organization_guid":         spaceVersion2.OrganizationGuid,
+				"space_name":                  "my-space-renamed",
+				"org_url":                     "my-org_url",
 				"updated_at":                  "2002-02-02T02:02:02+00:00",
 				"created_at":                  "2001-01-01T01:01:01+00:00",
 				"valid_from":                  "2002-02-02T02:02:02+00:00",
-				"space_quota_definition_guid": spaceVersion2.QuotaDefinitionGuid,
+				"quota_definition_guid": spaceVersion2.QuotaDefinitionGuid,
 				"isolation_segment_guid":      spaceVersion2.IsolationSegmentGuid,
 			},
 		}))

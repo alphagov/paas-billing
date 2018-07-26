@@ -48,6 +48,12 @@ func (s *Store) Init() error {
 	if err := s.collectServicePlans(tx); err != nil {
 		return err
 	}
+	if err := s.collectSpaces(tx); err != nil {
+		return err
+	}
+	if err := s.collectOrgs(tx); err != nil {
+		return err
+	}
 	s.logger.Info("initialized")
 	return tx.Commit()
 }
@@ -194,6 +200,7 @@ func (s *Store) collectServices(tx *sql.Tx) error {
 }
 
 func (s *Store) CollectSpaces() error {
+	//fmt.Println("hello") // DEBUG FIXME
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
 	defer cancel()
 	tx, err := s.db.BeginTx(ctx, nil)
@@ -214,16 +221,16 @@ func (s *Store) collectSpaces(tx *sql.Tx) error {
 	}
 	for _, spaces := range spaces {
 		validFrom := spaces.UpdatedAt
-		var serviceCount int
+		var spaceCount int
 		err := tx.QueryRow(`
 			select count(*)
 			from spaces
 			where guid = $1
-		`, spaces.Guid).Scan(&serviceCount)
+		`, spaces.Guid).Scan(&spaceCount)
 		if err != nil {
 			return err
 		}
-		if serviceCount == 0 {
+		if spaceCount == 0 {
 			validFrom = spaces.CreatedAt
 		}
 
@@ -274,16 +281,16 @@ func (s *Store) collectOrgs(tx *sql.Tx) error {
 	}
 	for _, orgs := range orgs {
 		validFrom := orgs.UpdatedAt
-		var serviceCount int
+		var orgCount int
 		err := tx.QueryRow(`
 			select count(*)
 			from orgs
 			where guid = $1
-		`, orgs.Guid).Scan(&serviceCount)
+		`, orgs.Guid).Scan(&orgCount)
 		if err != nil {
 			return err
 		}
-		if serviceCount == 0 {
+		if orgCount == 0 {
 			validFrom = orgs.CreatedAt
 		}
 
@@ -291,18 +298,16 @@ func (s *Store) collectOrgs(tx *sql.Tx) error {
 			insert into orgs (
 				guid, valid_from,
 				org_name, quota_definition_guid,
-				quota_definition_guid,
 				default_isolation_segment_guid,
 				created_at, updated_at
 			) values (
 				$1, $2,
 				$3, $4,
-				$5, $6,
-				$7, $8
+				$5,
+				$6, $7
 			) on conflict (guid, valid_from) do nothing
 		`, orgs.Guid, validFrom,
 			orgs.Name, orgs.QuotaDefinitionGuid,
-			orgs.QuotaDefinitionGuid,
 			orgs.DefaultIsolationSegmentGuid,
 			orgs.CreatedAt, orgs.UpdatedAt)
 		if err != nil {
