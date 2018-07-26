@@ -30,6 +30,28 @@ type FakeCFDataClient struct {
 		result1 []cfstore.Service
 		result2 error
 	}
+	ListSpacesStub        func() ([]cfstore.Spaces, error)
+	listSpacesMutex       sync.RWMutex
+	listSpacesArgsForCall []struct{}
+	listSpacesReturns     struct {
+		result1 []cfstore.Spaces
+		result2 error
+	}
+	listSpacesReturnsOnCall map[int]struct {
+		result1 []cfstore.Spaces
+		result2 error
+	}
+	ListOrgsStub        func() ([]cfstore.Orgs, error)
+	listOrgsMutex       sync.RWMutex
+	listOrgsArgsForCall []struct{}
+	listOrgsReturns     struct {
+		result1 []cfstore.Orgs
+		result2 error
+	}
+	listOrgsReturnsOnCall map[int]struct {
+		result1 []cfstore.Orgs
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -120,6 +142,92 @@ func (fake *FakeCFDataClient) ListServicesReturnsOnCall(i int, result1 []cfstore
 	}{result1, result2}
 }
 
+func (fake *FakeCFDataClient) ListSpaces() ([]cfstore.Spaces, error) {
+	fake.listSpacesMutex.Lock()
+	ret, specificReturn := fake.listSpacesReturnsOnCall[len(fake.listSpacesArgsForCall)]
+	fake.listSpacesArgsForCall = append(fake.listSpacesArgsForCall, struct{}{})
+	fake.recordInvocation("ListSpaces", []interface{}{})
+	fake.listSpacesMutex.Unlock()
+	if fake.ListSpacesStub != nil {
+		return fake.ListSpacesStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listSpacesReturns.result1, fake.listSpacesReturns.result2
+}
+
+func (fake *FakeCFDataClient) ListSpacesCallCount() int {
+	fake.listSpacesMutex.RLock()
+	defer fake.listSpacesMutex.RUnlock()
+	return len(fake.listSpacesArgsForCall)
+}
+
+func (fake *FakeCFDataClient) ListSpacesReturns(result1 []cfstore.Spaces, result2 error) {
+	fake.ListSpacesStub = nil
+	fake.listSpacesReturns = struct {
+		result1 []cfstore.Spaces
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCFDataClient) ListSpacesReturnsOnCall(i int, result1 []cfstore.Spaces, result2 error) {
+	fake.ListSpacesStub = nil
+	if fake.listSpacesReturnsOnCall == nil {
+		fake.listSpacesReturnsOnCall = make(map[int]struct {
+			result1 []cfstore.Spaces
+			result2 error
+		})
+	}
+	fake.listSpacesReturnsOnCall[i] = struct {
+		result1 []cfstore.Spaces
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCFDataClient) ListOrgs() ([]cfstore.Orgs, error) {
+	fake.listOrgsMutex.Lock()
+	ret, specificReturn := fake.listOrgsReturnsOnCall[len(fake.listOrgsArgsForCall)]
+	fake.listOrgsArgsForCall = append(fake.listOrgsArgsForCall, struct{}{})
+	fake.recordInvocation("ListOrgs", []interface{}{})
+	fake.listOrgsMutex.Unlock()
+	if fake.ListOrgsStub != nil {
+		return fake.ListOrgsStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listOrgsReturns.result1, fake.listOrgsReturns.result2
+}
+
+func (fake *FakeCFDataClient) ListOrgsCallCount() int {
+	fake.listOrgsMutex.RLock()
+	defer fake.listOrgsMutex.RUnlock()
+	return len(fake.listOrgsArgsForCall)
+}
+
+func (fake *FakeCFDataClient) ListOrgsReturns(result1 []cfstore.Orgs, result2 error) {
+	fake.ListOrgsStub = nil
+	fake.listOrgsReturns = struct {
+		result1 []cfstore.Orgs
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCFDataClient) ListOrgsReturnsOnCall(i int, result1 []cfstore.Orgs, result2 error) {
+	fake.ListOrgsStub = nil
+	if fake.listOrgsReturnsOnCall == nil {
+		fake.listOrgsReturnsOnCall = make(map[int]struct {
+			result1 []cfstore.Orgs
+			result2 error
+		})
+	}
+	fake.listOrgsReturnsOnCall[i] = struct {
+		result1 []cfstore.Orgs
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCFDataClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -127,6 +235,10 @@ func (fake *FakeCFDataClient) Invocations() map[string][][]interface{} {
 	defer fake.listServicePlansMutex.RUnlock()
 	fake.listServicesMutex.RLock()
 	defer fake.listServicesMutex.RUnlock()
+	fake.listSpacesMutex.RLock()
+	defer fake.listSpacesMutex.RUnlock()
+	fake.listOrgsMutex.RLock()
+	defer fake.listOrgsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
