@@ -49,6 +49,14 @@ func (app *App) StartServiceEventCollector() error {
 	return app.startUsageEventCollector(cffetcher.Service)
 }
 
+func (app *App) StartSpaceCollector() error {
+	return app.startUsageEventCollector(cffetcher.Service)
+}
+
+func (app *App) StartOrgCollector() error {
+	return app.startUsageEventCollector(cffetcher.Service)
+}
+
 func (app *App) startUsageEventCollector(kind cffetcher.Kind) error {
 	name := fmt.Sprintf("%s-usage-event-collector", kind)
 	logger := app.logger.Session(name)
@@ -157,6 +165,14 @@ func (app *App) StartHistoricDataCollector() error {
 				continue
 			}
 			if err := app.historicDataStore.CollectServicePlans(); err != nil {
+				logger.Error("collect-service-plans", err)
+				continue
+			}
+			if err := app.historicDataStore.CollectOrgs(); err != nil {
+				logger.Error("collect-service-plans", err)
+				continue
+			}
+			if err := app.historicDataStore.CollectSpaces(); err != nil {
 				logger.Error("collect-service-plans", err)
 				continue
 			}
