@@ -13,7 +13,9 @@ type UsageEvent struct {
 	ResourceName  string `json:"resource_name"`
 	ResourceType  string `json:"resource_type"`
 	OrgGUID       string `json:"org_guid"`
+	OrgName       string `json:"org_name"`
 	SpaceGUID     string `json:"space_guid"`
+	SpaceName     string `json:"space_name"`
 	PlanGUID      string `json:"plan_guid"`
 	PlanName      string `json:"plan_name"`
 	ServiceGUID   string `json:"service_guid"`

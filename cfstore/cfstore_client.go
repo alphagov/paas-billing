@@ -211,11 +211,11 @@ func (c *Client) ListOrgs() ([]Orgs, error) {
 		}
 		for _, orgResource := range orgResp.Resources {
 			orgs = append(orgs, Orgs{
-				Guid:                 orgResource.Meta.Guid,
-				CreatedAt:            orgResource.Meta.CreatedAt,
-				UpdatedAt:            orgResource.Meta.UpdatedAt,
-				Name:                 orgResource.Entity.Name,
-				QuotaDefinitionGuid:  orgResource.Entity.QuotaDefinitionGuid,
+				Guid:                        orgResource.Meta.Guid,
+				CreatedAt:                   orgResource.Meta.CreatedAt,
+				UpdatedAt:                   orgResource.Meta.UpdatedAt,
+				Name:                        orgResource.Entity.Name,
+				QuotaDefinitionGuid:         orgResource.Entity.QuotaDefinitionGuid,
 				DefaultIsolationSegmentGuid: orgResource.Entity.DefaultIsolationSegmentGuid,
 			})
 		}

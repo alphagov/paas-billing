@@ -71,11 +71,11 @@ func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 				continue
 			}
 			if err := cfHistoricData.CollectOrgs(); err != nil {
-				logger.Error("collect-service-plans", err)
+				logger.Error("collect-orgs", err)
 				continue
 			}
 			if err := cfHistoricData.CollectSpaces(); err != nil {
-				logger.Error("collect-service-plans", err)
+				logger.Error("collect-spaces", err)
 				continue
 			}
 			time.Sleep(10 * time.Second)
@@ -111,14 +111,6 @@ func Main(logger lager.Logger) error {
 	}
 
 	if err := app.StartComposeEventCollector(); err != nil {
-		return err
-	}
-
-	if err := app.StartSpaceCollector(); err != nil {
-		return err
-	}
-
-	if err := app.StartOrgCollector(); err != nil {
 		return err
 	}
 

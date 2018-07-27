@@ -37,14 +37,16 @@ func (s *EventStore) forecastBillableEventRows(tx *sql.Tx, events []eventio.Usag
 				org_guid, space_guid,
 				duration,
 				plan_guid, plan_name,
-				number_of_nodes, memory_in_mb, storage_in_mb
+				number_of_nodes, memory_in_mb, storage_in_mb,
+				org_name, space_name
 			) values (
 				$1::uuid,
 				$2::uuid, $3::text, $4::text,
 				$5::uuid, $6::uuid,
 				tstzrange($7::timestamptz, $8::timestamptz),
 				$9::uuid, 'simulated',
-				$10::numeric, $11::numeric, $12::numeric
+				$10::numeric, $11::numeric, $12::numeric,
+				$5::text, $6::text
 			)
 		`,
 			ev.EventGUID,

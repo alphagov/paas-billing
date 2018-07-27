@@ -94,7 +94,7 @@ var _ = Describe("Orgs", func() {
 		).To(MatchJSON(testenv.Rows{
 			{
 				"guid":                           org1.Guid,
-				"org_name":                           "my-org",
+				"org_name":                       "my-org",
 				"updated_at":                     "2002-02-02T02:02:02+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2001-01-01T01:01:01+00:00",
@@ -132,7 +132,7 @@ var _ = Describe("Orgs", func() {
 		).To(MatchJSON(testenv.Rows{
 			{
 				"guid":                           OrgVersion1.Guid,
-				"org_name":                           "my-Org",
+				"org_name":                       "my-Org",
 				"updated_at":                     "2001-01-01T01:01:01+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2001-01-01T01:01:01+00:00",
@@ -141,7 +141,7 @@ var _ = Describe("Orgs", func() {
 			},
 			{
 				"guid":                           OrgVersion2.Guid,
-				"org_name":                           "my-Org-renamed",
+				"org_name":                       "my-Org-renamed",
 				"updated_at":                     "2002-02-02T02:02:02+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2002-02-02T02:02:02+00:00",
@@ -184,7 +184,7 @@ var _ = Describe("Orgs", func() {
 		).To(MatchJSON(testenv.Rows{
 			{
 				"guid":                           OrgVersion1.Guid,
-				"org_name":                           "my-Org",
+				"org_name":                       "my-Org",
 				"updated_at":                     "2001-01-01T01:01:01+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2001-01-01T01:01:01+00:00",
@@ -193,7 +193,7 @@ var _ = Describe("Orgs", func() {
 			},
 			{
 				"guid":                           OrgVersion2.Guid,
-				"org_name":                           "my-Org-renamed",
+				"org_name":                       "my-Org-renamed",
 				"updated_at":                     "2002-02-02T02:02:02+00:00",
 				"created_at":                     "2001-01-01T01:01:01+00:00",
 				"valid_from":                     "2002-02-02T02:02:02+00:00",

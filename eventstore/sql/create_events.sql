@@ -4,9 +4,9 @@ CREATE TABLE events (
 	resource_name text NOT NULL,
 	resource_type text NOT NULL,
 	org_guid uuid NOT NULL,
-	org_name text NOT NULL,
+	org_name text NOT NULL check (length(org_name)>0),
 	space_guid uuid NOT NULL,
-	space_name text NOT NULL,
+	space_name text NOT NULL check (length(space_name)>0),
 	duration tstzrange NOT NULL,
 	plan_guid uuid NOT NULL,
 	plan_name text NOT NULL,
@@ -253,7 +253,7 @@ INSERT INTO events with
 		from
 			orgs
 	),
-		valid_spaces as (
+	valid_spaces as (
 		select
 			*,
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
@@ -268,9 +268,9 @@ INSERT INTO events with
 		resource_name,
 		resource_type,
 		org_guid,
-		coalesce(vo.org_name, org_name) as org_name,
+		coalesce(vo.org_name, ev.org_guid::text) as org_name,
 		space_guid,
-		coalesce(vos.space_name, space_name) as space_name,
+		coalesce(vos.space_name, ev.space_guid::text) as space_name,
 		duration,
 		plan_guid,
 		coalesce(vsp.name, plan_name) as plan_name,
