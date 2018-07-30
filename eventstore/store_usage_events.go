@@ -57,6 +57,7 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 			resource_name,
 			resource_type,
 			org_guid,
+			org_name,
 			space_guid,
 			plan_guid,
 			plan_name,

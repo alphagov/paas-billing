@@ -4,6 +4,7 @@ CREATE TABLE events (
 	resource_name text NOT NULL,
 	resource_type text NOT NULL,
 	org_guid uuid NOT NULL,
+	org_name text NOT NULL,
 	space_guid uuid NOT NULL,
 	duration tstzrange NOT NULL,
 	plan_guid uuid NOT NULL,
@@ -241,13 +242,24 @@ INSERT INTO events with
 			)) as valid_for
 		from
 			services
+	),
+	valid_orgs as (
+		select
+			*,
+			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
+				partition by guid order by valid_from rows between current row and 1 following
+			)) as valid_for
+		from
+			orgs
 	)
+
 	select
 		event_guid,
 		resource_guid,
 		resource_name,
 		resource_type,
 		org_guid,
+		coalesce(vo.name, org_guid::text) as org_name,
 		space_guid,
 		duration,
 		plan_guid,
@@ -265,6 +277,9 @@ INSERT INTO events with
 	left join
 		valid_services vs on vsp.service_guid = vs.guid
 		and upper(ev.duration) <@ vs.valid_for
+	left join
+		valid_orgs vo on ev.org_guid = vo.guid
+		and upper(ev.duration) <@ vo.valid_for
 	where
 		state = 'STARTED'
 		and not isempty(duration)

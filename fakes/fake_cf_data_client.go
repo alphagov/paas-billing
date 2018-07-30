@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/alphagov/paas-billing/cfstore"
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 )
 
 type FakeCFDataClient struct {
@@ -28,6 +29,17 @@ type FakeCFDataClient struct {
 	}
 	listServicesReturnsOnCall map[int]struct {
 		result1 []cfstore.Service
+		result2 error
+	}
+	ListOrgsStub        func() ([]cfclient.Org, error)
+	listOrgsMutex       sync.RWMutex
+	listOrgsArgsForCall []struct{}
+	listOrgsReturns     struct {
+		result1 []cfclient.Org
+		result2 error
+	}
+	listOrgsReturnsOnCall map[int]struct {
+		result1 []cfclient.Org
 		result2 error
 	}
 	invocations      map[string][][]interface{}
@@ -120,6 +132,49 @@ func (fake *FakeCFDataClient) ListServicesReturnsOnCall(i int, result1 []cfstore
 	}{result1, result2}
 }
 
+func (fake *FakeCFDataClient) ListOrgs() ([]cfclient.Org, error) {
+	fake.listOrgsMutex.Lock()
+	ret, specificReturn := fake.listOrgsReturnsOnCall[len(fake.listOrgsArgsForCall)]
+	fake.listOrgsArgsForCall = append(fake.listOrgsArgsForCall, struct{}{})
+	fake.recordInvocation("ListOrgs", []interface{}{})
+	fake.listOrgsMutex.Unlock()
+	if fake.ListOrgsStub != nil {
+		return fake.ListOrgsStub()
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.listOrgsReturns.result1, fake.listOrgsReturns.result2
+}
+
+func (fake *FakeCFDataClient) ListOrgsCallCount() int {
+	fake.listOrgsMutex.RLock()
+	defer fake.listOrgsMutex.RUnlock()
+	return len(fake.listOrgsArgsForCall)
+}
+
+func (fake *FakeCFDataClient) ListOrgsReturns(result1 []cfclient.Org, result2 error) {
+	fake.ListOrgsStub = nil
+	fake.listOrgsReturns = struct {
+		result1 []cfclient.Org
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeCFDataClient) ListOrgsReturnsOnCall(i int, result1 []cfclient.Org, result2 error) {
+	fake.ListOrgsStub = nil
+	if fake.listOrgsReturnsOnCall == nil {
+		fake.listOrgsReturnsOnCall = make(map[int]struct {
+			result1 []cfclient.Org
+			result2 error
+		})
+	}
+	fake.listOrgsReturnsOnCall[i] = struct {
+		result1 []cfclient.Org
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeCFDataClient) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -127,6 +182,8 @@ func (fake *FakeCFDataClient) Invocations() map[string][][]interface{} {
 	defer fake.listServicePlansMutex.RUnlock()
 	fake.listServicesMutex.RLock()
 	defer fake.listServicesMutex.RUnlock()
+	fake.listOrgsMutex.RLock()
+	defer fake.listOrgsMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

@@ -48,6 +48,9 @@ func (s *Store) Init() error {
 	if err := s.collectServicePlans(tx); err != nil {
 		return err
 	}
+	if err := s.collectOrgs(tx); err != nil {
+		return err
+	}
 	s.logger.Info("initialized")
 	return tx.Commit()
 }
@@ -186,6 +189,71 @@ func (s *Store) collectServices(tx *sql.Tx) error {
 			service.Active, service.Bindable,
 			service.ServiceBrokerGuid,
 			service.CreatedAt, service.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) CollectOrgs() error {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.collectOrgs(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) collectOrgs(tx *sql.Tx) error {
+	orgs, err := s.client.ListOrgs()
+	if err != nil {
+		return err
+	}
+	for _, org := range orgs {
+		validFrom := org.UpdatedAt
+		var recordCount int
+		err := tx.QueryRow(
+			`select count(*) from orgs where guid = $1`,
+			org.Guid,
+		).Scan(&recordCount)
+		if err != nil {
+			return err
+		}
+		if recordCount == 0 {
+			validFrom = org.CreatedAt
+		}
+
+		_, err = tx.Exec(`
+            insert into orgs (
+                guid, valid_from,
+		name,
+		created_at,
+		updated_at,
+		default_isolation_segment_guid,
+		quota_definition_guid
+            ) values (
+                $1, $2,
+                $3,
+		$4,
+		$5,
+		$6,
+		$7
+            ) on conflict (guid, valid_from) do nothing
+        `,
+			org.Guid, validFrom,
+			org.Name,
+			org.CreatedAt,
+			org.UpdatedAt,
+			org.DefaultIsolationSegmentGuid,
+			org.QuotaDefinitionGuid,
+		)
+
 		if err != nil {
 			return err
 		}

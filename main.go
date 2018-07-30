@@ -70,6 +70,10 @@ func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 				logger.Error("collect-service-plans", err)
 				continue
 			}
+			if err := cfHistoricData.CollectOrgs(); err != nil {
+				logger.Error("collect-orgs", err)
+				continue
+			}
 			time.Sleep(10 * time.Second)
 		}
 	}()

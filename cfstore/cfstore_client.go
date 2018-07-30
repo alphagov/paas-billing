@@ -41,6 +41,7 @@ type Service struct {
 type CFDataClient interface {
 	ListServicePlans() ([]ServicePlan, error)
 	ListServices() ([]Service, error)
+	ListOrgs() ([]cfclient.Org, error)
 }
 
 var _ CFDataClient = &Client{}
@@ -129,4 +130,8 @@ func (c *Client) ListServices() ([]Service, error) {
 		}
 	}
 	return services, nil
+}
+
+func (c *Client) ListOrgs() ([]cfclient.Org, error) {
+	return c.Client.ListOrgs()
 }

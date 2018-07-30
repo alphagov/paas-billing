@@ -50,6 +50,7 @@ type BillableEvent struct {
 	ResourceName  string `json:"resource_name"`
 	ResourceType  string `json:"resource_type"`
 	OrgGUID       string `json:"org_guid"`
+	OrgName       string `json:"org_name"`
 	SpaceGUID     string `json:"space_guid"`
 	PlanGUID      string `json:"plan_guid"`
 	PlanName      string `json:"plan_name"`
