@@ -51,6 +51,9 @@ func (s *Store) Init() error {
 	if err := s.collectOrgs(tx); err != nil {
 		return err
 	}
+	if err := s.collectSpaces(tx); err != nil {
+		return err
+	}
 	s.logger.Info("initialized")
 	return tx.Commit()
 }
@@ -252,6 +255,71 @@ func (s *Store) collectOrgs(tx *sql.Tx) error {
 			org.UpdatedAt,
 			org.DefaultIsolationSegmentGuid,
 			org.QuotaDefinitionGuid,
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) CollectSpaces() error {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.collectSpaces(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) collectSpaces(tx *sql.Tx) error {
+	spaces, err := s.client.ListSpaces()
+	if err != nil {
+		return err
+	}
+	for _, space := range spaces {
+		validFrom := space.UpdatedAt
+		var recordCount int
+		err := tx.QueryRow(
+			`select count(*) from spaces where guid = $1`,
+			space.Guid,
+		).Scan(&recordCount)
+		if err != nil {
+			return err
+		}
+		if recordCount == 0 {
+			validFrom = space.CreatedAt
+		}
+
+		_, err = tx.Exec(`
+            insert into spaces (
+                guid, valid_from,
+				name,
+				created_at,
+				updated_at,
+				isolation_segment_guid,
+				quota_definition_guid
+		            ) values (
+		                $1, $2,
+		                $3,
+				$4,
+				$5,
+				$6,
+				$7
+            ) on conflict (guid, valid_from) do nothing
+        `,
+			space.Guid, validFrom,
+			space.Name,
+			space.CreatedAt,
+			space.UpdatedAt,
+			space.IsolationSegmentGuid,
+			space.QuotaDefinitionGuid,
 		)
 
 		if err != nil {

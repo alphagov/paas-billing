@@ -74,6 +74,10 @@ func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 				logger.Error("collect-orgs", err)
 				continue
 			}
+			if err := cfHistoricData.CollectSpaces(); err != nil {
+				logger.Error("collect-spaces", err)
+				continue
+			}
 			time.Sleep(10 * time.Second)
 		}
 	}()

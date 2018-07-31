@@ -87,6 +87,9 @@ func (s *EventStore) Init() error {
 	if err := s.execFile(tx, "create_orgs.sql"); err != nil {
 		return err
 	}
+	if err := s.execFile(tx, "create_spaces.sql"); err != nil {
+		return err
+	}
 	if err := s.refresh(tx); err != nil {
 		return err
 	}
@@ -453,7 +456,7 @@ func checkVATRates(tx *sql.Tx) error {
 			pricing_plan_components ppc
 		where
 			ppc.vat_code not in (
-				select code 
+				select code
 				from vat_rates vr
 				where vr.valid_from <= ppc.valid_from
 			)

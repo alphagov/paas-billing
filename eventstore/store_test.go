@@ -107,6 +107,7 @@ var _ = Describe("Store", func() {
 				"resource_name":   "ja-rails-postgres",
 				"resource_type":   "service",
 				"space_guid":      "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+				"space_name":      "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
 				"storage_in_mb":   nil,
 			},
 			{
@@ -124,6 +125,7 @@ var _ = Describe("Store", func() {
 				"resource_name":   "APP1",
 				"resource_type":   "app",
 				"space_guid":      "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name":      "276f4886-ac40-492d-a8cd-b2646637ba76",
 				"storage_in_mb":   0,
 			},
 		}))

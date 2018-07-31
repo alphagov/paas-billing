@@ -42,6 +42,7 @@ type CFDataClient interface {
 	ListServicePlans() ([]ServicePlan, error)
 	ListServices() ([]Service, error)
 	ListOrgs() ([]cfclient.Org, error)
+	ListSpaces() ([]cfclient.Space, error)
 }
 
 var _ CFDataClient = &Client{}
@@ -134,4 +135,8 @@ func (c *Client) ListServices() ([]Service, error) {
 
 func (c *Client) ListOrgs() ([]cfclient.Org, error) {
 	return c.Client.ListOrgs()
+}
+
+func (c *Client) ListSpaces() ([]cfclient.Space, error) {
+	return c.Client.ListSpaces()
 }

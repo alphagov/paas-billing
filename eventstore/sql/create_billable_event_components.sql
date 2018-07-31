@@ -7,6 +7,7 @@ CREATE TABLE billable_event_components (
 	org_guid uuid NOT NULL,
 	org_name text NOT NULL,
 	space_guid uuid NOT NULL,
+	space_name text NOT NULL,
 	duration tstzrange NOT NULL,
 	plan_guid uuid NOT NULL,
 	plan_valid_from timestamptz NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE billable_event_components (
 );
 
 CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF billable_event_components AS $$
-	with	
+	with
 	valid_pricing_plans as (
 		select
 			*,
@@ -62,6 +63,7 @@ CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF bi
 		ev.org_guid,
 		ev.org_name,
 		ev.space_guid,
+		ev.space_name,
 		ev.duration * vpp.valid_for * vcr.valid_for * vvr.valid_for as duration,
 		vpp.plan_guid as plan_guid,
 		vpp.valid_from as plan_valid_from,
@@ -70,7 +72,7 @@ CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF bi
 		coalesce(ev.memory_in_mb, vpp.memory_in_mb)::numeric as memory_in_mb,
 		coalesce(ev.storage_in_mb, vpp.storage_in_mb)::numeric as storage_in_mb,
 		ppc.name AS component_name,
-		ppc.formula as component_formula, 
+		ppc.formula as component_formula,
 		vcr.code as currency_code,
 		vcr.rate as currency_rate,
 		vvr.code as vat_code,

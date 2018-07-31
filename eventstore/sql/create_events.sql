@@ -6,6 +6,7 @@ CREATE TABLE events (
 	org_guid uuid NOT NULL,
 	org_name text NOT NULL,
 	space_guid uuid NOT NULL,
+	space_name text NOT NULL,
 	duration tstzrange NOT NULL,
 	plan_guid uuid NOT NULL,
 	plan_name text NOT NULL,
@@ -251,6 +252,15 @@ INSERT INTO events with
 			)) as valid_for
 		from
 			orgs
+	),
+	valid_spaces as (
+		select
+			*,
+			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
+				partition by guid order by valid_from rows between current row and 1 following
+			)) as valid_for
+		from
+			spaces
 	)
 
 	select
@@ -261,6 +271,7 @@ INSERT INTO events with
 		org_guid,
 		coalesce(vo.name, org_guid::text) as org_name,
 		space_guid,
+		coalesce(vspace.name, space_guid::text) as space_name,
 		duration,
 		plan_guid,
 		coalesce(vsp.name, plan_name) as plan_name,
@@ -280,6 +291,9 @@ INSERT INTO events with
 	left join
 		valid_orgs vo on ev.org_guid = vo.guid
 		and upper(ev.duration) <@ vo.valid_for
+	left join
+		valid_spaces vspace on ev.space_guid = vspace.guid
+		and upper(ev.duration) <@ vspace.valid_for
 	where
 		state = 'STARTED'
 		and not isempty(duration)
