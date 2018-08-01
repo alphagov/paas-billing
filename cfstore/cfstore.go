@@ -43,15 +43,19 @@ func (s *Store) Init() error {
 	}
 	defer tx.Rollback()
 	if err := s.collectServices(tx); err != nil {
+		s.logger.Error("collectServices-failed", err)
 		return err
 	}
 	if err := s.collectServicePlans(tx); err != nil {
+		s.logger.Error("collectServicePlans-failed", err)
 		return err
 	}
 	if err := s.collectOrgs(tx); err != nil {
+		s.logger.Error("collectOrgs-failed", err)
 		return err
 	}
 	if err := s.collectSpaces(tx); err != nil {
+		s.logger.Error("collectSpaces-failed", err)
 		return err
 	}
 	s.logger.Info("initialized")
