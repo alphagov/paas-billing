@@ -736,13 +736,12 @@ var _ = Describe("GetUsageEvents", func() {
 		store := db.Schema
 
 		Expect(db.Insert("orgs", testenv.Row{
-			"guid":                           "51ba75ef-edc0-47ad-a633-a8f6e8770944",
-			"valid_from":                     "2000-01-01T00:00:00Z",
-			"name":                           "my-org",
-			"created_at":                     "2000-01-01T00:00:00Z",
-			"updated_at":                     "2018-06-14T16:32:38Z",
-			"default_isolation_segment_guid": "2ece271e-ba63-4e9b-937c-6280a513a8c6",
-			"quota_definition_guid":          "f9909cea-81fe-4934-ba17-2a10278d2646",
+			"guid":                  "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			"valid_from":            "2000-01-01T00:00:00Z",
+			"name":                  "my-org",
+			"created_at":            "2000-01-01T00:00:00Z",
+			"updated_at":            "2018-06-14T16:32:38Z",
+			"quota_definition_guid": "f9909cea-81fe-4934-ba17-2a10278d2646",
 		})).To(Succeed())
 
 		Expect(store.StoreEvents([]eventio.RawEvent{

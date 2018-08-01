@@ -128,8 +128,8 @@ func (s *Store) collectServicePlans(tx *sql.Tx) error {
 				$9,
 				$10, $11,
 				$12, $13
-			) on conflict (guid, valid_from) do nothing
-		`, plan.Guid, validFrom,
+			) on conflict (guid, valid_from) do nothing`,
+			plan.Guid, validFrom,
 			plan.Name, plan.Description,
 			plan.UniqueId,
 			plan.Active, plan.Public, plan.Free,
@@ -190,8 +190,8 @@ func (s *Store) collectServices(tx *sql.Tx) error {
 				$5, $6,
 				$7,
 				$8, $9
-			) on conflict (guid, valid_from) do nothing
-		`, service.Guid, validFrom,
+			) on conflict (guid, valid_from) do nothing`,
+			service.Guid, validFrom,
 			service.Label, service.Description,
 			service.Active, service.Bindable,
 			service.ServiceBrokerGuid,
@@ -235,29 +235,24 @@ func (s *Store) collectOrgs(tx *sql.Tx) error {
 		if recordCount == 0 {
 			validFrom = org.CreatedAt
 		}
-
 		_, err = tx.Exec(`
-            insert into orgs (
-                guid, valid_from,
-		name,
-		created_at,
-		updated_at,
-		default_isolation_segment_guid,
-		quota_definition_guid
-            ) values (
-                $1, $2,
-                $3,
-		$4,
-		$5,
-		$6,
-		$7
-            ) on conflict (guid, valid_from) do nothing
-        `,
+			insert into orgs (
+				guid, valid_from,
+				name,
+				created_at,
+				updated_at,
+				quota_definition_guid
+			) values (
+				$1, $2,
+				$3,
+				$4,
+				$5,
+				$6
+			) on conflict (guid, valid_from) do nothing`,
 			org.Guid, validFrom,
 			org.Name,
 			org.CreatedAt,
 			org.UpdatedAt,
-			org.DefaultIsolationSegmentGuid,
 			org.QuotaDefinitionGuid,
 		)
 
@@ -302,28 +297,24 @@ func (s *Store) collectSpaces(tx *sql.Tx) error {
 		}
 
 		_, err = tx.Exec(`
-            insert into spaces (
-                guid, valid_from,
+			insert into spaces (
+				guid,
+				valid_from,
 				name,
 				created_at,
-				updated_at,
-				isolation_segment_guid,
-				quota_definition_guid
-		            ) values (
-		                $1, $2,
-		                $3,
+				updated_at
+			) values (
+				$1,
+				$2,
+				$3,
 				$4,
-				$5,
-				$6,
-				$7
-            ) on conflict (guid, valid_from) do nothing
-        `,
-			space.Guid, validFrom,
+				$5
+			) on conflict (guid, valid_from) do nothing`,
+			space.Guid,
+			validFrom,
 			space.Name,
 			space.CreatedAt,
 			space.UpdatedAt,
-			space.IsolationSegmentGuid,
-			space.QuotaDefinitionGuid,
 		)
 
 		if err != nil {
