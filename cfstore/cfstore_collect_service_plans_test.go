@@ -34,7 +34,7 @@ var _ = Describe("ServicePlans", func() {
 
 		fakeClient = &fakes.FakeCFDataClient{}
 		fakeClient.ListServicesReturnsOnCall(0, []cfclient.Service{testService}, nil)
-		fakeClient.ListServicePlansReturnsOnCall(0, []cfstore.ServicePlan{}, nil)
+		fakeClient.ListServicePlansReturnsOnCall(0, []cfclient.ServicePlan{}, nil)
 
 		store, err = cfstore.New(cfstore.Config{
 			Client: fakeClient,
@@ -50,21 +50,21 @@ var _ = Describe("ServicePlans", func() {
 
 	It("should be safe to call Init() multiple times", func() {
 		fakeClient.ListServicesReturns([]cfclient.Service{testService}, nil)
-		fakeClient.ListServicePlansReturns([]cfstore.ServicePlan{}, nil)
+		fakeClient.ListServicePlansReturns([]cfclient.ServicePlan{}, nil)
 		Expect(store.Init()).To(Succeed())
 		Expect(store.Init()).To(Succeed())
 	})
 
 	DescribeTable("should fail to write record with invalid data",
-		func(expectedErr string, servicePlan cfstore.ServicePlan) {
-			fakeClient.ListServicePlansReturnsOnCall(1, []cfstore.ServicePlan{
+		func(expectedErr string, servicePlan cfclient.ServicePlan) {
+			fakeClient.ListServicePlansReturnsOnCall(1, []cfclient.ServicePlan{
 				servicePlan,
 			}, nil)
 
 			err := store.CollectServicePlans()
 			Expect(err).To(MatchError(ContainSubstring(expectedErr)))
 		},
-		Entry("bad CreatedAt", `invalid input syntax for type timestamp with time zone: "bad-created-at"`, cfstore.ServicePlan{
+		Entry("bad CreatedAt", `invalid input syntax for type timestamp with time zone: "bad-created-at"`, cfclient.ServicePlan{
 			Guid:        uuid.NewV4().String(),
 			UniqueId:    uuid.NewV4().String(),
 			Name:        "my-service-plan",
@@ -72,7 +72,7 @@ var _ = Describe("ServicePlans", func() {
 			UpdatedAt:   "2002-02-02T02:02:02+00:00",
 			ServiceGuid: testService.Guid,
 		}),
-		Entry("bad UpdatedAt", `invalid input syntax for type timestamp with time zone: "bad-updated-at"`, cfstore.ServicePlan{
+		Entry("bad UpdatedAt", `invalid input syntax for type timestamp with time zone: "bad-updated-at"`, cfclient.ServicePlan{
 			Guid:        uuid.NewV4().String(),
 			UniqueId:    uuid.NewV4().String(),
 			Name:        "my-service-plan",
@@ -80,7 +80,7 @@ var _ = Describe("ServicePlans", func() {
 			UpdatedAt:   "bad-updated-at",
 			ServiceGuid: testService.Guid,
 		}),
-		Entry("bad Name", `violates check constraint "service_plans_name_check"`, cfstore.ServicePlan{
+		Entry("bad Name", `violates check constraint "service_plans_name_check"`, cfclient.ServicePlan{
 			Guid:        uuid.NewV4().String(),
 			UniqueId:    uuid.NewV4().String(),
 			Name:        "",
@@ -91,7 +91,7 @@ var _ = Describe("ServicePlans", func() {
 	)
 
 	It("should collect service plans from client", func() {
-		servicePlan1 := cfstore.ServicePlan{
+		servicePlan1 := cfclient.ServicePlan{
 			Guid:        uuid.NewV4().String(),
 			UniqueId:    uuid.NewV4().String(),
 			Name:        "my-service-plan",
@@ -101,7 +101,7 @@ var _ = Describe("ServicePlans", func() {
 			ServiceGuid: testService.Guid,
 		}
 
-		fakeClient.ListServicePlansReturnsOnCall(1, []cfstore.ServicePlan{
+		fakeClient.ListServicePlansReturnsOnCall(1, []cfclient.ServicePlan{
 			servicePlan1,
 		}, nil)
 
@@ -129,7 +129,7 @@ var _ = Describe("ServicePlans", func() {
 	})
 
 	It("should create a new version of service_plan when it has changed", func() {
-		servicePlanVersion1 := cfstore.ServicePlan{
+		servicePlanVersion1 := cfclient.ServicePlan{
 			Guid:        uuid.NewV4().String(),
 			UniqueId:    uuid.NewV4().String(),
 			Name:        "my-service-plan",
@@ -138,7 +138,7 @@ var _ = Describe("ServicePlans", func() {
 			Extra:       "Blah blah extra stuff ",
 			ServiceGuid: testService.Guid,
 		}
-		fakeClient.ListServicePlansReturnsOnCall(1, []cfstore.ServicePlan{
+		fakeClient.ListServicePlansReturnsOnCall(1, []cfclient.ServicePlan{
 			servicePlanVersion1,
 		}, nil)
 		Expect(store.CollectServicePlans()).To(Succeed())
@@ -146,7 +146,7 @@ var _ = Describe("ServicePlans", func() {
 		servicePlanVersion2 := servicePlanVersion1
 		servicePlanVersion2.Name = "my-service-plan-renamed"
 		servicePlanVersion2.UpdatedAt = "2002-02-02T02:02:02+00:00"
-		fakeClient.ListServicePlansReturnsOnCall(2, []cfstore.ServicePlan{
+		fakeClient.ListServicePlansReturnsOnCall(2, []cfclient.ServicePlan{
 			servicePlanVersion2,
 		}, nil)
 		Expect(store.CollectServicePlans()).To(Succeed())
@@ -188,7 +188,7 @@ var _ = Describe("ServicePlans", func() {
 	})
 
 	It("should only record versions of service_plans that have changed", func() {
-		servicePlanVersion1 := cfstore.ServicePlan{
+		servicePlanVersion1 := cfclient.ServicePlan{
 			Guid:        uuid.NewV4().String(),
 			UniqueId:    uuid.NewV4().String(),
 			Name:        "my-service-plan",
@@ -197,12 +197,12 @@ var _ = Describe("ServicePlans", func() {
 			Extra:       "Blah blah extra stuff ",
 			ServiceGuid: testService.Guid,
 		}
-		fakeClient.ListServicePlansReturnsOnCall(1, []cfstore.ServicePlan{
+		fakeClient.ListServicePlansReturnsOnCall(1, []cfclient.ServicePlan{
 			servicePlanVersion1,
 		}, nil)
 		Expect(store.CollectServicePlans()).To(Succeed())
 
-		fakeClient.ListServicePlansReturnsOnCall(2, []cfstore.ServicePlan{
+		fakeClient.ListServicePlansReturnsOnCall(2, []cfclient.ServicePlan{
 			servicePlanVersion1,
 		}, nil)
 		Expect(store.CollectServicePlans()).To(Succeed())
@@ -210,7 +210,7 @@ var _ = Describe("ServicePlans", func() {
 		servicePlanVersion2 := servicePlanVersion1
 		servicePlanVersion2.Name = "my-service-plan-renamed"
 		servicePlanVersion2.UpdatedAt = "2002-02-02T02:02:02+00:00"
-		fakeClient.ListServicePlansReturnsOnCall(3, []cfstore.ServicePlan{
+		fakeClient.ListServicePlansReturnsOnCall(3, []cfclient.ServicePlan{
 			servicePlanVersion2,
 		}, nil)
 		Expect(store.CollectServicePlans()).To(Succeed())

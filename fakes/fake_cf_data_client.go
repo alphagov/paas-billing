@@ -5,19 +5,19 @@ import (
 	"sync"
 
 	"github.com/alphagov/paas-billing/cfstore"
-	"github.com/cloudfoundry-community/go-cfclient"
+	cfclient "github.com/cloudfoundry-community/go-cfclient"
 )
 
 type FakeCFDataClient struct {
-	ListServicePlansStub        func() ([]cfstore.ServicePlan, error)
+	ListServicePlansStub        func() ([]cfclient.ServicePlan, error)
 	listServicePlansMutex       sync.RWMutex
 	listServicePlansArgsForCall []struct{}
 	listServicePlansReturns     struct {
-		result1 []cfstore.ServicePlan
+		result1 []cfclient.ServicePlan
 		result2 error
 	}
 	listServicePlansReturnsOnCall map[int]struct {
-		result1 []cfstore.ServicePlan
+		result1 []cfclient.ServicePlan
 		result2 error
 	}
 	ListServicesStub        func() ([]cfclient.Service, error)
@@ -57,7 +57,7 @@ type FakeCFDataClient struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeCFDataClient) ListServicePlans() ([]cfstore.ServicePlan, error) {
+func (fake *FakeCFDataClient) ListServicePlans() ([]cfclient.ServicePlan, error) {
 	fake.listServicePlansMutex.Lock()
 	ret, specificReturn := fake.listServicePlansReturnsOnCall[len(fake.listServicePlansArgsForCall)]
 	fake.listServicePlansArgsForCall = append(fake.listServicePlansArgsForCall, struct{}{})
@@ -78,24 +78,24 @@ func (fake *FakeCFDataClient) ListServicePlansCallCount() int {
 	return len(fake.listServicePlansArgsForCall)
 }
 
-func (fake *FakeCFDataClient) ListServicePlansReturns(result1 []cfstore.ServicePlan, result2 error) {
+func (fake *FakeCFDataClient) ListServicePlansReturns(result1 []cfclient.ServicePlan, result2 error) {
 	fake.ListServicePlansStub = nil
 	fake.listServicePlansReturns = struct {
-		result1 []cfstore.ServicePlan
+		result1 []cfclient.ServicePlan
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeCFDataClient) ListServicePlansReturnsOnCall(i int, result1 []cfstore.ServicePlan, result2 error) {
+func (fake *FakeCFDataClient) ListServicePlansReturnsOnCall(i int, result1 []cfclient.ServicePlan, result2 error) {
 	fake.ListServicePlansStub = nil
 	if fake.listServicePlansReturnsOnCall == nil {
 		fake.listServicePlansReturnsOnCall = make(map[int]struct {
-			result1 []cfstore.ServicePlan
+			result1 []cfclient.ServicePlan
 			result2 error
 		})
 	}
 	fake.listServicePlansReturnsOnCall[i] = struct {
-		result1 []cfstore.ServicePlan
+		result1 []cfclient.ServicePlan
 		result2 error
 	}{result1, result2}
 }
