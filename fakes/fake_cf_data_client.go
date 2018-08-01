@@ -20,15 +20,15 @@ type FakeCFDataClient struct {
 		result1 []cfstore.ServicePlan
 		result2 error
 	}
-	ListServicesStub        func() ([]cfstore.Service, error)
+	ListServicesStub        func() ([]cfclient.Service, error)
 	listServicesMutex       sync.RWMutex
 	listServicesArgsForCall []struct{}
 	listServicesReturns     struct {
-		result1 []cfstore.Service
+		result1 []cfclient.Service
 		result2 error
 	}
 	listServicesReturnsOnCall map[int]struct {
-		result1 []cfstore.Service
+		result1 []cfclient.Service
 		result2 error
 	}
 	ListOrgsStub        func() ([]cfclient.Org, error)
@@ -100,7 +100,7 @@ func (fake *FakeCFDataClient) ListServicePlansReturnsOnCall(i int, result1 []cfs
 	}{result1, result2}
 }
 
-func (fake *FakeCFDataClient) ListServices() ([]cfstore.Service, error) {
+func (fake *FakeCFDataClient) ListServices() ([]cfclient.Service, error) {
 	fake.listServicesMutex.Lock()
 	ret, specificReturn := fake.listServicesReturnsOnCall[len(fake.listServicesArgsForCall)]
 	fake.listServicesArgsForCall = append(fake.listServicesArgsForCall, struct{}{})
@@ -121,24 +121,24 @@ func (fake *FakeCFDataClient) ListServicesCallCount() int {
 	return len(fake.listServicesArgsForCall)
 }
 
-func (fake *FakeCFDataClient) ListServicesReturns(result1 []cfstore.Service, result2 error) {
+func (fake *FakeCFDataClient) ListServicesReturns(result1 []cfclient.Service, result2 error) {
 	fake.ListServicesStub = nil
 	fake.listServicesReturns = struct {
-		result1 []cfstore.Service
+		result1 []cfclient.Service
 		result2 error
 	}{result1, result2}
 }
 
-func (fake *FakeCFDataClient) ListServicesReturnsOnCall(i int, result1 []cfstore.Service, result2 error) {
+func (fake *FakeCFDataClient) ListServicesReturnsOnCall(i int, result1 []cfclient.Service, result2 error) {
 	fake.ListServicesStub = nil
 	if fake.listServicesReturnsOnCall == nil {
 		fake.listServicesReturnsOnCall = make(map[int]struct {
-			result1 []cfstore.Service
+			result1 []cfclient.Service
 			result2 error
 		})
 	}
 	fake.listServicesReturnsOnCall[i] = struct {
-		result1 []cfstore.Service
+		result1 []cfclient.Service
 		result2 error
 	}{result1, result2}
 }

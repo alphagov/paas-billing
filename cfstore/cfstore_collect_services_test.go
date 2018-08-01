@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	uuid "github.com/satori/go.uuid"
+	"github.com/cloudfoundry-community/go-cfclient"
 )
 
 var _ = Describe("Services", func() {
@@ -24,7 +25,7 @@ var _ = Describe("Services", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeClient = &fakes.FakeCFDataClient{}
-		fakeClient.ListServicesReturnsOnCall(0, []cfstore.Service{}, nil)
+		fakeClient.ListServicesReturnsOnCall(0, []cfclient.Service{}, nil)
 
 		store, err = cfstore.New(cfstore.Config{
 			Client: fakeClient,
@@ -39,15 +40,15 @@ var _ = Describe("Services", func() {
 	})
 
 	DescribeTable("should fail to write service record with invalid data",
-		func(expectedErr string, servicePlan cfstore.Service) {
-			fakeClient.ListServicesReturnsOnCall(1, []cfstore.Service{
+		func(expectedErr string, servicePlan cfclient.Service) {
+			fakeClient.ListServicesReturnsOnCall(1, []cfclient.Service{
 				servicePlan,
 			}, nil)
 
 			err := store.CollectServices()
 			Expect(err).To(MatchError(ContainSubstring(expectedErr)))
 		},
-		Entry("bad CreatedAt", `invalid input syntax for type timestamp with time zone: "bad-created-at"`, cfstore.Service{
+		Entry("bad CreatedAt", `invalid input syntax for type timestamp with time zone: "bad-created-at"`, cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			ServiceBrokerGuid: uuid.NewV4().String(),
 			Label:             "my-service",
@@ -55,7 +56,7 @@ var _ = Describe("Services", func() {
 			CreatedAt:         "bad-created-at",
 			UpdatedAt:         "2002-02-02T02:02:02+00:00",
 		}),
-		Entry("bad UpdatedAt", `invalid input syntax for type timestamp with time zone: "bad-updated-at"`, cfstore.Service{
+		Entry("bad UpdatedAt", `invalid input syntax for type timestamp with time zone: "bad-updated-at"`, cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			ServiceBrokerGuid: uuid.NewV4().String(),
 			Label:             "my-service",
@@ -63,7 +64,7 @@ var _ = Describe("Services", func() {
 			CreatedAt:         "2001-01-01T01:01:01+00:00",
 			UpdatedAt:         "bad-updated-at",
 		}),
-		Entry("bad Label", `violates check constraint "services_label_check"`, cfstore.Service{
+		Entry("bad Label", `violates check constraint "services_label_check"`, cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			ServiceBrokerGuid: uuid.NewV4().String(),
 			Label:             "",
@@ -74,7 +75,7 @@ var _ = Describe("Services", func() {
 	)
 
 	It("should collect services from client", func() {
-		service1 := cfstore.Service{
+		service1 := cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			ServiceBrokerGuid: uuid.NewV4().String(),
 			Label:             "my-service",
@@ -83,7 +84,7 @@ var _ = Describe("Services", func() {
 			CreatedAt:         "2001-01-01T01:01:01+00:00",
 		}
 
-		fakeClient.ListServicesReturnsOnCall(1, []cfstore.Service{
+		fakeClient.ListServicesReturnsOnCall(1, []cfclient.Service{
 			service1,
 		}, nil)
 
@@ -107,7 +108,7 @@ var _ = Describe("Services", func() {
 	})
 
 	It("should create a new version of service when it has changed", func() {
-		serviceVersion1 := cfstore.Service{
+		serviceVersion1 := cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			ServiceBrokerGuid: uuid.NewV4().String(),
 			Label:             "my-service",
@@ -115,7 +116,7 @@ var _ = Describe("Services", func() {
 			UpdatedAt:         "2001-01-01T01:01:01+00:00",
 			CreatedAt:         "2001-01-01T01:01:01+00:00",
 		}
-		fakeClient.ListServicesReturnsOnCall(1, []cfstore.Service{
+		fakeClient.ListServicesReturnsOnCall(1, []cfclient.Service{
 			serviceVersion1,
 		}, nil)
 		Expect(store.CollectServices()).To(Succeed())
@@ -123,7 +124,7 @@ var _ = Describe("Services", func() {
 		serviceVersion2 := serviceVersion1
 		serviceVersion2.Label = "my-service-renamed"
 		serviceVersion2.UpdatedAt = "2002-02-02T02:02:02+00:00"
-		fakeClient.ListServicesReturnsOnCall(2, []cfstore.Service{
+		fakeClient.ListServicesReturnsOnCall(2, []cfclient.Service{
 			serviceVersion2,
 		}, nil)
 		Expect(store.CollectServices()).To(Succeed())
@@ -157,7 +158,7 @@ var _ = Describe("Services", func() {
 	})
 
 	It("should only record versions of services that have changed", func() {
-		serviceVersion1 := cfstore.Service{
+		serviceVersion1 := cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			ServiceBrokerGuid: uuid.NewV4().String(),
 			Label:             "my-service",
@@ -165,12 +166,12 @@ var _ = Describe("Services", func() {
 			UpdatedAt:         "2001-01-01T01:01:01+00:00",
 			CreatedAt:         "2001-01-01T01:01:01+00:00",
 		}
-		fakeClient.ListServicesReturnsOnCall(1, []cfstore.Service{
+		fakeClient.ListServicesReturnsOnCall(1, []cfclient.Service{
 			serviceVersion1,
 		}, nil)
 		Expect(store.CollectServices()).To(Succeed())
 
-		fakeClient.ListServicesReturnsOnCall(2, []cfstore.Service{
+		fakeClient.ListServicesReturnsOnCall(2, []cfclient.Service{
 			serviceVersion1,
 		}, nil)
 		Expect(store.CollectServices()).To(Succeed())
@@ -178,7 +179,7 @@ var _ = Describe("Services", func() {
 		serviceVersion2 := serviceVersion1
 		serviceVersion2.Label = "my-service-renamed"
 		serviceVersion2.UpdatedAt = "2002-02-02T02:02:02+00:00"
-		fakeClient.ListServicesReturnsOnCall(3, []cfstore.Service{
+		fakeClient.ListServicesReturnsOnCall(3, []cfclient.Service{
 			serviceVersion2,
 		}, nil)
 		Expect(store.CollectServices()).To(Succeed())

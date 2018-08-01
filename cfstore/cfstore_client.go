@@ -25,22 +25,9 @@ type ServicePlan struct {
 	ServiceInstancesUrl string      `json:"service_instances_url"`
 }
 
-type Service struct {
-	Guid              string   `json:"guid"`
-	CreatedAt         string   `json:"created_at"`
-	UpdatedAt         string   `json:"updated_at"`
-	Label             string   `json:"label"`
-	Description       string   `json:"description"`
-	Active            bool     `json:"active"`
-	Bindable          bool     `json:"bindable"`
-	ServiceBrokerGuid string   `json:"service_broker_guid"`
-	PlanUpdateable    bool     `json:"plan_updateable"`
-	Tags              []string `json:"tags"`
-}
-
 type CFDataClient interface {
 	ListServicePlans() ([]ServicePlan, error)
-	ListServices() ([]Service, error)
+	ListServices() ([]cfclient.Service, error)
 	ListOrgs() ([]cfclient.Org, error)
 	ListSpaces() ([]cfclient.Space, error)
 }
@@ -93,44 +80,8 @@ func (c *Client) ListServicePlans() ([]ServicePlan, error) {
 	return servicePlans, nil
 }
 
-func (c *Client) ListServices() ([]Service, error) {
-	var services []Service
-	requestUrl := "/v2/services"
-	for {
-		var servicesResp cfclient.ServicesResponse
-		r := c.Client.NewRequest("GET", requestUrl)
-		resp, err := c.Client.DoRequest(r)
-		if err != nil {
-			return nil, errors.Wrap(err, "Error requesting services")
-		}
-		resBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, errors.Wrap(err, "Error reading services request:")
-		}
-		err = json.Unmarshal(resBody, &servicesResp)
-		if err != nil {
-			return nil, errors.Wrap(err, "Error unmarshaling services")
-		}
-		for _, serviceResource := range servicesResp.Resources {
-			services = append(services, Service{
-				Guid:              serviceResource.Meta.Guid,
-				CreatedAt:         serviceResource.Meta.CreatedAt,
-				UpdatedAt:         serviceResource.Meta.UpdatedAt,
-				Label:             serviceResource.Entity.Label,
-				Description:       serviceResource.Entity.Description,
-				Active:            serviceResource.Entity.Active,
-				Bindable:          serviceResource.Entity.Bindable,
-				PlanUpdateable:    serviceResource.Entity.PlanUpdateable,
-				ServiceBrokerGuid: serviceResource.Entity.ServiceBrokerGuid,
-				Tags:              serviceResource.Entity.Tags,
-			})
-		}
-		requestUrl = servicesResp.NextUrl
-		if requestUrl == "" {
-			break
-		}
-	}
-	return services, nil
+func (c *Client) ListServices() ([]cfclient.Service, error) {
+	return c.Client.ListServices()
 }
 
 func (c *Client) ListOrgs() ([]cfclient.Org, error) {

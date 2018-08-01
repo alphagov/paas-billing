@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	uuid "github.com/satori/go.uuid"
+	"github.com/cloudfoundry-community/go-cfclient"
 )
 
 var _ = Describe("ServicePlans", func() {
@@ -16,7 +17,7 @@ var _ = Describe("ServicePlans", func() {
 		tempdb      *testenv.TempDB
 		fakeClient  *fakes.FakeCFDataClient
 		store       *cfstore.Store
-		testService = cfstore.Service{
+		testService = cfclient.Service{
 			Guid:              uuid.NewV4().String(),
 			Label:             "test-service",
 			Description:       "test-service-desc",
@@ -32,7 +33,7 @@ var _ = Describe("ServicePlans", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeClient = &fakes.FakeCFDataClient{}
-		fakeClient.ListServicesReturnsOnCall(0, []cfstore.Service{testService}, nil)
+		fakeClient.ListServicesReturnsOnCall(0, []cfclient.Service{testService}, nil)
 		fakeClient.ListServicePlansReturnsOnCall(0, []cfstore.ServicePlan{}, nil)
 
 		store, err = cfstore.New(cfstore.Config{
@@ -48,7 +49,7 @@ var _ = Describe("ServicePlans", func() {
 	})
 
 	It("should be safe to call Init() multiple times", func() {
-		fakeClient.ListServicesReturns([]cfstore.Service{testService}, nil)
+		fakeClient.ListServicesReturns([]cfclient.Service{testService}, nil)
 		fakeClient.ListServicePlansReturns([]cfstore.ServicePlan{}, nil)
 		Expect(store.Init()).To(Succeed())
 		Expect(store.Init()).To(Succeed())
