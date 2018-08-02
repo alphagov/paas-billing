@@ -11,7 +11,9 @@ var _ eventio.BillableEventForecaster = &EventStore{}
 
 const (
 	DummyOrgGUID   = "00000001-0000-0000-0000-000000000000"
+	DummyOrgName   = "my-org"
 	DummySpaceGUID = "00000001-0001-0000-0000-000000000000"
+	DummySpaceName = "my-space"
 )
 
 func (s *EventStore) ForecastBillableEventRows(events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
@@ -34,22 +36,22 @@ func (s *EventStore) forecastBillableEventRows(tx *sql.Tx, events []eventio.Usag
 			insert into events (
 				event_guid,
 				resource_guid, resource_name, resource_type,
-				org_guid, space_guid,
+				org_guid, org_name, space_guid, space_name,
 				duration,
 				plan_guid, plan_name,
 				number_of_nodes, memory_in_mb, storage_in_mb
 			) values (
 				$1::uuid,
 				$2::uuid, $3::text, $4::text,
-				$5::uuid, $6::uuid,
-				tstzrange($7::timestamptz, $8::timestamptz),
-				$9::uuid, 'simulated',
-				$10::numeric, $11::numeric, $12::numeric
+				$5::uuid, $6::text, $7::uuid, $8::text,
+				tstzrange($9::timestamptz, $10::timestamptz),
+				$11::uuid, 'simulated',
+				$12::numeric, $13::numeric, $14::numeric
 			)
 		`,
 			ev.EventGUID,
 			ev.ResourceGUID, ev.ResourceName, ev.ResourceType,
-			ev.OrgGUID, ev.SpaceGUID,
+			ev.OrgGUID, ev.OrgName, ev.SpaceGUID, ev.SpaceName,
 			ev.EventStart, ev.EventStop,
 			ev.PlanGUID,
 			ev.NumberOfNodes, ev.MemoryInMB, ev.StorageInMB,

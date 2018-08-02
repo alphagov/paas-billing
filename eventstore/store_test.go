@@ -98,6 +98,7 @@ var _ = Describe("Store", func() {
 				"memory_in_mb":    nil,
 				"number_of_nodes": nil,
 				"org_guid":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"org_name":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 				"plan_name":       "Free",
 				"service_guid":    "efadb775-58c4-4e17-8087-6d0f4febc489",
@@ -106,6 +107,7 @@ var _ = Describe("Store", func() {
 				"resource_name":   "ja-rails-postgres",
 				"resource_type":   "service",
 				"space_guid":      "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+				"space_name":      "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
 				"storage_in_mb":   nil,
 			},
 			{
@@ -114,6 +116,7 @@ var _ = Describe("Store", func() {
 				"memory_in_mb":    1024,
 				"number_of_nodes": 1,
 				"org_guid":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"org_name":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 				"plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
 				"plan_name":       "app",
 				"service_guid":    "4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b",
@@ -122,6 +125,7 @@ var _ = Describe("Store", func() {
 				"resource_name":   "APP1",
 				"resource_type":   "app",
 				"space_guid":      "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name":      "276f4886-ac40-492d-a8cd-b2646637ba76",
 				"storage_in_mb":   0,
 			},
 		}))

@@ -65,24 +65,32 @@ func (s *EventStore) Init() error {
 	if err != nil {
 		return err
 	}
-	if err := s.execFile(tx, "create_services.sql"); err != nil {
-		return err
+	sqlFiles := []string{
+		"create_services.sql",
+		"create_service_plans.sql",
+		"drop_ephemeral_objects.sql",
 	}
-	if err := s.execFile(tx, "create_service_plans.sql"); err != nil {
-		return err
-	}
-	if err := s.execFile(tx, "drop_ephemeral_objects.sql"); err != nil {
-		return err
+	for _, sqlFile := range sqlFiles {
+		err := s.execFile(tx, sqlFile)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("init-failed:%s", sqlFile), err)
+			return err
+		}
 	}
 	defer tx.Rollback()
-	if err := s.execFile(tx, "create_app_usage_events.sql"); err != nil {
-		return err
+	sqlFiles = []string{
+		"create_app_usage_events.sql",
+		"create_service_usage_events.sql",
+		"create_compose_audit_events.sql",
+		"create_orgs.sql",
+		"create_spaces.sql",
 	}
-	if err := s.execFile(tx, "create_service_usage_events.sql"); err != nil {
-		return err
-	}
-	if err := s.execFile(tx, "create_compose_audit_events.sql"); err != nil {
-		return err
+	for _, sqlFile := range sqlFiles {
+		err := s.execFile(tx, sqlFile)
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("init-failed:%s", sqlFile), err)
+			return err
+		}
 	}
 	if err := s.refresh(tx); err != nil {
 		return err
@@ -450,7 +458,7 @@ func checkVATRates(tx *sql.Tx) error {
 			pricing_plan_components ppc
 		where
 			ppc.vat_code not in (
-				select code 
+				select code
 				from vat_rates vr
 				where vr.valid_from <= ppc.valid_from
 			)

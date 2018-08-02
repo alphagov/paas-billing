@@ -4,3 +4,4 @@ profile.out
 paas-billing
 scripts/genplans/prices.json
 bin/paas-billing
+.idea

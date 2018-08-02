@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 
@@ -36,6 +35,7 @@ type Org struct {
 	CreatedAt                   string `json:"created_at"`
 	UpdatedAt                   string `json:"updated_at"`
 	Name                        string `json:"name"`
+	Status                      string `json:"status"`
 	QuotaDefinitionGuid         string `json:"quota_definition_guid"`
 	DefaultIsolationSegmentGuid string `json:"default_isolation_segment_guid"`
 	c                           *Client
@@ -121,30 +121,7 @@ func (c *Client) GetOrgByGuid(guid string) (Org, error) {
 }
 
 func (c *Client) OrgSpaces(guid string) ([]Space, error) {
-	var spaces []Space
-	var spaceResp SpaceResponse
-	path := fmt.Sprintf("/v2/organizations/%s/spaces", guid)
-	r := c.NewRequest("GET", path)
-	resp, err := c.DoRequest(r)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error requesting space")
-	}
-	resBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("Error reading space request %v", resBody)
-	}
-
-	err = json.Unmarshal(resBody, &spaceResp)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error space organization")
-	}
-	for _, space := range spaceResp.Resources {
-		space.Entity.Guid = space.Meta.Guid
-		space.Entity.c = c
-		spaces = append(spaces, space.Entity)
-	}
-
-	return spaces, nil
+	return c.fetchSpaces(fmt.Sprintf("/v2/organizations/%s/spaces", guid))
 }
 
 func (o *Org) Summary() (OrgSummary, error) {
@@ -518,7 +495,7 @@ func (o *Org) removeRole(userGUID, role string) error {
 		return err
 	}
 	if resp.StatusCode != http.StatusNoContent {
-		return errors.Wrapf(err, "Error removing manager %s, response code: %d", userGUID, resp.StatusCode)
+		return errors.Wrapf(err, "Error removing %s %s, response code: %d", role, userGUID, resp.StatusCode)
 	}
 	return nil
 }
@@ -716,4 +693,30 @@ func (c *Client) mergeOrgResource(org OrgResource) Org {
 	org.Entity.UpdatedAt = org.Meta.UpdatedAt
 	org.Entity.c = c
 	return org.Entity
+}
+
+func (c *Client) DefaultIsolationSegmentForOrg(orgGUID, isolationSegmentGUID string) error {
+	return c.updateOrgDefaultIsolationSegment(orgGUID, map[string]interface{}{"guid": isolationSegmentGUID})
+}
+
+func (c *Client) ResetDefaultIsolationSegmentForOrg(orgGUID string) error {
+	return c.updateOrgDefaultIsolationSegment(orgGUID, nil)
+}
+
+func (c *Client) updateOrgDefaultIsolationSegment(orgGUID string, data interface{}) error {
+	requestURL := fmt.Sprintf("/v3/organizations/%s/relationships/default_isolation_segment", orgGUID)
+	buf := bytes.NewBuffer(nil)
+	err := json.NewEncoder(buf).Encode(map[string]interface{}{"data": data})
+	if err != nil {
+		return err
+	}
+	r := c.NewRequestWithBody("PATCH", requestURL, buf)
+	resp, err := c.DoRequest(r)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.Wrapf(err, "Error setting default isolation segment for org %s, response code: %d", orgGUID, resp.StatusCode)
+	}
+	return nil
 }

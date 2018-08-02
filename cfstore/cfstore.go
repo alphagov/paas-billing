@@ -43,9 +43,19 @@ func (s *Store) Init() error {
 	}
 	defer tx.Rollback()
 	if err := s.collectServices(tx); err != nil {
+		s.logger.Error("collectServices-failed", err)
 		return err
 	}
 	if err := s.collectServicePlans(tx); err != nil {
+		s.logger.Error("collectServicePlans-failed", err)
+		return err
+	}
+	if err := s.collectOrgs(tx); err != nil {
+		s.logger.Error("collectOrgs-failed", err)
+		return err
+	}
+	if err := s.collectSpaces(tx); err != nil {
+		s.logger.Error("collectSpaces-failed", err)
 		return err
 	}
 	s.logger.Info("initialized")
@@ -118,8 +128,8 @@ func (s *Store) collectServicePlans(tx *sql.Tx) error {
 				$9,
 				$10, $11,
 				$12, $13
-			) on conflict (guid, valid_from) do nothing
-		`, plan.Guid, validFrom,
+			) on conflict (guid, valid_from) do nothing`,
+			plan.Guid, validFrom,
 			plan.Name, plan.Description,
 			plan.UniqueId,
 			plan.Active, plan.Public, plan.Free,
@@ -180,12 +190,133 @@ func (s *Store) collectServices(tx *sql.Tx) error {
 				$5, $6,
 				$7,
 				$8, $9
-			) on conflict (guid, valid_from) do nothing
-		`, service.Guid, validFrom,
+			) on conflict (guid, valid_from) do nothing`,
+			service.Guid, validFrom,
 			service.Label, service.Description,
 			service.Active, service.Bindable,
 			service.ServiceBrokerGuid,
 			service.CreatedAt, service.UpdatedAt)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) CollectOrgs() error {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.collectOrgs(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) collectOrgs(tx *sql.Tx) error {
+	orgs, err := s.client.ListOrgs()
+	if err != nil {
+		return err
+	}
+	for _, org := range orgs {
+		validFrom := org.UpdatedAt
+		var recordCount int
+		err := tx.QueryRow(
+			`select count(*) from orgs where guid = $1`,
+			org.Guid,
+		).Scan(&recordCount)
+		if err != nil {
+			return err
+		}
+		if recordCount == 0 {
+			validFrom = org.CreatedAt
+		}
+		_, err = tx.Exec(`
+			insert into orgs (
+				guid, valid_from,
+				name,
+				created_at,
+				updated_at,
+				quota_definition_guid
+			) values (
+				$1, $2,
+				$3,
+				$4,
+				$5,
+				$6
+			) on conflict (guid, valid_from) do nothing`,
+			org.Guid, validFrom,
+			org.Name,
+			org.CreatedAt,
+			org.UpdatedAt,
+			org.QuotaDefinitionGuid,
+		)
+
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) CollectSpaces() error {
+	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
+	defer cancel()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	if err := s.collectSpaces(tx); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) collectSpaces(tx *sql.Tx) error {
+	spaces, err := s.client.ListSpaces()
+	if err != nil {
+		return err
+	}
+	for _, space := range spaces {
+		validFrom := space.UpdatedAt
+		var recordCount int
+		err := tx.QueryRow(
+			`select count(*) from spaces where guid = $1`,
+			space.Guid,
+		).Scan(&recordCount)
+		if err != nil {
+			return err
+		}
+		if recordCount == 0 {
+			validFrom = space.CreatedAt
+		}
+
+		_, err = tx.Exec(`
+			insert into spaces (
+				guid,
+				valid_from,
+				name,
+				created_at,
+				updated_at
+			) values (
+				$1,
+				$2,
+				$3,
+				$4,
+				$5
+			) on conflict (guid, valid_from) do nothing`,
+			space.Guid,
+			validFrom,
+			space.Name,
+			space.CreatedAt,
+			space.UpdatedAt,
+		)
+
 		if err != nil {
 			return err
 		}
