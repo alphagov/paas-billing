@@ -72,7 +72,7 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 				currency_rate,
 				vat_code,
 				vat_rate,
-				greatest(0.01, eval_formula(
+				(eval_formula(
 					memory_in_mb,
 					storage_in_mb,
 					number_of_nodes,
