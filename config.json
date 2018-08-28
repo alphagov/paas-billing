@@ -33,7 +33,7 @@
 		{
 			"name": "prometheus",
 			"valid_from": "2017-01-01",
-			"plan_guid": "09f2a841-1997-468b-be99-15020ff6c9c4",
+			"plan_guid": "b5998c91-d379-4df7-b329-11450f8459f1",
 			"components": [
 				{
 					"name": "instance",
@@ -129,7 +129,7 @@
 		{
 			"name": "postgres tiny-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "e264800e-20cb-4bf0-99fc-84bd42681d81",
+			"plan_guid": "5f2eec8a-0cad-4ab9-b81e-d6adade2fd42",
 			"storage_in_mb": 5120,
 			"memory_in_mb": 0,
 			"components": [
@@ -150,7 +150,7 @@
 		{
 			"name": "postgres small-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "4b47d304-003d-4771-a8ba-281adc90b2a6",
+			"plan_guid": "b7d0a368-ac92-4eff-9b8d-ab4ba45bed0e",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -171,7 +171,7 @@
 		{
 			"name": "postgres small-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "3a50a98f-316b-459c-a2de-3c5616ee77e3",
+			"plan_guid": "2611d776-9991-4940-a755-880eafbc33a0",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -192,7 +192,7 @@
 		{
 			"name": "postgres small-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "dbd330b0-13e7-47b5-aec2-6303430c4776",
+			"plan_guid": "359bcb39-0264-46bd-9120-0182c3829067",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -213,7 +213,7 @@
 		{
 			"name": "postgres small-ha-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "1f4439d4-5010-480e-8fe0-9e7a2be6fe90",
+			"plan_guid": "d9f1d61d-0a65-45ad-8fc9-88c921d038d2",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -234,7 +234,7 @@
 		{
 			"name": "postgres medium-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "7bbefbf0-70c1-4ae4-88af-fc2170c0b4d6",
+			"plan_guid": "9b882524-ab58-4c18-b501-d2a3f4619104",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -255,7 +255,7 @@
 		{
 			"name": "postgres medium-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "a203ff49-bbab-411b-8a3e-89df586ab696",
+			"plan_guid": "17ef8670-5134-4ae6-b7fc-9ee8e52394c5",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -276,7 +276,7 @@
 		{
 			"name": "postgres medium-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "ef9ee73a-7e82-47e6-9f1b-126cdb9ef49c",
+			"plan_guid": "bf5b99c2-7990-4b66-b341-1bb83566d76e",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -297,7 +297,7 @@
 		{
 			"name": "postgres medium-ha-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "3de5429b-424a-412b-b3a7-b6b08688ce5c",
+			"plan_guid": "8d50ccc5-707c-4306-be8f-f59a158eb736",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -318,7 +318,7 @@
 		{
 			"name": "postgres large-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "8a7346f9-2c91-473c-aaba-e1a5ed8ce036",
+			"plan_guid": "238a1328-4f77-4b70-9bd9-2cdbbfb999c8",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -339,7 +339,7 @@
 		{
 			"name": "postgres large-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "f6b802ba-2c35-4e9a-84e3-4e71876c2290",
+			"plan_guid": "8ea15f55-fbd2-41a3-a679-482d67a3d9ea",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -360,7 +360,7 @@
 		{
 			"name": "postgres large-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "5ca3b793-9a59-4447-8bbe-64e052102bb6",
+			"plan_guid": "dfe4ab2b-2069-41a5-ba08-2be21b0c76d3",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -381,7 +381,7 @@
 		{
 			"name": "postgres large-ha-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "1bc93270-3d89-4ddd-a916-53e1b1d899e9",
+			"plan_guid": "620055b3-fe7c-46fc-87ad-c7d8f4fe7f34",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -402,7 +402,7 @@
 		{
 			"name": "postgres xlarge-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "82278904-9e0a-4ed3-9089-f94b0304f89a",
+			"plan_guid": "1065c353-54dd-4f6b-a5b4-a4b5aa4575c6",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -423,7 +423,7 @@
 		{
 			"name": "postgres xlarge-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "31d4c25c-1a36-4fd9-869b-c0e4a3a745da",
+			"plan_guid": "3cb1947e-1df5-4483-8e9e-07c9294f9347",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -444,7 +444,7 @@
 		{
 			"name": "postgres xlarge-ha-unencrypted-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "7ae6a962-50f2-4fbd-acd1-f8f3dc5b1301",
+			"plan_guid": "7119925f-518d-4263-96ac-16990295aad6",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -465,7 +465,7 @@
 		{
 			"name": "postgres xlarge-ha-9.5",
 			"valid_from": "2017-01-01",
-			"plan_guid": "ab7b6626-4500-4df0-a3ff-280190573a30",
+			"plan_guid": "a91c8e59-8869-42fd-8a99-8989151d7353",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -486,7 +486,7 @@
 		{
 			"name": "mysql tiny-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "c03510d2-54bd-4fb0-9d9a-1e5ffb82aa39",
+			"plan_guid": "69977068-8ef5-4172-bfdb-e8cea3c14d01",
 			"storage_in_mb": 5120,
 			"memory_in_mb": 0,
 			"components": [
@@ -507,7 +507,7 @@
 		{
 			"name": "mysql small-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "7ecc2e37-905d-4d61-9c11-b747c2317b90",
+			"plan_guid": "7fdde6ea-cc27-466c-86aa-46181fc20d25",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -528,7 +528,7 @@
 		{
 			"name": "mysql small-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "e4db2b8c-b247-41dd-8cb8-9b6c0d15d7a1",
+			"plan_guid": "b0ccc8c9-09b0-4c3e-9880-091cc41c2ab5",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -549,7 +549,7 @@
 		{
 			"name": "mysql small-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "6839c764-9f4c-48e2-8219-4a2c4fb687fb",
+			"plan_guid": "72279ebd-6001-4e38-aaef-72b68c4fa6fd",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -570,7 +570,7 @@
 		{
 			"name": "mysql small-ha-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "a093b624-0547-4483-aeab-df200a08ca42",
+			"plan_guid": "6aa563c1-5aeb-46a1-9509-badcf5995c96",
 			"storage_in_mb": 20480,
 			"memory_in_mb": 0,
 			"components": [
@@ -591,7 +591,7 @@
 		{
 			"name": "mysql medium-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "76f54dfc-9f6f-4a01-a538-b354091cfed8",
+			"plan_guid": "4eb35ca9-a7ec-46c6-b137-d819848536cd",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -612,7 +612,7 @@
 		{
 			"name": "mysql medium-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "d68d322c-18d5-40a4-adcf-44eea4f6054b",
+			"plan_guid": "29cdedeb-e910-4a7a-b606-2c4e42eea478",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -633,7 +633,7 @@
 		{
 			"name": "mysql medium-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "60f51688-aba3-4789-b5e1-06ad243600ba",
+			"plan_guid": "e60edf62-b701-4e38-846f-b0b3db728349",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -654,7 +654,7 @@
 		{
 			"name": "mysql medium-ha-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "d76c2a54-a921-4833-839e-6ffff23a1034",
+			"plan_guid": "8d139b9e-bc82-4749-8ad6-7733980292d6",
 			"storage_in_mb": 102400,
 			"memory_in_mb": 0,
 			"components": [
@@ -675,7 +675,7 @@
 		{
 			"name": "mysql large-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "55466bc0-cb3f-497c-bed7-43b95d4b0dab",
+			"plan_guid": "6725bf1f-71e8-447a-b6a1-659247fcc03c",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -696,7 +696,7 @@
 		{
 			"name": "mysql large-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "7e14cdc6-5de1-40dc-8d86-535149a59300",
+			"plan_guid": "98a9b7cf-e067-4915-8190-ce8224dd04dc",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -717,7 +717,7 @@
 		{
 			"name": "mysql large-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "be7c7124-6d08-4856-a311-d9912110cb9e",
+			"plan_guid": "63cdac92-9e44-42a6-ba3f-7be3dccf5dc6",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -738,7 +738,7 @@
 		{
 			"name": "mysql large-ha-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "2ee14c9f-a66d-440c-bddb-233c31a1a4b2",
+			"plan_guid": "d5efbf83-5e00-47a5-a668-2ef1307d5a23",
 			"storage_in_mb": 524288,
 			"memory_in_mb": 0,
 			"components": [
@@ -759,7 +759,7 @@
 		{
 			"name": "mysql xlarge-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "6c7ef397-0f8b-4157-a566-d4e7b580417b",
+			"plan_guid": "a37144bf-4e05-451b-87ba-0a2c57a23a91",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -780,7 +780,7 @@
 		{
 			"name": "mysql xlarge-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "b7618d38-452e-47f1-b43e-dc44c4969d70",
+			"plan_guid": "e03020e8-eaed-49c2-bd58-23b7cb871c22",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -801,7 +801,7 @@
 		{
 			"name": "mysql xlarge-ha-unencrypted-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "004592ae-8856-4124-9fb1-8af8e54d14f3",
+			"plan_guid": "065a7de5-28e8-4de1-8a39-4b4f752e2f2f",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -822,7 +822,7 @@
 		{
 			"name": "mysql xlarge-ha-5.7",
 			"valid_from": "2017-01-01",
-			"plan_guid": "8bf361e0-4cc5-4da0-a5de-be934fac96bf",
+			"plan_guid": "4edc975c-3f07-46f1-bd87-ecb35b76298f",
 			"storage_in_mb": 2097152,
 			"memory_in_mb": 0,
 			"components": [
@@ -843,7 +843,7 @@
 		{
 			"name": "redis tiny-clustered-3.2",
 			"valid_from": "2017-01-01",
-			"plan_guid": "957e6177-323c-4eeb-8630-c4bfa979a86c",
+			"plan_guid": "3a51701c-eef3-447c-882b-907ad2bcb7ab",
 			"number_of_nodes": 1,
 			"components": [
 				{
@@ -857,7 +857,7 @@
 		{
 			"name": "redis tiny-unclustered-3.2",
 			"valid_from": "2017-01-01",
-			"plan_guid": "ffa2f099-e416-4632-b936-32ab0c0c0166",
+			"plan_guid": "c84d1bef-9500-4ce9-88b2-c0bd421bbf8a",
 			"number_of_nodes": 1,
 			"components": [
 				{
@@ -871,7 +871,7 @@
 		{
 			"name": "cloudfront cdn-route",
 			"valid_from": "2017-01-01",
-			"plan_guid": "e4f39630-e385-410b-972f-6b4cc7aad112",
+			"plan_guid": "fc055c72-1075-44c9-9aee-bddd52e1b053",
 			"components": [
 				{
 					"name": "distribution",
@@ -884,7 +884,7 @@
 		{
 			"name": "mongodb tiny (compose)",
 			"valid_from": "2017-01-01",
-			"plan_guid": "5d56dd1b-52d5-4ffb-a034-fc5c79794c90",
+			"plan_guid": "fdfd4fc1-ce69-451c-a436-c2e2795b9abe",
 			"memory_in_mb": 1024,
 			"components": [
 				{
@@ -912,7 +912,7 @@
 		{
 			"name": "elasticsearch tiny (compose)",
 			"valid_from": "2017-01-01",
-			"plan_guid": "31bb8b32-d5e0-4310-8a8d-3e8bff4b2bbc",
+			"plan_guid": "6d051078-0913-403c-9763-1d03ecee50d9",
 			"memory_in_mb": 2048,
 			"components": [
 				{
@@ -926,7 +926,7 @@
 		{
 			"name": "elasticsearch small-ha-5.x",
 			"valid_from": "2017-01-01",
-			"plan_guid": "6c35a479-9622-4852-b80e-b21b40e0378f",
+			"plan_guid": "0eee9e10-db37-4cc3-bc9b-39e378ff3a5f",
 			"components": [
 				{
 					"name": "instance",
@@ -939,7 +939,7 @@
 		{
 			"name": "elasticsearch small-ha-6.x",
 			"valid_from": "2017-01-01",
-			"plan_guid": "99c6c41e-5f7a-4422-a7f2-95e7d8f88b30",
+			"plan_guid": "225e97cc-f786-408c-8b59-d2118248a53d",
 			"components": [
 				{
 					"name": "instance",
