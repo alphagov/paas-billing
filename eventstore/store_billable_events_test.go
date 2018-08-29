@@ -1025,6 +1025,10 @@ var _ = Describe("GetBillableEvents", func() {
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
+		validServicePlan := testenv.Row{
+			"unique_id": "efadb775-58c4-4e17-8087-6d0f4febc489",
+			"name":      "compose-db",
+		}
 		service1EventStart := testenv.Row{
 			"guid":        "00000000-0000-0000-0000-000000000001",
 			"created_at":  "2001-01-01T00:00Z",
@@ -1041,6 +1045,7 @@ var _ = Describe("GetBillableEvents", func() {
 			"raw_message": json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "compose-db", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "PLAN1", "service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001", "service_instance_name": "db1", "service_instance_type": "managed_service_instance"}`),
 		}
 
+		Expect(db.Insert("valid_service_plans", validServicePlan)).To(Succeed())
 		Expect(db.Insert("service_usage_events", service1EventStart, service1EventStop)).To(Succeed())
 		Expect(db.Insert("compose_audit_events", service1EventScale)).To(Succeed())
 
