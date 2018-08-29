@@ -490,7 +490,7 @@ func checkCurrencyRates(tx *sql.Tx) error {
 			pricing_plan_components ppc
 		where
 			ppc.currency_code not in (
-				select code 
+				select code
 				from currency_rates cr
 				where cr.valid_from <= ppc.valid_from
 			)
@@ -611,16 +611,16 @@ func checkPlanConsistency(tx *sql.Tx) error {
 				pricing_plans
 		)
 		select distinct
-			plan_guid,	
+			plan_unique_id,
 			plan_name,
 			resource_type
 		from
 			events
 		where
-			events.plan_guid not in (
+			events.plan_unique_id not in (
 				select plan_guid
 				from valid_pricing_plans pp
-				where pp.plan_guid = events.plan_guid
+				where pp.plan_guid = events.plan_unique_id
 				and events.duration && pp.valid_for
 			)
 	`)

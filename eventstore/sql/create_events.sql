@@ -9,6 +9,7 @@ CREATE TABLE events (
 	space_name text NOT NULL,
 	duration tstzrange NOT NULL,
 	plan_guid uuid NOT NULL,
+	plan_unique_id uuid NOT NULL,
 	plan_name text NOT NULL,
 	service_guid uuid,
 	service_name text,
@@ -274,6 +275,10 @@ INSERT INTO events with
 		coalesce(vspace.name, space_guid::text) as space_name,
 		duration,
 		plan_guid,
+		(case
+			when resource_type = 'service' then vsp.unique_id::uuid
+			else plan_guid
+		end) as plan_unique_id,
 		coalesce(vsp.name, plan_name) as plan_name,
 		coalesce(vs.guid, ev.service_guid) as service_guid,
 		coalesce(vs.label, ev.service_name) as service_name,
