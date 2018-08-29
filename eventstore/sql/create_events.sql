@@ -275,7 +275,7 @@ INSERT INTO events with
 		duration,
 		plan_guid,
 		coalesce(vsp.name, plan_name) as plan_name,
-		coalesce(vs.guid, ev.service_guid) as service_guid,
+		coalesce(vs.guid, vsp.unique_id::uuid) as service_guid,
 		coalesce(vs.label, ev.service_name) as service_name,
 		number_of_nodes,
 		memory_in_mb,
