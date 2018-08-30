@@ -1004,7 +1004,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "epoch",
 		})
 		plan := eventio.PricingPlan{
-			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
@@ -1024,6 +1024,36 @@ var _ = Describe("GetBillableEvents", func() {
 		db, err := testenv.Open(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
+
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "postgres",
+				"guid":                "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "Free",
+				"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
 
 		service1EventStart := testenv.Row{
 			"guid":        "00000000-0000-0000-0000-000000000001",
@@ -1078,7 +1108,7 @@ var _ = Describe("GetBillableEvents", func() {
 			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
 			StorageInMB:   2048,
@@ -1113,7 +1143,7 @@ var _ = Describe("GetBillableEvents", func() {
 			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			NumberOfNodes: 1,
 			MemoryInMB:    2048,
 			StorageInMB:   4096,
@@ -1156,7 +1186,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "epoch",
 		})
 		plan := eventio.PricingPlan{
-			PlanGUID:      "11111111-1111-1111-1111-111111111111",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
@@ -1176,6 +1206,36 @@ var _ = Describe("GetBillableEvents", func() {
 		db, err := testenv.Open(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
+
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "postgres",
+				"guid":                "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "PLAN1",
+				"guid":               "11111111-1111-1111-1111-111111111111",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
 
 		service1EventStart := testenv.Row{
 			"guid":       "00000000-0000-0000-0000-000000000001",
@@ -1242,7 +1302,7 @@ var _ = Describe("GetBillableEvents", func() {
 			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "11111111-1111-1111-1111-111111111111",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
 			StorageInMB:   2048,
@@ -1605,5 +1665,4 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		}))
 	})
-
 })
