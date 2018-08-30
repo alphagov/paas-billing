@@ -518,11 +518,17 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		insert into pricing_plans (
 			plan_guid, valid_from, name
-		) (select distinct
-			plan_guid,
-			'epoch'::timestamptz,
-			first_value(resource_type || ' ' || plan_name) over (partition by plan_guid order by lower(duration) desc)
-		from events)
+		) (
+			select
+				distinct plan_unique_id,
+				'epoch'::timestamptz,
+				first_value(resource_type || ' ' || plan_name)
+			over (
+				partition by plan_unique_id
+				order by lower(duration) desc
+			)
+			from events
+		)
 		returning plan_guid, name
 	`)
 	if err != nil {
@@ -547,7 +553,7 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 		insert into pricing_plan_components (
 			plan_guid, valid_from, name, formula, vat_code, currency_code
 		) select distinct
-			plan_guid,
+			plan_unique_id,
 			'epoch'::timestamptz,
 			'pending',
 			'0',
