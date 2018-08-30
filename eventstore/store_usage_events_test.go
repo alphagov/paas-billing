@@ -731,7 +731,7 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("should use the service_name from the historic service/service_plans data if available", func() {
+	It("should use the historic service data (name, label, uuid, unique_id) if available", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "c6221308-b7bb-46d2-9d79-a357f5a3837b",
 			ValidFrom: "2001-01-01",
@@ -863,6 +863,115 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
+	It("should populate service info (name, label, uuid, unique_id) if historic data is not available", func() {
+		cfg.AddVATRate(eventio.VATRate{
+			Code:      "Zero",
+			Rate:      0,
+			ValidFrom: "epoch",
+		})
+
+		cfg.AddPlan(eventio.PricingPlan{
+			PlanGUID:  "d5091c33-2f9d-4b15-82dc-4ad69717fc03",
+			ValidFrom: "2001-01-01",
+			Name:      "Unknown Plan",
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "Unknown cost",
+					Formula:      "0",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		})
+
+		service1EventStart := eventio.RawEvent{
+			GUID:      "c497eb13-f48a-4859-be53-5569f302b516",
+			Kind:      "service",
+			CreatedAt: time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{
+				"state": "CREATED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "user_custom",
+				"service_plan_guid": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+				"service_plan_name": "myplan",
+				"service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
+				"service_instance_name": "DB1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+		service1EventStop := eventio.RawEvent{
+			GUID:      "dd52b4f4-9e33-4504-8fca-fd9e33af11a6",
+			Kind:      "service",
+			CreatedAt: time.Date(2001, 1, 1, 1, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{
+				"state": "DELETED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "user_custom",
+				"service_plan_guid": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+				"service_plan_name": "myplan",
+				"service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
+				"service_instance_name": "DB1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+		store := db.Schema
+
+		Expect(store.StoreEvents([]eventio.RawEvent{
+			service1EventStart,
+			service1EventStop,
+		})).To(Succeed())
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		usageEvents, err := store.GetUsageEvents(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2002-01-01",
+			OrgGUIDs:   []string{"51ba75ef-edc0-47ad-a633-a8f6e8770944"},
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(usageEvents).To(HaveLen(1))
+
+		Expect(usageEvents[0]).To(Equal(eventio.UsageEvent{
+			EventGUID:     "c497eb13-f48a-4859-be53-5569f302b516",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T01:00:00+00:00",
+			ResourceGUID:  "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
+			ResourceName:  "DB1",
+			ResourceType:  "service",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+			SpaceName:     "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+			PlanGUID:      "d5091c33-2f9d-4b15-82dc-4ad69717fc03",
+			PlanName:      "myplan",
+			ServiceGUID:   "efadb775-58c4-4e17-8087-6d0f4febc489",
+			ServiceName:   "user_custom",
+			NumberOfNodes: 0,
+			MemoryInMB:    0,
+			StorageInMB:   0,
+		}))
+	})
+
+	/*-----------------------------------------------------------------------------------*
+	     2001-01-01                                                      2002-01-01      .
+	       00:00           01:00                                           00:00         .
+	         |               |                                               |           .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   |   .   .   .
+	 .   .   [======DB1======]   .   .   .   .   .   .   .   .   .   .   .   |   .   .   .
+	 .   .   |   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   |   .   .   .
+	 .   .   |   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   |   :   .   .
+	 .   .   |_____________________ request range ___________________________|   .   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	*-----------------------------------------------------------------------------------*/
 	It("should use the org name from the historic data if available", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
@@ -970,7 +1079,7 @@ var _ = Describe("GetUsageEvents", func() {
 		}))
 	})
 
-	It("should use the org guid if the org name is not available", func() {
+	It("should use the org/space guid if the org/space historic name is not available", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",

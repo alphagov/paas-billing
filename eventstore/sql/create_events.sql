@@ -274,7 +274,8 @@ INSERT INTO events with
 		coalesce(vspace.name, space_guid::text) as space_name,
 		duration,
 		(case
-			when resource_type = 'service' then vsp.unique_id::uuid
+			when resource_type = 'service'
+			then coalesce(vsp.unique_id, 'd5091c33-2f9d-4b15-82dc-4ad69717fc03')::uuid
 			else plan_guid
 		end) as plan_guid,
 		coalesce(vsp.name, plan_name) as plan_name,
