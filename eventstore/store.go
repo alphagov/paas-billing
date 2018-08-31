@@ -513,7 +513,9 @@ func checkCurrencyRates(tx *sql.Tx) error {
 }
 
 // generateMissingPlans creates dummy plans with 0 cost at the epoch time
-// useful for getting the system up with an existing dataset without configuring it properly
+// for every single plan in events, unless there is already one.
+// Useful for getting the system up with an existing dataset without
+// configuring it properly
 func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		insert into pricing_plans (
@@ -523,11 +525,17 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 				distinct plan_unique_id,
 				'epoch'::timestamptz,
 				first_value(resource_type || ' ' || plan_name)
-			over (
-				partition by plan_unique_id
-				order by lower(duration) desc
-			)
+				over (
+					partition by plan_unique_id
+					order by lower(duration) desc
+				)
 			from events
+			where plan_unique_id not in (
+				select distinct plan_guid
+				from pricing_plans pp
+				where pp.plan_guid = plan_unique_id
+				and valid_from = 'epoch'::timestamptz
+			)
 		)
 		returning plan_guid, name
 	`)
@@ -552,15 +560,23 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	if _, err := tx.Exec(`
 		insert into pricing_plan_components (
 			plan_guid, valid_from, name, formula, vat_code, currency_code
-		) select distinct
-			plan_unique_id,
-			'epoch'::timestamptz,
-			'pending',
-			'0',
-			'Standard'::vat_code,
-			'GBP'::currency_code
-		from events
-	`); err != nil {
+		) (
+			select distinct
+				plan_unique_id,
+				'epoch'::timestamptz,
+				'pending',
+				'0',
+				'Standard'::vat_code,
+				'GBP'::currency_code
+			from events
+			where plan_unique_id not in (
+				select distinct plan_guid
+				from pricing_plan_components ppc
+				where ppc.plan_guid = plan_unique_id
+				and valid_from = 'epoch'::timestamptz
+			)
+		)`,
+	); err != nil {
 		return wrapPqError(err, "generate-service-plan-component")
 	}
 	return nil

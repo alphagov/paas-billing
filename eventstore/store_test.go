@@ -279,6 +279,21 @@ var _ = Describe("Store", func() {
 	It("should not fail and generate a fake plan if there is a service_plan without pricing_plan but IgnoreMissingPlans=true", func() {
 		cfg.IgnoreMissingPlans = true
 
+		existingPlan := eventio.PricingPlan{
+			PlanGUID:  "c6221308-b7bb-46d2-9d79-a357f5a3837b",
+			ValidFrom: "1970-01-01T00:00:00+00:00",
+			Name:      "AWESOME_SERVICE_PLAN_NAME",
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compute",
+					Formula:      "ceil($time_in_seconds/3600) * 1",
+					CurrencyCode: "GBP",
+					VATCode:      "Standard",
+				},
+			},
+		}
+		cfg.AddPlan(existingPlan)
+
 		db, err := testenv.Open(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
@@ -312,6 +327,22 @@ var _ = Describe("Store", func() {
 			"extra":              "",
 		})).To(Succeed())
 
+		Expect(db.Insert("service_plans", testenv.Row{
+			"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe6",
+			"valid_from":         "2000-01-01T00:00:00Z",
+			"created_at":         "2000-01-01T00:00:00Z",
+			"updated_at":         "2018-06-14T16:32:38Z",
+			"name":               "AWESOME_MISSING_SERVICE_PLAN_NAME",
+			"description":        "the missing test service service",
+			"service_guid":       "6c3d1a25-0fbc-45e5-9076-d940390a3bc0",
+			"service_valid_from": "2000-01-01T00:00:00Z",
+			"unique_id":          "cccccccc-cccc-cccc-cccc-cccccccccccc",
+			"active":             true,
+			"public":             true,
+			"free":               false,
+			"extra":              "",
+		})).To(Succeed())
+
 		service1EventStart := eventio.RawEvent{
 			GUID:      "c497eb13-f48a-4859-be53-5569f302b516",
 			Kind:      "service",
@@ -324,7 +355,7 @@ var _ = Describe("Store", func() {
 				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
 				"service_label": "postgres",
 				"service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"service_plan_name": "Free",
+				"service_plan_name": "AWESOME_SERVICE_PLAN_NAME",
 				"service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
 				"service_instance_name": "DB1",
 				"service_instance_type": "managed_service_instance"
@@ -342,9 +373,46 @@ var _ = Describe("Store", func() {
 				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
 				"service_label": "postgres",
 				"service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"service_plan_name": "Free",
+				"service_plan_name": "AWESOME_SERVICE_PLAN_NAME",
 				"service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f",
 				"service_instance_name": "DB1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+
+		service2EventStart := eventio.RawEvent{
+			GUID:      "c497eb13-f48a-4859-be53-5569f302b517",
+			Kind:      "service",
+			CreatedAt: time.Date(2001, 1, 1, 0, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{
+				"state": "CREATED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "postgres",
+				"service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe6",
+				"service_plan_name": "AWESOME_MISSING_SERVICE_PLAN_NAME",
+				"service_instance_guid": "6f4e0958-e87e-4880-aa28-9babe7be0512",
+				"service_instance_name": "DB2",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+		service2EventStop := eventio.RawEvent{
+			GUID:      "dd52b4f4-9e33-4504-8fca-fd9e33af11a7",
+			Kind:      "service",
+			CreatedAt: time.Date(2001, 1, 1, 1, 0, 0, 0, time.UTC),
+			RawMessage: json.RawMessage(`{
+				"state": "DELETED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "postgres",
+				"service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe6",
+				"service_plan_name": "AWESOME_MISSING_SERVICE_PLAN_NAME",
+				"service_instance_guid": "6f4e0958-e87e-4880-aa28-9babe7be0512",
+				"service_instance_name": "DB2",
 				"service_instance_type": "managed_service_instance"
 			}`),
 		}
@@ -352,6 +420,8 @@ var _ = Describe("Store", func() {
 		Expect(store.StoreEvents([]eventio.RawEvent{
 			service1EventStart,
 			service1EventStop,
+			service2EventStart,
+			service2EventStop,
 		})).To(Succeed())
 
 		err = store.Refresh()
@@ -362,12 +432,13 @@ var _ = Describe("Store", func() {
 			RangeStop:  "2002-01-01",
 		})
 		Expect(err).ToNot(HaveOccurred())
-		Expect(plans).To(HaveLen(1))
-		Expect(plans[0]).To(Equal(
+		Expect(plans).To(HaveLen(2))
+		Expect(plans[0]).To(Equal(existingPlan))
+		Expect(plans[1]).To(Equal(
 			eventio.PricingPlan{
-				PlanGUID:      "c6221308-b7bb-46d2-9d79-a357f5a3837b",
+				PlanGUID:      "cccccccc-cccc-cccc-cccc-cccccccccccc",
 				ValidFrom:     "1970-01-01T00:00:00+00:00",
-				Name:          "service AWESOME_SERVICE_PLAN_NAME",
+				Name:          "service AWESOME_MISSING_SERVICE_PLAN_NAME",
 				NumberOfNodes: 0,
 				MemoryInMB:    0,
 				StorageInMB:   0,
