@@ -924,7 +924,7 @@
 		{
 			"name": "redis tiny (compose)",
 			"valid_from": "2017-01-01",
-			"plan_guid": "53ca5c56-5474-4d64-9211-fe9aee86d502",
+			"plan_guid": "a8574a4b-9c6c-40ea-a0df-e9b7507948c8",
 			"memory_in_mb": 256,
 			"components": [
 				{
