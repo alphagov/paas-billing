@@ -34,7 +34,7 @@ func (uaa *UAA) Exchange(c echo.Context) error {
 
 func (uaa *UAA) NewAuthorizer(token string) (Authorizer, error) {
 	if token == "" {
-		return nil, errors.New("no auth token: unauthozed")
+		return nil, errors.New("no auth token: unauthorized")
 	}
 	return &ClientAuthorizer{
 		endpoint: uaa.Config.Endpoint.TokenURL,
@@ -95,8 +95,8 @@ func (a *ClientAuthorizer) HasBillingAccess(requestedOrgs []string) (bool, error
 		orgGUIDs = append(orgGUIDs, org.Guid)
 	}
 
-	if ok, missmatch := SliceMatches(requestedOrgs, orgGUIDs); !ok {
-		return false, fmt.Errorf("authorizer: no access to organisation: %s", missmatch)
+	if ok, mismatch := SliceMatches(requestedOrgs, orgGUIDs); !ok {
+		return false, fmt.Errorf("authorizer: no access to organisation: %s", mismatch)
 	}
 
 	return true, nil

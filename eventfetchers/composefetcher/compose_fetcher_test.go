@@ -199,7 +199,7 @@ var _ = Describe("ComposeEventFetcher", func() {
 			cancel()
 		}()
 
-		Eventually(errs).Should(Receive(MatchError("interupted by context cancelation")))
+		Eventually(errs).Should(Receive(MatchError("interrupted by context cancellation")))
 		Expect(fakeClient.GetAuditEventsCallCount()).To(BeNumerically(">", 1))
 	})
 

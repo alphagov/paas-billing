@@ -146,7 +146,7 @@ func (db *TempDB) Query(q string, args ...interface{}) Rows {
 }
 
 // Insert is way of inserting Row objects (generic json representations of
-// data) into the database it makes it a bit easier to read the intension of
+// data) into the database it makes it a bit easier to read the intention of
 // the insert in tests than raw sql
 func (db *TempDB) Insert(tableName string, rows ...Row) error {
 	tx, err := db.Conn.Begin()

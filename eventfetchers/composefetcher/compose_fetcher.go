@@ -45,7 +45,7 @@ func (e *ComposeEventFetcher) fetchScaleEvents(ctx context.Context, newerThan *t
 	for {
 		select {
 		case <-ctx.Done():
-			return nil, fmt.Errorf("interupted by context cancelation")
+			return nil, fmt.Errorf("interrupted by context cancellation")
 		default:
 		}
 		e.logger.Info("fetching", lager.Data{

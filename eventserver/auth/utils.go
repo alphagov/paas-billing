@@ -50,7 +50,7 @@ func CreateConfigFromEnv() (*oauth2.Config, error) {
 	}, nil
 }
 
-// SliceMatches will iterate throug both slices to find any incompatibilities in
+// SliceMatches will iterate through both slices to find any incompatibilities in
 // order to determine if the requested access is indeed allowed.
 func SliceMatches(requested, allowed []string) (bool, string) {
 	for _, r := range requested {

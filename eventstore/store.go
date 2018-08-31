@@ -148,7 +148,7 @@ func (s *EventStore) refresh(tx *sql.Tx) error {
 	if err := s.execFile(tx, "create_billable_event_components.sql"); err != nil {
 		return err
 	}
-	s.logger.Info("finsihed-processing-events", lager.Data{
+	s.logger.Info("finished-processing-events", lager.Data{
 		"elapsed": time.Since(startTime),
 	})
 	return nil
@@ -248,7 +248,7 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 		return err
 	}
 
-	if err := checkPlanConsistancy(tx); err != nil {
+	if err := checkPlanConsistency(tx); err != nil {
 		return err
 	}
 
@@ -596,10 +596,10 @@ func checkPricingComponents(tx *sql.Tx) error {
 	return nil
 }
 
-// checkPlanConsistancy reports an error if there are any plans in use in the
-// the existing service_usage_events data that do not have corrosponding
+// checkPlanConsistency reports an error if there are any plans in use in the
+// the existing service_usage_events data that do not have corresponding
 // pricing_plans configured
-func checkPlanConsistancy(tx *sql.Tx) error {
+func checkPlanConsistency(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		with valid_pricing_plans as (
 			select
