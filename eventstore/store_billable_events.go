@@ -195,8 +195,8 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 		billable_events as (
 			select
 				event_guid,
-				to_json(min(lower(duration))) as event_start,
-				to_json(max(upper(duration))) as event_stop,
+				min(lower(duration)) as event_start,
+				max(upper(duration)) as event_stop,
 				resource_guid,
 				resource_name,
 				resource_type,
