@@ -32,113 +32,20 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 	if err := filter.Validate(); err != nil {
 		return nil, err
 	}
-	args := []interface{}{
-		fmt.Sprintf("[%s, %s)", filter.RangeStart, filter.RangeStop), // $1
-	}
-	filterConditions := []string{}
-	orgPlaceholders := []string{}
-	for _, orgGUID := range filter.OrgGUIDs {
-		args = append(args, orgGUID)
-		orgPlaceholders = append(orgPlaceholders, fmt.Sprintf("($%d::uuid)", len(args))) // $N
-	}
-	if len(orgPlaceholders) > 0 {
-		filterConditions = append(filterConditions, fmt.Sprintf("org_guid = any (values %s)", strings.Join(orgPlaceholders, ",")))
-	}
-	filterQuery := ""
-	if len(filterConditions) > 0 {
-		filterQuery = " and " + strings.Join(filterConditions, " and ")
-	}
-	rows, err := queryJSON(tx, fmt.Sprintf(`
-		with
-		components_with_price as (
-			select
-				event_guid,
-				resource_guid,
-				resource_name,
-				resource_type,
-				org_guid,
-				org_name,
-				space_guid,
-				space_name,
-				plan_guid,
-				plan_name,
-				duration * $1::tstzrange as duration,
-				number_of_nodes,
-				memory_in_mb,
-				storage_in_mb,
-				component_name,
-				component_formula,
-				currency_code,
-				currency_rate,
-				vat_code,
-				vat_rate,
-				(eval_formula(
-					memory_in_mb,
-					storage_in_mb,
-					number_of_nodes,
-					duration * $1::tstzrange,
-					component_formula
-				) * currency_rate) as price_ex_vat
-			from
-				billable_event_components
-			where
-				duration && $1::tstzrange
-				%s
-			order by
-				lower(duration) asc
-		)
-		select
-			event_guid,
-			to_json(min(lower(duration))) as event_start,
-			to_json(max(upper(duration))) as event_stop,
-			resource_guid,
-			resource_name,
-			resource_type,
-			org_guid,
-			org_name,
-			space_guid,
-			space_name,
-			plan_guid,
-			number_of_nodes,
-			memory_in_mb,
-			storage_in_mb,
-			json_build_object(
-				'ex_vat', (sum(price_ex_vat))::text,
-				'inc_vat', (sum(price_ex_vat * (1 + vat_rate)))::text,
-				'details', json_agg(json_build_object(
-					'name', component_name,
-					'start', lower(duration),
-					'stop', upper(duration),
-					'plan_name', plan_name,
-					'ex_vat', (price_ex_vat)::text,
-					'inc_vat', (price_ex_vat * (1 + vat_rate))::text,
-					'vat_rate', (vat_rate)::text,
-					'vat_code', vat_code,
-					'currency_code', currency_code,
-					'currency_rate', (currency_rate)::text
-				))
-			) as price
-		from
-			components_with_price
-		group by
-			event_guid,
-			resource_guid,
-			resource_name,
-			resource_type,
-			org_guid,
-			org_name,
-			space_guid,
-			space_name,
-			plan_guid,
-			number_of_nodes,
-			memory_in_mb,
-			storage_in_mb
-		order by
-			event_guid
-	`, filterQuery), args...)
+
+	query, args, err := WithBillableEvents(
+		`select * from billable_events`,
+		filter,
+	)
 	if err != nil {
 		return nil, err
 	}
+
+	rows, err := queryJSON(tx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+
 	return &BillableEventRows{rows, tx}, nil
 }
 
@@ -212,4 +119,135 @@ func (ber *BillableEventRows) Event() (*eventio.BillableEvent, error) {
 		return nil, err
 	}
 	return &event, nil
+}
+
+// WithBillableEvents wraps a given query with a subquery called
+// billable_events, containing the result of applying the given pricing
+// formula to the events for the given filter.
+//
+// Other included tables are:
+//  - components_with_price: Components and formulas selected for this filter
+//  - filtered range: time range of the filter
+func WithBillableEvents(query string, filter eventio.EventFilter, args ...interface{}) (string, []interface{}, error) {
+	if err := filter.Validate(); err != nil {
+		return query, args, err
+	}
+	args = append(args, fmt.Sprintf("[%s, %s)", filter.RangeStart, filter.RangeStop)) // $1
+	durationArgPosition := len(args)
+
+	filterConditions := []string{}
+	orgPlaceholders := []string{}
+	for _, orgGUID := range filter.OrgGUIDs {
+		args = append(args, orgGUID)
+		orgPlaceholders = append(orgPlaceholders, fmt.Sprintf("($%d::uuid)", len(args))) // $N
+	}
+	if len(orgPlaceholders) > 0 {
+		filterConditions = append(filterConditions, fmt.Sprintf("org_guid = any (values %s)", strings.Join(orgPlaceholders, ",")))
+	}
+	filterQuery := ""
+	if len(filterConditions) > 0 {
+		filterQuery = " and " + strings.Join(filterConditions, " and ")
+	}
+
+	wrappedQuery := fmt.Sprintf(`
+		with
+		filtered_range as (
+			select $%d::tstzrange as filtered_range
+		),
+		components_with_price as (
+			select
+				event_guid,
+				resource_guid,
+				resource_name,
+				resource_type,
+				org_guid,
+				org_name,
+				space_guid,
+				space_name,
+				plan_guid,
+				plan_name,
+				duration * filtered_range as duration,
+				number_of_nodes,
+				memory_in_mb,
+				storage_in_mb,
+				component_name,
+				component_formula,
+				currency_code,
+				currency_rate,
+				vat_code,
+				vat_rate,
+				(eval_formula(
+					memory_in_mb,
+					storage_in_mb,
+					number_of_nodes,
+					duration * filtered_range,
+					component_formula
+				) * currency_rate) as price_ex_vat
+			from
+				billable_event_components,
+				filtered_range
+			where
+				duration && filtered_range
+				%s
+			order by
+				lower(duration) asc
+		),
+		billable_events as (
+			select
+				event_guid,
+				to_json(min(lower(duration))) as event_start,
+				to_json(max(upper(duration))) as event_stop,
+				resource_guid,
+				resource_name,
+				resource_type,
+				org_guid,
+				org_name,
+				space_guid,
+				space_name,
+				plan_guid,
+				number_of_nodes,
+				memory_in_mb,
+				storage_in_mb,
+				json_build_object(
+					'ex_vat', (sum(price_ex_vat))::text,
+					'inc_vat', (sum(price_ex_vat * (1 + vat_rate)))::text,
+					'details', json_agg(json_build_object(
+						'name', component_name,
+						'start', lower(duration),
+						'stop', upper(duration),
+						'plan_name', plan_name,
+						'ex_vat', (price_ex_vat)::text,
+						'inc_vat', (price_ex_vat * (1 + vat_rate))::text,
+						'vat_rate', (vat_rate)::text,
+						'vat_code', vat_code,
+						'currency_code', currency_code,
+						'currency_rate', (currency_rate)::text
+					))
+				) as price
+			from
+				components_with_price
+			group by
+				event_guid,
+				resource_guid,
+				resource_name,
+				resource_type,
+				org_guid,
+				org_name,
+				space_guid,
+				space_name,
+				plan_guid,
+				number_of_nodes,
+				memory_in_mb,
+				storage_in_mb
+			order by
+				event_guid
+	  )
+	  %s
+	  `,
+		durationArgPosition,
+		filterQuery,
+		query,
+	)
+
+	return wrappedQuery, args, nil
 }
