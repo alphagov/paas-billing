@@ -36,7 +36,7 @@ func (s *EventStore) GetPricingPlans(filter eventio.PricingPlanFilter) ([]eventi
 		return nil, err
 	}
 	defer tx.Rollback()
-	rows, err := s.queryJSON(tx, `
+	rows, err := queryJSON(tx, `
 		with
 		valid_pricing_plans as (
 			select

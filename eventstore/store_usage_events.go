@@ -48,7 +48,7 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 	if len(filterConditions) > 0 {
 		filterQuery = " and " + strings.Join(filterConditions, " and ")
 	}
-	rows, err := s.queryJSON(tx, fmt.Sprintf(`
+	rows, err := queryJSON(tx, fmt.Sprintf(`
 		select
 			event_guid,
 			to_json(lower(duration * $1::tstzrange)) as event_start,

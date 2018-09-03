@@ -48,7 +48,7 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 	if len(filterConditions) > 0 {
 		filterQuery = " and " + strings.Join(filterConditions, " and ")
 	}
-	rows, err := s.queryJSON(tx, fmt.Sprintf(`
+	rows, err := queryJSON(tx, fmt.Sprintf(`
 		with
 		components_with_price as (
 			select
