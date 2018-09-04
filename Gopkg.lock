@@ -26,12 +26,6 @@
   revision = "4d0c80011a0f37da1711c184028bc40137cd45af"
 
 [[projects]]
-  name = "github.com/compose/gocomposeapi"
-  packages = ["."]
-  revision = "43f6db5661d738d5c42d7bc2da2f98520e0b9330"
-  version = "0.3.0"
-
-[[projects]]
   name = "github.com/dgrijalva/jwt-go"
   packages = ["."]
   revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
@@ -85,12 +79,6 @@
   version = "v0.0.3"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/moul/http2curl"
-  packages = ["."]
-  revision = "9ac6cf4d929b2fa8fd2d2e6dec5bb0feb4f4911d"
-
-[[projects]]
   name = "github.com/onsi/ginkgo"
   packages = [
     ".",
@@ -138,12 +126,6 @@
   version = "v1.3.0"
 
 [[projects]]
-  name = "github.com/parnurzeal/gorequest"
-  packages = ["."]
-  revision = "a578a48e8d6ca8b01a3b18314c43c6716bb5f5a3"
-  version = "v0.2.15"
-
-[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -184,9 +166,7 @@
     "context/ctxhttp",
     "html",
     "html/atom",
-    "html/charset",
-    "idna",
-    "publicsuffix"
+    "html/charset"
   ]
   revision = "6078986fec03a1dcc236c34816c71b0e05018fda"
 
@@ -209,8 +189,6 @@
 [[projects]]
   name = "golang.org/x/text"
   packages = [
-    "collate",
-    "collate/build",
     "encoding",
     "encoding/charmap",
     "encoding/htmlindex",
@@ -221,20 +199,13 @@
     "encoding/simplifiedchinese",
     "encoding/traditionalchinese",
     "encoding/unicode",
-    "internal/colltab",
     "internal/gen",
     "internal/tag",
-    "internal/triegen",
-    "internal/ucd",
     "internal/utf8internal",
     "language",
     "runes",
-    "secure/bidirule",
     "transform",
-    "unicode/bidi",
-    "unicode/cldr",
-    "unicode/norm",
-    "unicode/rangetable"
+    "unicode/cldr"
   ]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
@@ -262,6 +233,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5e1bfed40670d56e18a6cea7ed44994845a659ac2be616bb621adbd0afc71dca"
+  inputs-digest = "89d4d9dc8f1be93f6457762bedf881ed9fa225bd864c1d5c4e02cd815e02bf07"
   solver-name = "gps-cdcl"
   solver-version = 1
