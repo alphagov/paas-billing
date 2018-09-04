@@ -10,6 +10,16 @@ type BillableEventReader interface {
 	GetBillableEvents(filter EventFilter) ([]BillableEvent, error)
 }
 
+type ConsolidatedBillableEventReader interface {
+	GetConsolidatedBillableEventRows(filter EventFilter) (BillableEventRows, error)
+	GetConsolidatedBillableEvents(filter EventFilter) ([]BillableEvent, error)
+	IsRangeConsolidated(filter EventFilter) (bool, error)
+}
+
+type BillableEventConsolidator interface {
+	Consolidate(filter EventFilter) error
+}
+
 type BillableEventForecaster interface {
 	ForecastBillableEventRows(events []UsageEvent, filter EventFilter) (BillableEventRows, error)
 	ForecastBillableEvents(events []UsageEvent, filter EventFilter) ([]BillableEvent, error)

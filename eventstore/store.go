@@ -84,6 +84,7 @@ func (s *EventStore) Init() error {
 		"create_compose_audit_events.sql",
 		"create_orgs.sql",
 		"create_spaces.sql",
+		"create_consolidated_billable_events.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.execFile(tx, sqlFile)

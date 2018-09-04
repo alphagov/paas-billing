@@ -527,8 +527,8 @@ var _ = Describe("GetBillableEvents", func() {
 		Expect(db.Schema.Refresh()).To(Succeed())
 
 		filter := eventio.EventFilter{
-			RangeStart: "2002-01-01T01:00:00Z",
-			RangeStop:  "2002-02-02T02:00:00Z",
+			RangeStart: "2002-01-01",
+			RangeStop:  "2002-02-02",
 		}
 		events, err := db.Schema.GetBillableEvents(filter)
 		Expect(err).ToNot(HaveOccurred())
@@ -864,7 +864,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   +-----------------------------------------------------------------------    .   .
 	 .   .   |   .  component1.  . | component2 |  component3  |    component4    .  |   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return a single BillingEvent with four pricing components when the events intersects currency and vate rate changes", func() {
+	It("should return a single BillingEvent with four pricing components when the events intersects currency and VAT rate changes", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
