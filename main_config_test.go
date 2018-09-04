@@ -26,8 +26,6 @@ var _ = Describe("Config", func() {
 		os.Unsetenv("CF_SKIP_SSL_VALIDATION")
 		os.Unsetenv("CF_TOKEN")
 		os.Unsetenv("CF_USER_AGENT")
-		os.Unsetenv("COMPOSE_API_KEY")
-		os.Unsetenv("COMPOSE_FETCH_LIMIT")
 		os.Unsetenv("PROCESSOR_SCHEDULE")
 		os.Unsetenv("PORT")
 	})
@@ -42,7 +40,6 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Collector.MinWaitTime).To(Equal(3 * time.Second))
 		Expect(cfg.CFFetcher.RecordMinAge).To(Equal(10 * time.Minute))
 		Expect(cfg.CFFetcher.FetchLimit).To(Equal(50))
-		Expect(cfg.ComposeFetcher.FetchLimit).To(Equal(50))
 		Expect(cfg.Processor.Schedule).To(Equal(30 * time.Minute))
 		Expect(cfg.ServerPort).To(Equal(8881))
 	})
@@ -66,7 +63,6 @@ var _ = Describe("Config", func() {
 			Expect(err).To(MatchError(ContainSubstring("invalid syntax")))
 		},
 		Entry("bad cf fetch limit", "CF_FETCH_LIMIT"),
-		Entry("bad compose fetch limit", "COMPOSE_FETCH_LIMIT"),
 	)
 
 	It("should set DatabaseURL from DATABASE_URL", func() {
@@ -158,13 +154,6 @@ var _ = Describe("Config", func() {
 		cfg, err := NewConfigFromEnv()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.CFFetcher.ClientConfig.UserAgent).To(Equal("set-in-test"))
-	})
-
-	It("should set ComposeFetcher.FetchLimit from COMPOSE_FETCH_LIMIT", func() {
-		os.Setenv("COMPOSE_FETCH_LIMIT", "25")
-		cfg, err := NewConfigFromEnv()
-		Expect(err).ToNot(HaveOccurred())
-		Expect(cfg.ComposeFetcher.FetchLimit).To(Equal(25))
 	})
 
 	It("should set Processor.Schedule from PROCESSOR_SCHEDULE", func() {

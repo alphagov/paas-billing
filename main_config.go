@@ -12,7 +12,6 @@ import (
 	"github.com/alphagov/paas-billing/cfstore"
 	"github.com/alphagov/paas-billing/eventcollector"
 	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
-	"github.com/alphagov/paas-billing/eventfetchers/composefetcher"
 	"github.com/alphagov/paas-billing/eventio"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pkg/errors"
@@ -27,7 +26,6 @@ type Config struct {
 	DatabaseURL           string
 	Collector             eventcollector.Config
 	CFFetcher             cffetcher.Config
-	ComposeFetcher        composefetcher.Config
 	ServerPort            int
 	Processor             ProcessorConfig
 	HistoricDataCollector cfstore.Config
@@ -98,10 +96,6 @@ func NewConfigFromEnv() (cfg Config, err error) {
 			},
 			RecordMinAge: getEnvWithDefaultDuration("CF_RECORD_MIN_AGE", 10*time.Minute),
 			FetchLimit:   getEnvWithDefaultInt("CF_FETCH_LIMIT", 50),
-		},
-		ComposeFetcher: composefetcher.Config{
-			APIKey:     getEnvWithDefaultString("COMPOSE_API_KEY", ""),
-			FetchLimit: getEnvWithDefaultInt("COMPOSE_FETCH_LIMIT", 50),
 		},
 		Processor: ProcessorConfig{
 			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 30*time.Minute),

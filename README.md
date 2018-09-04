@@ -7,7 +7,6 @@
 	* [Configuring the store](#configuring-the-store)
 	* [Configuring the Collectors](#configuring-the-collectors)
 	* [Configuring Cloudfoundry integration](#configuring-cloudfoundry-integration)
-	* [Configuring the Compose integration](#configuring-the-compose-integration)
 	* [Configuring the API server](#configuring-the-api-server)
 * [API Usage](#api-usage)
 	* [GET /usage_events](#get-usage_events)
@@ -32,7 +31,6 @@ The repository contains the following packages:
 * `eventio` - a collection of interfaces that describe the system
 * `eventcollector` - EventCollector's periodically poll for events via an eventio.EventFetcher
 * `eventfetchers/cffetcher` - an `eventio.EventFetcher` that gets [cf usage events](http://apidocs.cloudfoundry.org/272/app_usage_events/list_all_app_usage_events.html)
-* `eventfetchers/composefetcher` - an `eventio.EventFetcher` that gets [compose audit events](https://apidocs.compose.com/docs/audit-events)
 * `eventstore` - implements `eventio.EventWriter` to persist eventio.RawEvents from collectors and implements `eventio.BillableEventReader` to read out the processed events.
 * `eventserver` - an HTTP server that allows reading data from the store
 
@@ -167,13 +165,6 @@ The store can be configured via the following environment variables
 |`CF_RECORD_MIN_AGE`|duration|no|5m|stop processing records from the API if a record is found with less than a minimum age. This guarantees that we don't miss events from ongoing transactions.|
 
 **Note**: in development you can use `CF_USERNAME` and `CF_PASSWORD` instead of `CF_CLIENT_ID` `CF_CLIENT_SECRET` to configure the CFFetcher
-
-### Configuring the Compose integration
-
-| Variable name | Type | Required | Default | Description |
-|---|---|---|---|---|
-|`COMPOSE_FETCH_LIMIT`|integer|no|50|how many items to fetch from the compose API in one request|
-|`COMPOSE_API_KEY`|string|yes||Compose token with access to fetch audit events|
 
 ### Configuring the API server
 
