@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ForecastEventsHandler", func() {
+var _ = FDescribe("ForecastEventsHandler", func() {
 
 	var (
 		ctx               context.Context
@@ -60,7 +60,6 @@ var _ = Describe("ForecastEventsHandler", func() {
 			"space_name": "` + eventstore.DummySpaceName + `",
 			"event_start": "2001-01-01T00:00",
 			"event_stop": "2001-01-01T01:00",
-			"plan_guid": "` + eventstore.ComputePlanGUID + `",
 			"plan_unique_id": "` + eventstore.DummyPlanUniqueID + `",
 			"plan_name": "instance",
 			"service_name": "app",
@@ -80,8 +79,106 @@ var _ = Describe("ForecastEventsHandler", func() {
 			"space_name": "` + eventstore.DummySpaceName + `",
 			"event_start": "2001-01-01T00:00",
 			"event_stop": "2001-01-01T05:00",
-			"plan_guid": "` + eventstore.ComputePlanGUID + `",
 			"plan_unique_id": "` + eventstore.DummyPlanUniqueID + `",
+			"plan_name": "instance",
+			"service_name": "app",
+			"service_guid": "` + eventstore.ComputeServiceGUID + `",
+			"number_of_nodes": 1,
+			"memory_in_mb": 64,
+			"storage_in_mb": 1024
+		}`
+		billingEvent1JSON := `{
+			"event_guid": "raw-json-guid-1"
+		}`
+		billingEvent2JSON := `{
+			"event_guid": "raw-json-guid-2"
+		}`
+
+		fakeRows := &fakes.FakeBillableEventRows{}
+		fakeRows.CloseReturns(nil)
+		fakeRows.NextReturnsOnCall(0, true)
+		fakeRows.NextReturnsOnCall(1, true)
+		fakeRows.NextReturnsOnCall(2, false)
+		fakeRows.EventJSONReturnsOnCall(0, []byte(billingEvent1JSON), nil)
+		fakeRows.EventJSONReturnsOnCall(1, []byte(billingEvent2JSON), nil)
+		fakeStore.ForecastBillableEventRowsReturnsOnCall(0, fakeRows, nil)
+
+		inputEventsJSON := fmt.Sprintf("[%s]", strings.Join([]string{
+			inputEvent1JSON,
+			inputEvent2JSON,
+		}, ","))
+
+		u := url.URL{}
+		u.Path = "/forecast_events"
+		q := u.Query()
+		q.Set("org_guid", eventstore.DummyOrgGUID)
+		q.Set("range_start", "2001-01-01")
+		q.Set("range_stop", "2001-02-01")
+		q.Set("events", inputEventsJSON)
+		u.RawQuery = q.Encode()
+
+		req := httptest.NewRequest(echo.GET, u.String(), nil)
+		res := httptest.NewRecorder()
+
+		e := New(cfg)
+		e.ServeHTTP(res, req)
+		defer e.Shutdown(ctx)
+
+		Expect(fakeStore.ForecastBillableEventRowsCallCount()).To(Equal(1))
+		requestedInputEvents, requestedFilter := fakeStore.ForecastBillableEventRowsArgsForCall(0)
+		requestedInputEventsJSON, err := json.Marshal(requestedInputEvents)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(requestedInputEventsJSON).To(MatchJSON(inputEventsJSON))
+		Expect(requestedFilter.RangeStart).To(Equal("2001-01-01"))
+		Expect(requestedFilter.RangeStop).To(Equal("2001-02-01"))
+		Expect(requestedFilter.OrgGUIDs).To(Equal([]string{eventstore.DummyOrgGUID}))
+
+		Expect(fakeRows.NextCallCount()).To(Equal(3))
+		Expect(fakeRows.EventJSONCallCount()).To(Equal(2))
+		Expect(fakeRows.CloseCallCount()).To(Equal(1))
+
+		outputEventsJSON := fmt.Sprintf("[%s]", strings.Join([]string{
+			billingEvent1JSON,
+			billingEvent2JSON,
+		}, ","))
+		Expect(res.Body).To(MatchJSON(outputEventsJSON))
+		Expect(res.Code).To(Equal(200))
+		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
+	})
+
+	It("should suport pass the Plan Unique ID using the legacy `plan_guid` and return BillableEvents based on given UsageEvents", func() {
+		inputEvent1JSON := `{
+			"event_guid": "00000000-0000-0000-0000-000000000001",
+			"resource_guid": "00000000-0000-0000-0001-000000000001",
+			"resource_name": "fake-app-1",
+			"resource_type": "app",
+			"org_guid": "` + eventstore.DummyOrgGUID + `",
+			"org_name": "` + eventstore.DummyOrgName + `",
+			"space_guid": "` + eventstore.DummySpaceGUID + `",
+			"space_name": "` + eventstore.DummySpaceName + `",
+			"event_start": "2001-01-01T00:00",
+			"event_stop": "2001-01-01T01:00",
+			"plan_id": "` + eventstore.DummyPlanUniqueID + `",
+			"plan_name": "instance",
+			"service_name": "app",
+			"service_guid": "` + eventstore.ComputeServiceGUID + `",
+			"number_of_nodes": 2,
+			"memory_in_mb": 64,
+			"storage_in_mb": 1024
+		}`
+		inputEvent2JSON := `{
+			"event_guid": "00000000-0000-0000-0000-000000000002",
+			"resource_guid": "00000000-0000-0000-0002-000000000002",
+			"resource_name": "fake-app-2",
+			"resource_type": "app",
+			"org_guid": "` + eventstore.DummyOrgGUID + `",
+			"org_name": "` + eventstore.DummyOrgName + `",
+			"space_guid": "` + eventstore.DummySpaceGUID + `",
+			"space_name": "` + eventstore.DummySpaceName + `",
+			"event_start": "2001-01-01T00:00",
+			"event_stop": "2001-01-01T05:00",
+			"plan_id": "` + eventstore.DummyPlanUniqueID + `",
 			"plan_name": "instance",
 			"service_name": "app",
 			"service_guid": "` + eventstore.ComputeServiceGUID + `",
