@@ -36,6 +36,11 @@ func ForecastEventsHandler(store eventio.BillableEventForecaster) echo.HandlerFu
 		if err := json.Unmarshal([]byte(inputEventData), &inputEvents); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
+		for i := range inputEvents {
+			if inputEvents[i].PlanUniqueID == "" {
+				inputEvents[i].PlanUniqueID = inputEvents[i].LegacyPlanGUID
+			}
+		}
 		// query the store
 		rows, err := store.ForecastBillableEventRows(inputEvents, filter)
 		if err != nil {

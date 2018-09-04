@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/alphagov/paas-billing/fakes"
 	"github.com/labstack/echo"
@@ -18,7 +19,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = FDescribe("ForecastEventsHandler", func() {
+var _ = Describe("ForecastEventsHandler", func() {
 
 	var (
 		ctx               context.Context
@@ -49,6 +50,7 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 	})
 
 	It("should forecast BillableEvents based on given UsageEvents", func() {
+		var err error
 		inputEvent1JSON := `{
 			"event_guid": "00000000-0000-0000-0000-000000000001",
 			"resource_guid": "00000000-0000-0000-0001-000000000001",
@@ -87,12 +89,22 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 			"memory_in_mb": 64,
 			"storage_in_mb": 1024
 		}`
+
 		billingEvent1JSON := `{
 			"event_guid": "raw-json-guid-1"
 		}`
 		billingEvent2JSON := `{
 			"event_guid": "raw-json-guid-2"
 		}`
+
+		inputEventsJSON := fmt.Sprintf("[%s]", strings.Join([]string{
+			inputEvent1JSON,
+			inputEvent2JSON,
+		}, ","))
+
+		inputEvents := []eventio.UsageEvent{}
+		err = json.Unmarshal([]byte(inputEventsJSON), &inputEvents)
+		Expect(err).ToNot(HaveOccurred())
 
 		fakeRows := &fakes.FakeBillableEventRows{}
 		fakeRows.CloseReturns(nil)
@@ -102,11 +114,6 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 		fakeRows.EventJSONReturnsOnCall(0, []byte(billingEvent1JSON), nil)
 		fakeRows.EventJSONReturnsOnCall(1, []byte(billingEvent2JSON), nil)
 		fakeStore.ForecastBillableEventRowsReturnsOnCall(0, fakeRows, nil)
-
-		inputEventsJSON := fmt.Sprintf("[%s]", strings.Join([]string{
-			inputEvent1JSON,
-			inputEvent2JSON,
-		}, ","))
 
 		u := url.URL{}
 		u.Path = "/forecast_events"
@@ -126,10 +133,8 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 
 		Expect(fakeStore.ForecastBillableEventRowsCallCount()).To(Equal(1))
 		requestedInputEvents, requestedFilter := fakeStore.ForecastBillableEventRowsArgsForCall(0)
-		requestedInputEventsJSON, err := json.Marshal(requestedInputEvents)
-		Expect(err).ToNot(HaveOccurred())
 
-		Expect(requestedInputEventsJSON).To(MatchJSON(inputEventsJSON))
+		Expect(requestedInputEvents).To(Equal(inputEvents))
 		Expect(requestedFilter.RangeStart).To(Equal("2001-01-01"))
 		Expect(requestedFilter.RangeStop).To(Equal("2001-02-01"))
 		Expect(requestedFilter.OrgGUIDs).To(Equal([]string{eventstore.DummyOrgGUID}))
@@ -148,6 +153,7 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 	})
 
 	It("should suport pass the Plan Unique ID using the legacy `plan_guid` and return BillableEvents based on given UsageEvents", func() {
+		var err error
 		inputEvent1JSON := `{
 			"event_guid": "00000000-0000-0000-0000-000000000001",
 			"resource_guid": "00000000-0000-0000-0001-000000000001",
@@ -159,7 +165,7 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 			"space_name": "` + eventstore.DummySpaceName + `",
 			"event_start": "2001-01-01T00:00",
 			"event_stop": "2001-01-01T01:00",
-			"plan_id": "` + eventstore.DummyPlanUniqueID + `",
+			"plan_guid": "` + eventstore.DummyPlanUniqueID + `",
 			"plan_name": "instance",
 			"service_name": "app",
 			"service_guid": "` + eventstore.ComputeServiceGUID + `",
@@ -178,7 +184,7 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 			"space_name": "` + eventstore.DummySpaceName + `",
 			"event_start": "2001-01-01T00:00",
 			"event_stop": "2001-01-01T05:00",
-			"plan_id": "` + eventstore.DummyPlanUniqueID + `",
+			"plan_guid": "` + eventstore.DummyPlanUniqueID + `",
 			"plan_name": "instance",
 			"service_name": "app",
 			"service_guid": "` + eventstore.ComputeServiceGUID + `",
@@ -186,12 +192,25 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 			"memory_in_mb": 64,
 			"storage_in_mb": 1024
 		}`
+
 		billingEvent1JSON := `{
 			"event_guid": "raw-json-guid-1"
 		}`
 		billingEvent2JSON := `{
 			"event_guid": "raw-json-guid-2"
 		}`
+
+		inputEventsJSON := fmt.Sprintf("[%s]", strings.Join([]string{
+			inputEvent1JSON,
+			inputEvent2JSON,
+		}, ","))
+
+		inputEvents := []eventio.UsageEvent{}
+		err = json.Unmarshal([]byte(inputEventsJSON), &inputEvents)
+		Expect(err).ToNot(HaveOccurred())
+		for i := range inputEvents {
+			inputEvents[i].PlanUniqueID = inputEvents[i].LegacyPlanGUID
+		}
 
 		fakeRows := &fakes.FakeBillableEventRows{}
 		fakeRows.CloseReturns(nil)
@@ -201,11 +220,6 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 		fakeRows.EventJSONReturnsOnCall(0, []byte(billingEvent1JSON), nil)
 		fakeRows.EventJSONReturnsOnCall(1, []byte(billingEvent2JSON), nil)
 		fakeStore.ForecastBillableEventRowsReturnsOnCall(0, fakeRows, nil)
-
-		inputEventsJSON := fmt.Sprintf("[%s]", strings.Join([]string{
-			inputEvent1JSON,
-			inputEvent2JSON,
-		}, ","))
 
 		u := url.URL{}
 		u.Path = "/forecast_events"
@@ -225,10 +239,8 @@ var _ = FDescribe("ForecastEventsHandler", func() {
 
 		Expect(fakeStore.ForecastBillableEventRowsCallCount()).To(Equal(1))
 		requestedInputEvents, requestedFilter := fakeStore.ForecastBillableEventRowsArgsForCall(0)
-		requestedInputEventsJSON, err := json.Marshal(requestedInputEvents)
-		Expect(err).ToNot(HaveOccurred())
 
-		Expect(requestedInputEventsJSON).To(MatchJSON(inputEventsJSON))
+		Expect(requestedInputEvents).To(Equal(inputEvents))
 		Expect(requestedFilter.RangeStart).To(Equal("2001-01-01"))
 		Expect(requestedFilter.RangeStop).To(Equal("2001-02-01"))
 		Expect(requestedFilter.OrgGUIDs).To(Equal([]string{eventstore.DummyOrgGUID}))
