@@ -8,7 +8,7 @@ CREATE TABLE events (
 	space_guid uuid NOT NULL,
 	space_name text NOT NULL,
 	duration tstzrange NOT NULL,
-	plan_guid uuid NOT NULL,
+	plan_unique_id uuid NOT NULL,
 	plan_name text NOT NULL,
 	service_guid uuid,
 	service_name text,
@@ -273,7 +273,11 @@ INSERT INTO events with
 		space_guid,
 		coalesce(vspace.name, space_guid::text) as space_name,
 		duration,
-		plan_guid,
+		(case
+			when resource_type = 'service'
+			then coalesce(vsp.unique_id, 'd5091c33-2f9d-4b15-82dc-4ad69717fc03')::uuid
+			else plan_guid
+		end) as plan_unique_id,
 		coalesce(vsp.name, plan_name) as plan_name,
 		coalesce(vs.guid, ev.service_guid) as service_guid,
 		coalesce(vs.label, ev.service_name) as service_name,
@@ -305,4 +309,4 @@ CREATE INDEX events_org_idx ON events (org_guid);
 CREATE INDEX events_space_idx ON events (space_guid);
 CREATE INDEX events_resource_idx ON events (resource_guid);
 CREATE INDEX events_duration_idx ON events using gist (duration);
-CREATE INDEX events_plan_idx ON events (plan_guid);
+CREATE INDEX events_plan_idx ON events (plan_unique_id);

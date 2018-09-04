@@ -16,7 +16,7 @@ CREATE TABLE billable_event_components (
 	memory_in_mb numeric NOT NULL,
 	storage_in_mb numeric NOT NULL,
 	component_name text NOT NULL,
-	component_formula text NOT NULL, 
+	component_formula text NOT NULL,
 	currency_code currency_code NOT NULL,
 	currency_rate numeric NOT NULL,
 	vat_code vat_code NOT NULL,
@@ -80,7 +80,7 @@ CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF bi
 	from
 		events ev
 	left join
-		valid_pricing_plans vpp on ev.plan_guid = vpp.plan_guid
+		valid_pricing_plans vpp on ev.plan_unique_id = vpp.plan_guid
 		and vpp.valid_for && ev.duration
 	left join
 		pricing_plan_components ppc on ppc.plan_guid = vpp.plan_guid

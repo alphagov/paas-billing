@@ -1004,7 +1004,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "epoch",
 		})
 		plan := eventio.PricingPlan{
-			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
@@ -1024,6 +1024,36 @@ var _ = Describe("GetBillableEvents", func() {
 		db, err := testenv.Open(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
+
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "postgres",
+				"guid":                "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "Free",
+				"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
 
 		service1EventStart := testenv.Row{
 			"guid":        "00000000-0000-0000-0000-000000000001",
@@ -1078,7 +1108,7 @@ var _ = Describe("GetBillableEvents", func() {
 			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
 			StorageInMB:   2048,
@@ -1113,7 +1143,7 @@ var _ = Describe("GetBillableEvents", func() {
 			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
 			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
-			PlanGUID:      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			NumberOfNodes: 1,
 			MemoryInMB:    2048,
 			StorageInMB:   4096,
@@ -1132,6 +1162,504 @@ var _ = Describe("GetBillableEvents", func() {
 						CurrencyRate: "1",
 						IncVAT:       fmt.Sprintf("%d", expectedEvent2PriceIncVat),
 						ExVAT:        fmt.Sprintf("%d", expectedEvent2PriceExVat),
+					},
+				},
+			},
+		}))
+	})
+
+	/*-----------------------------------------------------------------------------------*
+	       00:00       01:00                                                             .
+	         |           |                                                               .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [====db1====]   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	       start       stop                                                  .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	<=======================================PLAN1 (cf_id)===============================>.
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	-------------------------------------------------------------------------------------*/
+	It("Should include BillableEvent with event.plan_guid == pricing_plan.plan_guid", func() {
+		cfg.AddVATRate(eventio.VATRate{
+			Code:      "Zero",
+			Rate:      0,
+			ValidFrom: "epoch",
+		})
+		plan := eventio.PricingPlan{
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			ValidFrom:     "2001-01-01",
+			Name:          "PLAN1",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compose",
+					Formula:      "ceil($time_in_seconds/3600) * $memory_in_mb * $storage_in_mb * $number_of_nodes",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		}
+		cfg.AddPlan(plan)
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "postgres",
+				"guid":                "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "PLAN1",
+				"guid":               "11111111-1111-1111-1111-111111111111",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
+
+		service1EventStart := testenv.Row{
+			"guid":       "00000000-0000-0000-0000-000000000001",
+			"created_at": "2001-01-01T00:00Z",
+			"raw_message": json.RawMessage(`{
+				"state": "CREATED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "compose-db",
+				"service_plan_guid": "11111111-1111-1111-1111-111111111111",
+				"service_plan_name": "PLAN1",
+				"service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001",
+				"service_instance_name": "db1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+		service1EventStop := testenv.Row{
+			"guid":       "00000000-0000-0000-0000-000000000003",
+			"created_at": "2001-01-01T01:00Z",
+			"raw_message": json.RawMessage(`{
+				"state": "DELETED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "compose-db",
+				"service_plan_guid": "11111111-1111-1111-1111-111111111111",
+				"service_plan_name": "PLAN1",
+				"service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001",
+				"service_instance_name": "db1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+
+		Expect(db.Insert("service_usage_events", service1EventStart, service1EventStop)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		events, err := db.Schema.GetBillableEvents(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2001-02-01",
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		oneHour := 1
+		expectedEvent1PriceExVat := uint(oneHour) * plan.MemoryInMB * plan.StorageInMB * plan.NumberOfNodes
+		expectedEvent1PriceIncVat := expectedEvent1PriceExVat
+
+		for i := 0; i < len(events); i++ {
+			events[i].EventGUID = "randomly-generated"
+		}
+		Expect(events).To(HaveLen(1))
+
+		Expect(events[0]).To(Equal(eventio.BillableEvent{
+			EventGUID:     "randomly-generated",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T01:00:00+00:00",
+			ResourceGUID:  "aaaaaaaa-0000-0000-0000-000000000001",
+			ResourceName:  "db1",
+			ResourceType:  "service",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Price: eventio.Price{
+				IncVAT: fmt.Sprintf("%d", expectedEvent1PriceIncVat),
+				ExVAT:  fmt.Sprintf("%d", expectedEvent1PriceExVat),
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "compose",
+						PlanName:     "PLAN1",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-01T01:00:00+00:00",
+						VatRate:      "0",
+						VatCode:      "Zero",
+						CurrencyCode: "GBP",
+						CurrencyRate: "1",
+						IncVAT:       fmt.Sprintf("%d", expectedEvent1PriceIncVat),
+						ExVAT:        fmt.Sprintf("%d", expectedEvent1PriceExVat),
+					},
+				},
+			},
+		}))
+	})
+
+	/*-----------------------------------------------------------------------------------*
+	       00:00       01:00                                                             .
+	         |           |                                                               .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [====db1====]   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	       start       stop                                                  .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	<====================================SERVICE_PLAN (cf_id)===========================>.
+	<=======================================PLAN1 (unique_id)===========================>.
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	-------------------------------------------------------------------------------------*/
+	It("Should include BillableEvent if event.plan_guid = service_plan.guid and service_plan.unique_id == pricing_plan.plan_guid", func() {
+		cfg.AddVATRate(eventio.VATRate{
+			Code:      "Zero",
+			Rate:      0,
+			ValidFrom: "epoch",
+		})
+		plan := eventio.PricingPlan{
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			ValidFrom:     "2001-01-01",
+			Name:          "PLAN1",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compose",
+					Formula:      "ceil($time_in_seconds/3600) * $memory_in_mb * $storage_in_mb * $number_of_nodes",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		}
+		cfg.AddPlan(plan)
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "compose-db",
+				"guid":                "ffffffff-ffff-ffff-ffff-ffffffffffff",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "PLAN1",
+				"guid":               "11111111-1111-1111-1111-111111111111",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "ffffffff-ffff-ffff-ffff-ffffffffffff",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
+
+		service1EventStart := testenv.Row{
+			"guid":       "00000000-0000-0000-0000-000000000001",
+			"created_at": "2001-01-01T00:00Z",
+			"raw_message": json.RawMessage(`{
+				"state": "CREATED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "compose-db",
+				"service_plan_guid": "11111111-1111-1111-1111-111111111111",
+				"service_plan_name": "PLAN1",
+				"service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001",
+				"service_instance_name": "db1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+		service1EventStop := testenv.Row{
+			"guid":       "00000000-0000-0000-0000-000000000003",
+			"created_at": "2001-01-01T01:00Z",
+			"raw_message": json.RawMessage(`{
+				"state": "DELETED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "compose-db",
+				"service_plan_guid": "11111111-1111-1111-1111-111111111111",
+				"service_plan_name": "PLAN1",
+				"service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001",
+				"service_instance_name": "db1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+
+		Expect(db.Insert("service_usage_events", service1EventStart, service1EventStop)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		events, err := db.Schema.GetBillableEvents(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2001-02-01",
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		oneHour := 1
+		expectedEvent1PriceExVat := uint(oneHour) * plan.MemoryInMB * plan.StorageInMB * plan.NumberOfNodes
+		expectedEvent1PriceIncVat := expectedEvent1PriceExVat
+
+		for i := 0; i < len(events); i++ {
+			events[i].EventGUID = "randomly-generated"
+		}
+		Expect(events).To(HaveLen(1))
+
+		Expect(events[0]).To(Equal(eventio.BillableEvent{
+			EventGUID:     "randomly-generated",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T01:00:00+00:00",
+			ResourceGUID:  "aaaaaaaa-0000-0000-0000-000000000001",
+			ResourceName:  "db1",
+			ResourceType:  "service",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Price: eventio.Price{
+				IncVAT: fmt.Sprintf("%d", expectedEvent1PriceIncVat),
+				ExVAT:  fmt.Sprintf("%d", expectedEvent1PriceExVat),
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "compose",
+						PlanName:     "PLAN1",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-01T01:00:00+00:00",
+						VatRate:      "0",
+						VatCode:      "Zero",
+						CurrencyCode: "GBP",
+						CurrencyRate: "1",
+						IncVAT:       fmt.Sprintf("%d", expectedEvent1PriceIncVat),
+						ExVAT:        fmt.Sprintf("%d", expectedEvent1PriceExVat),
+					},
+				},
+			},
+		}))
+	})
+
+	/*-----------------------------------------------------------------------------------*
+	       00:00       01:00                                                             .
+	         |           |                                                               .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [====db1====]   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	       start       stop                                                  .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	<====================================SERVICE_PLAN (cf_id) ==========================>.
+	<=======================================PLAN1 (unique_id) ==========================>.
+	<=======================================PLAN1' (cf_id) =============================>.
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	-------------------------------------------------------------------------------------*/
+	It("Should bill once BillableEvent when there are two conflicting pricing plans", func() {
+		cfg.AddVATRate(eventio.VATRate{
+			Code:      "Zero",
+			Rate:      0,
+			ValidFrom: "epoch",
+		})
+		plan := eventio.PricingPlan{
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			ValidFrom:     "2001-01-01",
+			Name:          "PLAN1",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compose",
+					Formula:      "ceil($time_in_seconds/3600) * $memory_in_mb * $storage_in_mb * $number_of_nodes",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		}
+		cfg.AddPlan(plan)
+
+		plan = eventio.PricingPlan{
+			PlanGUID:      "11111111-1111-1111-1111-111111111111",
+			ValidFrom:     "2001-01-01",
+			Name:          "PLAN1",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compose",
+					Formula:      "ceil($time_in_seconds/3600) * $memory_in_mb * $storage_in_mb * $number_of_nodes",
+					CurrencyCode: "GBP",
+					VATCode:      "Zero",
+				},
+			},
+		}
+		cfg.AddPlan(plan)
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		//defer db.Close()
+
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "compose-db",
+				"guid":                "ffffffff-ffff-ffff-ffff-ffffffffffff",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "PLAN1",
+				"guid":               "11111111-1111-1111-1111-111111111111",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "ffffffff-ffff-ffff-ffff-ffffffffffff",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
+
+		service1EventStart := testenv.Row{
+			"guid":       "00000000-0000-0000-0000-000000000001",
+			"created_at": "2001-01-01T00:00Z",
+			"raw_message": json.RawMessage(`{
+				"state": "CREATED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "compose-db",
+				"service_plan_guid": "11111111-1111-1111-1111-111111111111",
+				"service_plan_name": "PLAN1",
+				"service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001",
+				"service_instance_name": "db1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+		service1EventStop := testenv.Row{
+			"guid":       "00000000-0000-0000-0000-000000000003",
+			"created_at": "2001-01-01T01:00Z",
+			"raw_message": json.RawMessage(`{
+				"state": "DELETED",
+				"org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+				"space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76",
+				"space_name": "sandbox",
+				"service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_label": "compose-db",
+				"service_plan_guid": "11111111-1111-1111-1111-111111111111",
+				"service_plan_name": "PLAN1",
+				"service_instance_guid": "aaaaaaaa-0000-0000-0000-000000000001",
+				"service_instance_name": "db1",
+				"service_instance_type": "managed_service_instance"
+			}`),
+		}
+
+		Expect(db.Insert("service_usage_events", service1EventStart, service1EventStop)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		events, err := db.Schema.GetBillableEvents(eventio.EventFilter{
+			RangeStart: "2001-01-01",
+			RangeStop:  "2001-02-01",
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		oneHour := 1
+		expectedEvent1PriceExVat := uint(oneHour) * plan.MemoryInMB * plan.StorageInMB * plan.NumberOfNodes
+		expectedEvent1PriceIncVat := expectedEvent1PriceExVat
+
+		for i := 0; i < len(events); i++ {
+			events[i].EventGUID = "randomly-generated"
+		}
+		Expect(events).To(HaveLen(1))
+
+		Expect(events[0]).To(Equal(eventio.BillableEvent{
+			EventGUID:     "randomly-generated",
+			EventStart:    "2001-01-01T00:00:00+00:00",
+			EventStop:     "2001-01-01T01:00:00+00:00",
+			ResourceGUID:  "aaaaaaaa-0000-0000-0000-000000000001",
+			ResourceName:  "db1",
+			ResourceType:  "service",
+			OrgGUID:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			OrgName:       "51ba75ef-edc0-47ad-a633-a8f6e8770944",
+			SpaceGUID:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			SpaceName:     "276f4886-ac40-492d-a8cd-b2646637ba76",
+			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+			NumberOfNodes: 1,
+			MemoryInMB:    1024,
+			StorageInMB:   2048,
+			Price: eventio.Price{
+				IncVAT: fmt.Sprintf("%d", expectedEvent1PriceIncVat),
+				ExVAT:  fmt.Sprintf("%d", expectedEvent1PriceExVat),
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "compose",
+						PlanName:     "PLAN1",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-01T01:00:00+00:00",
+						VatRate:      "0",
+						VatCode:      "Zero",
+						CurrencyCode: "GBP",
+						CurrencyRate: "1",
+						IncVAT:       fmt.Sprintf("%d", expectedEvent1PriceIncVat),
+						ExVAT:        fmt.Sprintf("%d", expectedEvent1PriceExVat),
 					},
 				},
 			},

@@ -10,10 +10,11 @@ import (
 var _ eventio.BillableEventForecaster = &EventStore{}
 
 const (
-	DummyOrgGUID   = "00000001-0000-0000-0000-000000000000"
-	DummyOrgName   = "my-org"
-	DummySpaceGUID = "00000001-0001-0000-0000-000000000000"
-	DummySpaceName = "my-space"
+	DummyOrgGUID      = "00000001-0000-0000-0000-000000000000"
+	DummyOrgName      = "my-org"
+	DummySpaceGUID    = "00000001-0001-0000-0000-000000000000"
+	DummySpaceName    = "my-space"
+	DummyPlanUniqueID = "00000001-0001-0000-0000-000000000000"
 )
 
 func (s *EventStore) ForecastBillableEventRows(events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
@@ -38,7 +39,7 @@ func (s *EventStore) forecastBillableEventRows(tx *sql.Tx, events []eventio.Usag
 				resource_guid, resource_name, resource_type,
 				org_guid, org_name, space_guid, space_name,
 				duration,
-				plan_guid, plan_name,
+				plan_unique_id, plan_name,
 				number_of_nodes, memory_in_mb, storage_in_mb
 			) values (
 				$1::uuid,
@@ -53,7 +54,7 @@ func (s *EventStore) forecastBillableEventRows(tx *sql.Tx, events []eventio.Usag
 			ev.ResourceGUID, ev.ResourceName, ev.ResourceType,
 			ev.OrgGUID, ev.OrgName, ev.SpaceGUID, ev.SpaceName,
 			ev.EventStart, ev.EventStop,
-			ev.PlanGUID,
+			ev.PlanUniqueID,
 			ev.NumberOfNodes, ev.MemoryInMB, ev.StorageInMB,
 		)
 		if err != nil {

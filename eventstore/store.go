@@ -248,7 +248,7 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 		return err
 	}
 
-	if err := checkPlanConsistancy(tx); err != nil {
+	if err := checkPlanConsistency(tx); err != nil {
 		return err
 	}
 
@@ -490,7 +490,7 @@ func checkCurrencyRates(tx *sql.Tx) error {
 			pricing_plan_components ppc
 		where
 			ppc.currency_code not in (
-				select code 
+				select code
 				from currency_rates cr
 				where cr.valid_from <= ppc.valid_from
 			)
@@ -513,16 +513,30 @@ func checkCurrencyRates(tx *sql.Tx) error {
 }
 
 // generateMissingPlans creates dummy plans with 0 cost at the epoch time
-// useful for getting the system up with an existing dataset without configuring it properly
+// for every single plan in events, unless there is already one.
+// Useful for getting the system up with an existing dataset without
+// configuring it properly
 func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		insert into pricing_plans (
 			plan_guid, valid_from, name
-		) (select distinct
-			plan_guid,
-			'epoch'::timestamptz,
-			first_value(resource_type || ' ' || plan_name) over (partition by plan_guid order by lower(duration) desc)
-		from events)
+		) (
+			select
+				distinct plan_unique_id,
+				'epoch'::timestamptz,
+				first_value(resource_type || ' ' || plan_name)
+				over (
+					partition by plan_unique_id
+					order by lower(duration) desc
+				)
+			from events
+			where plan_unique_id not in (
+				select distinct plan_guid
+				from pricing_plans pp
+				where pp.plan_guid = plan_unique_id
+				and valid_from = 'epoch'::timestamptz
+			)
+		)
 		returning plan_guid, name
 	`)
 	if err != nil {
@@ -546,15 +560,23 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	if _, err := tx.Exec(`
 		insert into pricing_plan_components (
 			plan_guid, valid_from, name, formula, vat_code, currency_code
-		) select distinct
-			plan_guid,
-			'epoch'::timestamptz,
-			'pending',
-			'0',
-			'Standard'::vat_code,
-			'GBP'::currency_code
-		from events
-	`); err != nil {
+		) (
+			select distinct
+				plan_unique_id,
+				'epoch'::timestamptz,
+				'pending',
+				'0',
+				'Standard'::vat_code,
+				'GBP'::currency_code
+			from events
+			where plan_unique_id not in (
+				select distinct plan_guid
+				from pricing_plan_components ppc
+				where ppc.plan_guid = plan_unique_id
+				and valid_from = 'epoch'::timestamptz
+			)
+		)`,
+	); err != nil {
 		return wrapPqError(err, "generate-service-plan-component")
 	}
 	return nil
@@ -596,10 +618,10 @@ func checkPricingComponents(tx *sql.Tx) error {
 	return nil
 }
 
-// checkPlanConsistancy reports an error if there are any plans in use in the
+// checkPlanConsistency reports an error if there are any plans in use in the
 // the existing service_usage_events data that do not have corrosponding
 // pricing_plans configured
-func checkPlanConsistancy(tx *sql.Tx) error {
+func checkPlanConsistency(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		with valid_pricing_plans as (
 			select
@@ -611,16 +633,16 @@ func checkPlanConsistancy(tx *sql.Tx) error {
 				pricing_plans
 		)
 		select distinct
-			plan_guid,	
+			plan_unique_id,
 			plan_name,
 			resource_type
 		from
 			events
 		where
-			events.plan_guid not in (
+			events.plan_unique_id not in (
 				select plan_guid
 				from valid_pricing_plans pp
-				where pp.plan_guid = events.plan_guid
+				where pp.plan_guid = events.plan_unique_id
 				and events.duration && pp.valid_for
 			)
 	`)
