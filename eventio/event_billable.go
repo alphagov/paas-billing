@@ -17,6 +17,8 @@ type ConsolidatedBillableEventReader interface {
 }
 
 type BillableEventConsolidator interface {
+	ConsolidateAll() error
+	ConsolidateFullMonths(startAt string, endAt string) error
 	Consolidate(filter EventFilter) error
 }
 

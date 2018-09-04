@@ -3,10 +3,16 @@ package eventstore
 import (
 	"database/sql"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventio"
+)
+
+const (
+	DefaultConsolidationStartDate = "2017-07-01"
 )
 
 func (e *EventStore) GetConsolidatedBillableEventRows(filter eventio.EventFilter) (eventio.BillableEventRows, error) {
@@ -109,6 +115,7 @@ func (e *EventStore) IsRangeConsolidated(filter eventio.EventFilter) (bool, erro
 	}
 	result, err := e.isRangeConsolidated(tx, filter)
 	if err != nil {
+		tx.Rollback()
 		return false, err
 	}
 	return result, tx.Commit()
@@ -127,6 +134,88 @@ func (e *EventStore) isRangeConsolidated(tx *sql.Tx, filter eventio.EventFilter)
 	}
 	defer rows.Close()
 	return rows.Next(), nil
+}
+
+func (e *EventStore) ConsolidateAll() error {
+	tx, err := e.db.Begin()
+	if err != nil {
+		return err
+	}
+	err = e.consolidateAll(tx)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+func (e *EventStore) consolidateAll(tx *sql.Tx) error {
+	startAt := os.Getenv("CONSOLIDATION_START_DATE")
+	if startAt == "" {
+		startAt = DefaultConsolidationStartDate
+	}
+	endAt := os.Getenv("CONSOLIDATION_END_DATE")
+	if endAt == "" {
+		endAt = time.Now().AddDate(0, 0, -5).Format("2006-01-02")
+	}
+	return e.consolidateFullMonths(tx, startAt, endAt)
+}
+
+func (e *EventStore) ConsolidateFullMonths(startAt string, endAt string) error {
+	tx, err := e.db.Begin()
+	if err != nil {
+		return err
+	}
+	err = e.consolidateFullMonths(tx, startAt, endAt)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+	return tx.Commit()
+}
+
+func (e *EventStore) consolidateFullMonths(tx *sql.Tx, startAt string, endAt string) error {
+	eventFilter := eventio.EventFilter{
+		RangeStart: startAt,
+		RangeStop:  endAt,
+	}
+	truncatedEventFilter, err := eventFilter.TruncateMonth()
+	if err != nil {
+		return err
+	}
+
+	e.logger.Info("consolidating-full-months", lager.Data{
+		"start": truncatedEventFilter.RangeStart,
+		"stop":  truncatedEventFilter.RangeStop,
+	})
+
+	monthFilters, err := truncatedEventFilter.SplitByMonth()
+	if err != nil {
+		return err
+	}
+	for _, filter := range monthFilters {
+		isConsolidated, err := e.isRangeConsolidated(tx, filter)
+		if err != nil {
+			return err
+		}
+		if !isConsolidated {
+			e.logger.Info("consolidating-months", lager.Data{
+				"start": filter.RangeStart,
+				"stop":  filter.RangeStop,
+			})
+			err = e.consolidate(tx, filter)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	e.logger.Info("consolidated-full-months", lager.Data{
+		"start": truncatedEventFilter.RangeStart,
+		"stop":  truncatedEventFilter.RangeStop,
+	})
+
+	return nil
 }
 
 func (e *EventStore) Consolidate(filter eventio.EventFilter) error {

@@ -182,6 +182,27 @@ type FakeEventStore struct {
 		result1 bool
 		result2 error
 	}
+	ConsolidateAllStub        func() error
+	consolidateAllMutex       sync.RWMutex
+	consolidateAllArgsForCall []struct{}
+	consolidateAllReturns     struct {
+		result1 error
+	}
+	consolidateAllReturnsOnCall map[int]struct {
+		result1 error
+	}
+	ConsolidateFullMonthsStub        func(startAt string, endAt string) error
+	consolidateFullMonthsMutex       sync.RWMutex
+	consolidateFullMonthsArgsForCall []struct {
+		startAt string
+		endAt   string
+	}
+	consolidateFullMonthsReturns struct {
+		result1 error
+	}
+	consolidateFullMonthsReturnsOnCall map[int]struct {
+		result1 error
+	}
 	ConsolidateStub        func(filter eventio.EventFilter) error
 	consolidateMutex       sync.RWMutex
 	consolidateArgsForCall []struct {
@@ -903,6 +924,95 @@ func (fake *FakeEventStore) IsRangeConsolidatedReturnsOnCall(i int, result1 bool
 	}{result1, result2}
 }
 
+func (fake *FakeEventStore) ConsolidateAll() error {
+	fake.consolidateAllMutex.Lock()
+	ret, specificReturn := fake.consolidateAllReturnsOnCall[len(fake.consolidateAllArgsForCall)]
+	fake.consolidateAllArgsForCall = append(fake.consolidateAllArgsForCall, struct{}{})
+	fake.recordInvocation("ConsolidateAll", []interface{}{})
+	fake.consolidateAllMutex.Unlock()
+	if fake.ConsolidateAllStub != nil {
+		return fake.ConsolidateAllStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.consolidateAllReturns.result1
+}
+
+func (fake *FakeEventStore) ConsolidateAllCallCount() int {
+	fake.consolidateAllMutex.RLock()
+	defer fake.consolidateAllMutex.RUnlock()
+	return len(fake.consolidateAllArgsForCall)
+}
+
+func (fake *FakeEventStore) ConsolidateAllReturns(result1 error) {
+	fake.ConsolidateAllStub = nil
+	fake.consolidateAllReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateAllReturnsOnCall(i int, result1 error) {
+	fake.ConsolidateAllStub = nil
+	if fake.consolidateAllReturnsOnCall == nil {
+		fake.consolidateAllReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.consolidateAllReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonths(startAt string, endAt string) error {
+	fake.consolidateFullMonthsMutex.Lock()
+	ret, specificReturn := fake.consolidateFullMonthsReturnsOnCall[len(fake.consolidateFullMonthsArgsForCall)]
+	fake.consolidateFullMonthsArgsForCall = append(fake.consolidateFullMonthsArgsForCall, struct {
+		startAt string
+		endAt   string
+	}{startAt, endAt})
+	fake.recordInvocation("ConsolidateFullMonths", []interface{}{startAt, endAt})
+	fake.consolidateFullMonthsMutex.Unlock()
+	if fake.ConsolidateFullMonthsStub != nil {
+		return fake.ConsolidateFullMonthsStub(startAt, endAt)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.consolidateFullMonthsReturns.result1
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsCallCount() int {
+	fake.consolidateFullMonthsMutex.RLock()
+	defer fake.consolidateFullMonthsMutex.RUnlock()
+	return len(fake.consolidateFullMonthsArgsForCall)
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsArgsForCall(i int) (string, string) {
+	fake.consolidateFullMonthsMutex.RLock()
+	defer fake.consolidateFullMonthsMutex.RUnlock()
+	return fake.consolidateFullMonthsArgsForCall[i].startAt, fake.consolidateFullMonthsArgsForCall[i].endAt
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsReturns(result1 error) {
+	fake.ConsolidateFullMonthsStub = nil
+	fake.consolidateFullMonthsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsReturnsOnCall(i int, result1 error) {
+	fake.ConsolidateFullMonthsStub = nil
+	if fake.consolidateFullMonthsReturnsOnCall == nil {
+		fake.consolidateFullMonthsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.consolidateFullMonthsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeEventStore) Consolidate(filter eventio.EventFilter) error {
 	fake.consolidateMutex.Lock()
 	ret, specificReturn := fake.consolidateReturnsOnCall[len(fake.consolidateArgsForCall)]
@@ -982,6 +1092,10 @@ func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	defer fake.getConsolidatedBillableEventsMutex.RUnlock()
 	fake.isRangeConsolidatedMutex.RLock()
 	defer fake.isRangeConsolidatedMutex.RUnlock()
+	fake.consolidateAllMutex.RLock()
+	defer fake.consolidateAllMutex.RUnlock()
+	fake.consolidateFullMonthsMutex.RLock()
+	defer fake.consolidateFullMonthsMutex.RUnlock()
 	fake.consolidateMutex.RLock()
 	defer fake.consolidateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

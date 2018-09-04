@@ -2,6 +2,7 @@ package eventstore_test
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
@@ -226,4 +227,131 @@ var _ = Describe("IsRangeConsolidated", func() {
 		Expect(result).To(BeTrue())
 	})
 
+})
+
+var _ = Describe("ConsolidateFullMonths", func() {
+	var (
+		cfg      eventstore.Config
+		scenario *testenv.TestScenario
+		now      string
+	)
+
+	BeforeEach(func() {
+		cfg = testenv.BasicConfig
+		scenario = testenv.NewTestScenario("2018-01-01T00:00")
+		now = time.Now().Format("2006-01-02")
+	})
+
+	It("Should not error when there are no time periods to consolidate", func() {
+		db, err := scenario.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		err = db.Schema.ConsolidateFullMonths("9001-01-01", now)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("Should consolidate events which have not been consolidated yet ", func() {
+		db, err := scenario.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		consolidateSince := "2017-01-01"
+		err = db.Schema.ConsolidateFullMonths(consolidateSince, now)
+		Expect(err).NotTo(HaveOccurred())
+
+		filter := eventio.EventFilter{
+			RangeStart: consolidateSince,
+			RangeStop:  "2018-01-01",
+		}
+		filters, err := filter.SplitByMonth()
+		Expect(err).NotTo(HaveOccurred())
+		for _, filter := range filters {
+			isConsolidated, err := db.Schema.IsRangeConsolidated(filter)
+			Expect(err).NotTo(
+				HaveOccurred(),
+				fmt.Sprintf("Expected IsRangeConsolidated not to fail for RangeStart %s", filter.RangeStart))
+			Expect(isConsolidated).To(
+				BeTrue(),
+				fmt.Sprintf("Expected IsRangeConsolidated to be true for RangeStart %s", filter.RangeStart))
+		}
+	})
+
+	It("Should consolidate only full months, including the first one", func() {
+		db, err := scenario.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		consolidateSince := "2017-01-15"
+		consolidateUntil := "2017-03-15"
+
+		err = db.Schema.ConsolidateFullMonths(consolidateSince, consolidateUntil)
+		Expect(err).NotTo(HaveOccurred())
+
+		var isConsolidated bool
+		isConsolidated, err = db.Schema.IsRangeConsolidated(
+			eventio.EventFilter{RangeStart: "2017-01-01", RangeStop: "2017-02-01"},
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(isConsolidated).To(BeTrue())
+
+		isConsolidated, err = db.Schema.IsRangeConsolidated(
+			eventio.EventFilter{RangeStart: "2017-01-15", RangeStop: "2017-02-01"},
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(isConsolidated).To(BeFalse())
+
+		isConsolidated, err = db.Schema.IsRangeConsolidated(
+			eventio.EventFilter{RangeStart: "2017-02-01", RangeStop: "2017-03-01"},
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(isConsolidated).To(BeTrue())
+
+		isConsolidated, err = db.Schema.IsRangeConsolidated(
+			eventio.EventFilter{RangeStart: "2017-03-01", RangeStop: "2017-03-15"},
+		)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(isConsolidated).To(BeFalse())
+	})
+
+	It("Should return events from the first consolidation if consolidate is run multiple times", func() {
+		scenario.AddComputePlan()
+		scenario.AppLifeCycle("org1", "space1", "app1",
+			testenv.EventInfo{Delta: "+0h", State: "STARTED"},
+			testenv.EventInfo{Delta: "+3600h", State: "STOPPED"},
+		)
+		db, err := scenario.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		january2018 := "2018-01-01"
+		january2018Filter := eventio.EventFilter{RangeStart: january2018, RangeStop: "2018-02-01"}
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+		Expect(db.Schema.ConsolidateFullMonths(january2018, now)).To(Succeed())
+
+		billableEvents, err := db.Schema.GetBillableEvents(january2018Filter)
+		Expect(err).NotTo(HaveOccurred())
+		consolidatedEventsAfterOneConsolidation, err := db.Schema.GetConsolidatedBillableEvents(january2018Filter)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(consolidatedEventsAfterOneConsolidation)).To(BeNumerically(">=", 1))
+		Expect(billableEvents).To(Equal(consolidatedEventsAfterOneConsolidation))
+
+		scenario.AppLifeCycle("org1", "space1", "app2",
+			testenv.EventInfo{Delta: "+0h", State: "STARTED"},
+			testenv.EventInfo{Delta: "+3600h", State: "STOPPED"},
+		)
+		Expect(scenario.FlushAppEvents(db)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+		Expect(db.Schema.ConsolidateFullMonths(january2018, now)).To(Succeed())
+
+		billableEvents, err = db.Schema.GetBillableEvents(january2018Filter)
+		Expect(err).NotTo(HaveOccurred())
+		consolidatedEventsAfterTwoConsolidations, err := db.Schema.GetConsolidatedBillableEvents(january2018Filter)
+		Expect(err).NotTo(HaveOccurred())
+
+		Expect(consolidatedEventsAfterOneConsolidation).To(Equal(consolidatedEventsAfterTwoConsolidations))
+		Expect(consolidatedEventsAfterTwoConsolidations).NotTo(Equal(billableEvents))
+	})
 })
