@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo"
 )
 
-func BillableEventsHandler(store eventio.BillableEventReader, uaa auth.Authenticator) echo.HandlerFunc {
+func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore eventio.ConsolidatedBillableEventReader, uaa auth.Authenticator) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		requestedOrgs := c.Request().URL.Query()["org_guid"]
 		if ok, err := authorize(c, uaa, requestedOrgs); err != nil {
@@ -26,11 +26,22 @@ func BillableEventsHandler(store eventio.BillableEventReader, uaa auth.Authentic
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
 		// query the store
-		rows, err := store.GetBillableEventRows(filter)
+
+		var rows eventio.BillableEventRows
+		ok, err := consolidatedStore.IsRangeConsolidated(filter)
+		if err != nil {
+			return err
+		}
+		if ok {
+			rows, err = consolidatedStore.GetConsolidatedBillableEventRows(filter)
+		} else {
+			rows, err = store.GetBillableEventRows(filter)
+		}
 		if err != nil {
 			return err
 		}
 		defer rows.Close()
+
 		// stream response to client
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)

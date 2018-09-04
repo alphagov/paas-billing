@@ -47,7 +47,7 @@ fakes/fake_cf_client.go: eventfetchers/cffetcher/cf_client.go
 fakes/fake_event_fetcher.go: eventio/event_fetcher.go
 	counterfeiter -o $@ $< EventFetcher
 
-fakes/fake_event_store.go: eventio/event_store.go
+fakes/fake_event_store.go: eventio/*.go
 	counterfeiter -o $@ $< EventStore
 
 fakes/fake_authorizer.go: eventserver/auth/authorizer.go
