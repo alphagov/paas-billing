@@ -10,8 +10,13 @@ import (
 	"os/exec"
 	"time"
 
+	"context"
+	"sync"
+
+	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
+	"github.com/alphagov/paas-billing/fakes"
 	"github.com/alphagov/paas-billing/testenv"
 	"github.com/labstack/echo"
 	. "github.com/onsi/ginkgo"
@@ -251,5 +256,63 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 
 	By("Waiting until the process exits cleanly", func() {
 		Eventually(session, 60*time.Second).Should(Exit(0))
+	})
+})
+
+var _ = Describe("runRefreshAndConsolidateLoop", func() {
+	var (
+		fakeStore *fakes.FakeEventStore
+		logger    lager.Logger
+	)
+
+	BeforeEach(func() {
+		fakeStore = &fakes.FakeEventStore{}
+		logger = lager.NewLogger("test")
+	})
+
+	It("should call Refresh and Consolidate every 'Schedule'", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		wg := sync.WaitGroup{}
+		defer wg.Wait()
+		defer cancel()
+
+		go func() {
+			wg.Add(1)
+			runRefreshAndConsolidateLoop(ctx, logger, 1*time.Nanosecond, fakeStore)
+			wg.Done()
+		}()
+
+		Eventually(func() int {
+			return fakeStore.RefreshCallCount()
+		}).Should(BeNumerically(">=", 1))
+
+		Eventually(func() int {
+			return fakeStore.ConsolidateAllCallCount()
+		}).Should(BeNumerically(">=", 1))
+	})
+
+	It("should not call Consolidate if Refresh fails", func() {
+		fakeStore.RefreshReturns(fmt.Errorf("some-error"))
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		wg := sync.WaitGroup{}
+		defer wg.Wait()
+		defer cancel()
+
+		go func() {
+			wg.Add(1)
+			runRefreshAndConsolidateLoop(ctx, logger, 1*time.Nanosecond, fakeStore)
+			wg.Done()
+		}()
+
+		Eventually(func() int {
+			return fakeStore.RefreshCallCount()
+		}).Should(BeNumerically(">=", 2))
+
+		Consistently(func() int {
+			return fakeStore.ConsolidateAllCallCount()
+		}).Should(BeNumerically("==", 0))
 	})
 })
