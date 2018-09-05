@@ -32,7 +32,7 @@ var _ = Describe("Store", func() {
 		Expect(db.Schema.Init()).To(Succeed())
 	})
 
-	It("should normalize *_usage_events tables into a consistant format with durations", func() {
+	It("should normalize *_usage_events tables into a consistent format with durations", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",

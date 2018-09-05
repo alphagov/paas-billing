@@ -82,7 +82,7 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 }
 
 // GetUsageEvents returns a slice of usage events for the given filter.
-// Due to the large number of results that can be returned it is recormended
+// Due to the large number of results that can be returned it is recommended
 // you use the GetUsageEventRows version to avoid buffering everything into
 // memory
 func (s *EventStore) GetUsageEvents(filter eventio.EventFilter) ([]eventio.UsageEvent, error) {
@@ -116,7 +116,7 @@ func (ber *UsageEventRows) Next() bool {
 	return ber.rows.Next()
 }
 
-// Err returns any errors that occured behind the scenes during processing.
+// Err returns any errors that occurred behind the scenes during processing.
 // Call this at the end of your iteration.
 func (ber *UsageEventRows) Err() error {
 	return ber.rows.Err()
@@ -129,8 +129,8 @@ func (ber *UsageEventRows) Close() error {
 }
 
 // EventJSON returns the JSON representation of the event directly from the db.
-// If you are just going to marshel the object to JSON immediately, then this
-// is probably more effcient.
+// If you are just going to marshal the object to JSON immediately, then this
+// is probably more efficient.
 func (ber *UsageEventRows) EventJSON() ([]byte, error) {
 	var b []byte
 	if err := ber.rows.Scan(&b); err != nil {

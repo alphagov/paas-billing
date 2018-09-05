@@ -194,11 +194,11 @@ UsageEvents are the normalized, processed events. Each event represents some kin
 
 A single event might represent a Cloudfoundry app running for 20mins, with 64MB memory and 3x instances. Another event might represent a medium mysql database that was running for 3hrs.
 
-The `resource_guid` field references the subject of the event. For a cloudfoundry app event (`resource_type=app`) this would be an app guid. For a cloudoundry service event (`resource_type=service`) this would be a service instance guid.
+The `resource_guid` field references the subject of the event. For a cloudfoundry app event (`resource_type=app`) this would be an app guid. For a cloudfoundry service event (`resource_type=service`) this would be a service instance guid.
 
 **Authorization:**
 
-The `Authorization` header must contain a valid Cloudfoundy bearer token with permission to access the requested orgs is required.
+The `Authorization` header must contain a valid Cloudfoundry bearer token with permission to access the requested orgs is required.
 
 **Query parameters:**
 
@@ -403,7 +403,7 @@ curl -s -G 'http://localhost:8881/forecast_events' \
 
 ### `GET /pricing_plans`
 
-PricingPlans define how the costs for resources are applied. The PricingPlans are setup in the configuraiton json file. Each UsageEvent's PlanGUID should have a matching PricingPlan for a given point in time.
+PricingPlans define how the costs for resources are applied. The PricingPlans are setup in the configuration json file. Each UsageEvent's PlanGUID should have a matching PricingPlan for a given point in time.
 
 Each PricingPlan may be made up of multiple PricingComponents (for example a database service may have components for the CPU/VM instance and also for the storage used).
 

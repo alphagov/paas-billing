@@ -177,7 +177,7 @@ func (ber *BillableEventRows) Next() bool {
 	return ber.rows.Next()
 }
 
-// Err returns any errors that occured behind the scenes during processing.
+// Err returns any errors that occurred behind the scenes during processing.
 // Call this at the end of your iteration.
 func (ber *BillableEventRows) Err() error {
 	return ber.rows.Err()
@@ -190,8 +190,8 @@ func (ber *BillableEventRows) Close() error {
 }
 
 // EventJSON returns the JSON representation of the event directly from the db.
-// If you are just going to marshel the object to JSON immediately, then this
-// is probably more effcient.
+// If you are just going to marshal the object to JSON immediately, then this
+// is probably more efficient.
 func (ber *BillableEventRows) EventJSON() ([]byte, error) {
 	var b []byte
 	if err := ber.rows.Scan(&b); err != nil {

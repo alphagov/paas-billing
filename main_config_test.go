@@ -32,7 +32,7 @@ var _ = Describe("Config", func() {
 		os.Unsetenv("PORT")
 	})
 
-	It("should set sensible defaults for the config when no envionment variables set", func() {
+	It("should set sensible defaults for the config when no environment variables set", func() {
 		cfg, err := NewConfigFromEnv()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.Logger).ToNot(BeNil())

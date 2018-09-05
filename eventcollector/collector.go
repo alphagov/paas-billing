@@ -17,9 +17,9 @@ const (
 type state string
 
 const (
-	// Syncing state means that the collector has just started and need to immediatly do a fetch to catchup
+	// Syncing state means that the collector has just started and need to immediately do a fetch to catchup
 	Syncing state = "sync"
-	// Scheduled means that we have caught up with latest events and are schuduled to run again later in Schedule time
+	// Scheduled means that we have caught up with latest events and are scheduled to run again later in Schedule time
 	Scheduled state = "waiting"
 	// Collecting means the collector thinks it probably has more to collect but is rate limited by MinWaitTime
 	Collecting state = "collecting"
@@ -122,7 +122,7 @@ func (c *EventCollector) getLastEvent() (*eventio.RawEvent, error) {
 	return &lastEvents[0], nil
 }
 
-// wait returns a channel that closes after the collection schedule time has elaspsed
+// wait returns a channel that closes after the collection schedule time has elapsed
 func (c *EventCollector) waitDuration() time.Duration {
 	delay := c.schedule
 	if c.state == Syncing {

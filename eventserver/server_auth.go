@@ -9,7 +9,7 @@ import (
 )
 
 // isAdmin checks if there is a token in the request with an operator scope
-// (cloud_controler.admin / cloud_controler.read_only_admin / global_auditor)
+// (cloud_controller.admin / cloud_controller.read_only_admin / global_auditor)
 // isBillingManager checks if the user has either role assigned within the org
 // (billing_manager / org_manager)
 // Either of the above should satisfy the authorizer.
@@ -38,5 +38,5 @@ func authorize(c echo.Context, uaa auth.Authenticator, orgs []string) (bool, err
 	if hasBillingAccess {
 		return true, nil
 	}
-	return false, errors.New("you need to be billing_manager or an administrator to retreive the billing data")
+	return false, errors.New("you need to be billing_manager or an administrator to retrieve the billing data")
 }

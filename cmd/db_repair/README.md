@@ -34,7 +34,7 @@ go build -o db_repair
 
 ## Configuration
 
-Configuation is via environment variables.
+Configuration is via environment variables.
 
 | Name | required | Description |
 |---|---|---|
