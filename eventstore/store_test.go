@@ -47,7 +47,7 @@ var _ = Describe("Store", func() {
 			},
 		})
 		cfg.AddPlan(eventio.PricingPlan{
-			PlanGUID:  "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
@@ -85,6 +85,36 @@ var _ = Describe("Store", func() {
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
+		Expect(db.Insert("services",
+			testenv.Row{
+				"label":               "postgres",
+				"guid":                "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"valid_from":          "2000-01-01T00:00Z",
+				"created_at":          "2000-01-01T00:00Z",
+				"updated_at":          "2000-01-01T00:00Z",
+				"description":         "",
+				"service_broker_guid": "efadb775-58c4-4e17-8087-6d0f4febc481",
+				"active":              true,
+				"bindable":            true,
+			})).To(Succeed())
+
+		Expect(db.Insert("service_plans",
+			testenv.Row{
+				"unique_id":          "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+				"name":               "Free",
+				"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"valid_from":         "2000-01-01T00:00Z",
+				"created_at":         "2000-01-01T00:00Z",
+				"updated_at":         "2000-01-01T00:00Z",
+				"description":        "",
+				"service_guid":       "efadb775-58c4-4e17-8087-6d0f4febc489",
+				"service_valid_from": "2000-01-01T00:00Z",
+				"active":             true,
+				"public":             true,
+				"free":               true,
+				"extra":              "",
+			})).To(Succeed())
+
 		Expect(db.Insert("app_usage_events", app1EventStart, app1EventStop)).To(Succeed())
 		Expect(db.Insert("service_usage_events", service1EventStart, service1EventStop)).To(Succeed())
 		Expect(db.Schema.Refresh()).To(Succeed())
@@ -99,7 +129,7 @@ var _ = Describe("Store", func() {
 				"number_of_nodes": nil,
 				"org_guid":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 				"org_name":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
-				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"plan_guid":       "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 				"plan_name":       "Free",
 				"service_guid":    "efadb775-58c4-4e17-8087-6d0f4febc489",
 				"service_name":    "postgres",
