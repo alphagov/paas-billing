@@ -6,6 +6,7 @@ import (
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/labstack/echo"
+	"io"
 )
 
 func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore eventio.ConsolidatedBillableEventReader, uaa auth.Authenticator) echo.HandlerFunc {
@@ -45,35 +46,39 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 		// stream response to client
 		c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSONCharsetUTF8)
 		c.Response().WriteHeader(http.StatusOK)
-		if _, err := c.Response().Write([]byte("[\n")); err != nil {
-			return err
-		}
-		c.Response().Flush()
-		next := rows.Next()
-		delim := "\n"
-		for next {
-			b, err := rows.EventJSON()
-			if err != nil {
-				return err
-			}
-			if _, err := c.Response().Write(b); err != nil {
-				return err
-			}
-			next = rows.Next()
-			if next {
-				delim = ",\n"
-			} else {
-				delim = "\n"
-			}
-			if _, err := c.Response().Write([]byte(delim)); err != nil {
-				return err
-			}
-			c.Response().Flush()
-		}
-		if _, err := c.Response().Write([]byte("]\n")); err != nil {
-			return err
-		}
-		c.Response().Flush()
-		return rows.Err()
+		return WriteRowsAsJson(c.Response(), c.Response(), rows)
 	}
+}
+
+func WriteRowsAsJson(writer io.Writer, flusher http.Flusher, rows eventio.BillableEventRows) error {
+	if _, err := writer.Write([]byte("[\n")); err != nil {
+		return err
+	}
+	flusher.Flush()
+	next := rows.Next()
+	delim := "\n"
+	for next {
+		b, err := rows.EventJSON()
+		if err != nil {
+			return err
+		}
+		if _, err := writer.Write(b); err != nil {
+			return err
+		}
+		next = rows.Next()
+		if next {
+			delim = ",\n"
+		} else {
+			delim = "\n"
+		}
+		if _, err := writer.Write([]byte(delim)); err != nil {
+			return err
+		}
+		flusher.Flush()
+	}
+	if _, err := writer.Write([]byte("]\n")); err != nil {
+		return err
+	}
+	flusher.Flush()
+	return rows.Err()
 }

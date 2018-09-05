@@ -10,6 +10,10 @@ import (
 	"github.com/alphagov/paas-billing/fakes"
 	"github.com/labstack/echo"
 
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"github.com/alphagov/paas-billing/eventio"
 	. "github.com/alphagov/paas-billing/eventserver"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -303,3 +307,63 @@ var _ = Describe("BillableEventsHandler", func() {
 	})
 
 })
+
+var _ = Describe("WriteRowsAsJson", func() {
+	It("Should write out an empty array when there are no rows", func() {
+		b := &FlushyBuffer{bytes.Buffer{}}
+		events := []eventio.BillableEvent{}
+		rows := &FakeRows{contents: events}
+		Expect(WriteRowsAsJson(b, b, rows)).To(Succeed())
+		Expect(b.String()).To(MatchJSON(`[]`))
+	})
+
+	It("Should write an array with several objects when there are several rows", func() {
+		b := &FlushyBuffer{bytes.Buffer{}}
+		events := []eventio.BillableEvent{
+			{EventGUID: "some-event-guid-1"},
+			{EventGUID: "some-event-guid-2"},
+			{EventGUID: "some-event-guid-3"},
+			{EventGUID: "some-event-guid-4"},
+		}
+		rows := &FakeRows{contents: events}
+		Expect(WriteRowsAsJson(b, b, rows)).To(Succeed())
+		writtenEvents := []eventio.BillableEvent{}
+		Expect(json.Unmarshal(b.Bytes(), &writtenEvents)).To(Succeed())
+		Expect(writtenEvents).To(Equal(events))
+	})
+})
+
+type FlushyBuffer struct {
+	bytes.Buffer
+}
+
+func (f *FlushyBuffer) Flush() {
+
+}
+
+type FakeRows struct {
+	contents []eventio.BillableEvent
+	index    int
+}
+
+func (r *FakeRows) Next() bool {
+	r.index = r.index + 1
+	return r.index <= len(r.contents)
+}
+
+func (r *FakeRows) Close() error {
+	return nil
+}
+func (r *FakeRows) Err() error {
+	return nil
+}
+func (r *FakeRows) EventJSON() ([]byte, error) {
+	ev, _ := r.Event()
+	return json.Marshal(ev)
+}
+func (r *FakeRows) Event() (*eventio.BillableEvent, error) {
+	if r.index < 1 {
+		return nil, fmt.Errorf("index out of bounds")
+	}
+	return &r.contents[r.index-1], nil
+}
