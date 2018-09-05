@@ -12,12 +12,11 @@ import (
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventcollector"
 	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
-	"github.com/alphagov/paas-billing/eventfetchers/composefetcher"
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventserver"
 	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/alphagov/paas-billing/eventstore"
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
+	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pkg/errors"
 )
 
@@ -58,29 +57,6 @@ func (app *App) startUsageEventCollector(kind cffetcher.Kind) error {
 		ClientConfig: app.cfg.CFFetcher.ClientConfig,
 		FetchLimit:   app.cfg.CFFetcher.FetchLimit,
 		RecordMinAge: app.cfg.CFFetcher.RecordMinAge,
-	})
-	if err != nil {
-		return err
-	}
-	collector := eventcollector.New(eventcollector.Config{
-		Logger:      logger,
-		Store:       app.store,
-		Fetcher:     fetcher,
-		Schedule:    app.cfg.Collector.Schedule,
-		MinWaitTime: app.cfg.Collector.MinWaitTime,
-	})
-	return app.start(name, logger, func() error {
-		return collector.Run(app.ctx)
-	})
-}
-
-func (app *App) StartComposeEventCollector() error {
-	name := "compose-event-collector"
-	logger := app.logger.Session(name)
-	fetcher, err := composefetcher.New(composefetcher.Config{
-		Logger:     logger,
-		APIKey:     app.cfg.ComposeFetcher.APIKey,
-		FetchLimit: app.cfg.ComposeFetcher.FetchLimit,
 	})
 	if err != nil {
 		return err

@@ -110,10 +110,6 @@ func Main(logger lager.Logger) error {
 		return err
 	}
 
-	if err := app.StartComposeEventCollector(); err != nil {
-		return err
-	}
-
 	if err := app.StartEventProcessor(); err != nil {
 		return err
 	}
