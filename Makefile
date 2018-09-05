@@ -37,7 +37,6 @@ smoke:
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	echo "smoke test enabled against ${CF_API_ADDRESS}"
 	ginkgo -nodes=2 .
-	
 
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
 	counterfeiter -o $@ $< UsageEventsAPI
