@@ -950,6 +950,32 @@
 			]
 		},
 		{
+			"name": "elasticsearch tiny-5.x",
+			"valid_from": "2018-09-01",
+			"plan_guid": "07264114-c666-440b-934a-015508be4475",
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.178",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
+			"name": "elasticsearch tiny-6.x",
+			"valid_from": "2018-09-01",
+			"plan_guid": "7c0e6f6a-e443-41a0-83df-981bd35923a9",
+			"components": [
+				{
+					"name": "instance",
+					"formula": "ceil($time_in_seconds/3600) * 0.178",
+					"currency_code": "USD",
+					"vat_code": "Standard"
+				}
+			]
+		},
+		{
 			"name": "elasticsearch small-ha-5.x",
 			"valid_from": "2017-01-01",
 			"plan_guid": "0eee9e10-db37-4cc3-bc9b-39e378ff3a5f",
