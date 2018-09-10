@@ -40,7 +40,7 @@ func New(cfg Config) *echo.Echo {
 	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
 	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
 	e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
-	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Authenticator))
+	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
 
 	e.GET("/", status)
 

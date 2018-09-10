@@ -37,6 +37,9 @@ func (app *App) Init() error {
 	if err := app.historicDataStore.Init(); err != nil {
 		return err
 	}
+	if err := app.store.ConsolidateAll(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -103,24 +106,33 @@ func (app *App) StartEventProcessor() error {
 	name := "processor"
 	logger := app.logger.Session(name)
 	return app.start(name, logger, func() error {
-		logger.Info("started")
-		defer logger.Info("stopping")
-		for {
-			select {
-			case <-app.ctx.Done():
-				return nil
-			case <-time.After(app.cfg.Processor.Schedule):
-				logger.Info("processing")
-				if err := app.store.Refresh(); err != nil {
-					logger.Error("refresh-error", err)
-					continue
-				}
-			}
-			logger.Info("processed", lager.Data{
-				"next_processing_in": app.cfg.Processor.Schedule.String(),
-			})
-		}
+		runRefreshAndConsolidateLoop(app.ctx, logger, app.cfg.Processor.Schedule, app.store)
+		return nil
 	})
+}
+
+func runRefreshAndConsolidateLoop(ctx context.Context, logger lager.Logger, schedule time.Duration, store eventio.EventStore) {
+	logger.Info("started")
+	defer logger.Info("stopping")
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(schedule):
+			logger.Info("processing")
+			if err := store.Refresh(); err != nil {
+				logger.Error("refresh-error", err)
+				continue
+			}
+			if err := store.ConsolidateAll(); err != nil {
+				logger.Error("consolidate-error", err)
+				continue
+			}
+		}
+		logger.Info("processed", lager.Data{
+			"next_processing_in": schedule.String(),
+		})
+	}
 }
 
 func (app *App) StartHistoricDataCollector() error {

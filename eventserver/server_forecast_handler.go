@@ -1,6 +1,7 @@
 package eventserver
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -36,8 +37,12 @@ func ForecastEventsHandler(store eventio.BillableEventForecaster) echo.HandlerFu
 		if err := json.Unmarshal([]byte(inputEventData), &inputEvents); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
+
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		// query the store
-		rows, err := store.ForecastBillableEventRows(inputEvents, filter)
+		rows, err := store.ForecastBillableEventRows(storeCtx, inputEvents, filter)
 		if err != nil {
 			return err
 		}

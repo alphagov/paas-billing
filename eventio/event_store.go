@@ -21,4 +21,6 @@ type EventStore interface {
 	UsageEventReader
 	BillableEventReader
 	BillableEventForecaster
+	ConsolidatedBillableEventReader
+	BillableEventConsolidator
 }

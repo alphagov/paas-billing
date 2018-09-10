@@ -1,17 +1,30 @@
 package eventio
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 )
 
 type BillableEventReader interface {
-	GetBillableEventRows(filter EventFilter) (BillableEventRows, error)
+	GetBillableEventRows(ctx context.Context, filter EventFilter) (BillableEventRows, error)
 	GetBillableEvents(filter EventFilter) ([]BillableEvent, error)
 }
 
+type ConsolidatedBillableEventReader interface {
+	GetConsolidatedBillableEventRows(ctx context.Context, filter EventFilter) (BillableEventRows, error)
+	GetConsolidatedBillableEvents(filter EventFilter) ([]BillableEvent, error)
+	IsRangeConsolidated(filter EventFilter) (bool, error)
+}
+
+type BillableEventConsolidator interface {
+	ConsolidateAll() error
+	ConsolidateFullMonths(startAt string, endAt string) error
+	Consolidate(filter EventFilter) error
+}
+
 type BillableEventForecaster interface {
-	ForecastBillableEventRows(events []UsageEvent, filter EventFilter) (BillableEventRows, error)
+	ForecastBillableEventRows(ctx context.Context, events []UsageEvent, filter EventFilter) (BillableEventRows, error)
 	ForecastBillableEvents(events []UsageEvent, filter EventFilter) ([]BillableEvent, error)
 }
 

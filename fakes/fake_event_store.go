@@ -2,6 +2,7 @@
 package fakes
 
 import (
+	"context"
 	"sync"
 
 	"github.com/alphagov/paas-billing/eventio"
@@ -89,9 +90,10 @@ type FakeEventStore struct {
 		result1 []eventio.UsageEvent
 		result2 error
 	}
-	GetBillableEventRowsStub        func(filter eventio.EventFilter) (eventio.BillableEventRows, error)
+	GetBillableEventRowsStub        func(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error)
 	getBillableEventRowsMutex       sync.RWMutex
 	getBillableEventRowsArgsForCall []struct {
+		ctx    context.Context
 		filter eventio.EventFilter
 	}
 	getBillableEventRowsReturns struct {
@@ -115,9 +117,10 @@ type FakeEventStore struct {
 		result1 []eventio.BillableEvent
 		result2 error
 	}
-	ForecastBillableEventRowsStub        func(events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error)
+	ForecastBillableEventRowsStub        func(ctx context.Context, events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error)
 	forecastBillableEventRowsMutex       sync.RWMutex
 	forecastBillableEventRowsArgsForCall []struct {
+		ctx    context.Context
 		events []eventio.UsageEvent
 		filter eventio.EventFilter
 	}
@@ -142,6 +145,78 @@ type FakeEventStore struct {
 	forecastBillableEventsReturnsOnCall map[int]struct {
 		result1 []eventio.BillableEvent
 		result2 error
+	}
+	GetConsolidatedBillableEventRowsStub        func(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error)
+	getConsolidatedBillableEventRowsMutex       sync.RWMutex
+	getConsolidatedBillableEventRowsArgsForCall []struct {
+		ctx    context.Context
+		filter eventio.EventFilter
+	}
+	getConsolidatedBillableEventRowsReturns struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}
+	getConsolidatedBillableEventRowsReturnsOnCall map[int]struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}
+	GetConsolidatedBillableEventsStub        func(filter eventio.EventFilter) ([]eventio.BillableEvent, error)
+	getConsolidatedBillableEventsMutex       sync.RWMutex
+	getConsolidatedBillableEventsArgsForCall []struct {
+		filter eventio.EventFilter
+	}
+	getConsolidatedBillableEventsReturns struct {
+		result1 []eventio.BillableEvent
+		result2 error
+	}
+	getConsolidatedBillableEventsReturnsOnCall map[int]struct {
+		result1 []eventio.BillableEvent
+		result2 error
+	}
+	IsRangeConsolidatedStub        func(filter eventio.EventFilter) (bool, error)
+	isRangeConsolidatedMutex       sync.RWMutex
+	isRangeConsolidatedArgsForCall []struct {
+		filter eventio.EventFilter
+	}
+	isRangeConsolidatedReturns struct {
+		result1 bool
+		result2 error
+	}
+	isRangeConsolidatedReturnsOnCall map[int]struct {
+		result1 bool
+		result2 error
+	}
+	ConsolidateAllStub        func() error
+	consolidateAllMutex       sync.RWMutex
+	consolidateAllArgsForCall []struct{}
+	consolidateAllReturns     struct {
+		result1 error
+	}
+	consolidateAllReturnsOnCall map[int]struct {
+		result1 error
+	}
+	ConsolidateFullMonthsStub        func(startAt string, endAt string) error
+	consolidateFullMonthsMutex       sync.RWMutex
+	consolidateFullMonthsArgsForCall []struct {
+		startAt string
+		endAt   string
+	}
+	consolidateFullMonthsReturns struct {
+		result1 error
+	}
+	consolidateFullMonthsReturnsOnCall map[int]struct {
+		result1 error
+	}
+	ConsolidateStub        func(filter eventio.EventFilter) error
+	consolidateMutex       sync.RWMutex
+	consolidateArgsForCall []struct {
+		filter eventio.EventFilter
+	}
+	consolidateReturns struct {
+		result1 error
+	}
+	consolidateReturnsOnCall map[int]struct {
+		result1 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -484,16 +559,17 @@ func (fake *FakeEventStore) GetUsageEventsReturnsOnCall(i int, result1 []eventio
 	}{result1, result2}
 }
 
-func (fake *FakeEventStore) GetBillableEventRows(filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+func (fake *FakeEventStore) GetBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
 	fake.getBillableEventRowsMutex.Lock()
 	ret, specificReturn := fake.getBillableEventRowsReturnsOnCall[len(fake.getBillableEventRowsArgsForCall)]
 	fake.getBillableEventRowsArgsForCall = append(fake.getBillableEventRowsArgsForCall, struct {
+		ctx    context.Context
 		filter eventio.EventFilter
-	}{filter})
-	fake.recordInvocation("GetBillableEventRows", []interface{}{filter})
+	}{ctx, filter})
+	fake.recordInvocation("GetBillableEventRows", []interface{}{ctx, filter})
 	fake.getBillableEventRowsMutex.Unlock()
 	if fake.GetBillableEventRowsStub != nil {
-		return fake.GetBillableEventRowsStub(filter)
+		return fake.GetBillableEventRowsStub(ctx, filter)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -507,10 +583,10 @@ func (fake *FakeEventStore) GetBillableEventRowsCallCount() int {
 	return len(fake.getBillableEventRowsArgsForCall)
 }
 
-func (fake *FakeEventStore) GetBillableEventRowsArgsForCall(i int) eventio.EventFilter {
+func (fake *FakeEventStore) GetBillableEventRowsArgsForCall(i int) (context.Context, eventio.EventFilter) {
 	fake.getBillableEventRowsMutex.RLock()
 	defer fake.getBillableEventRowsMutex.RUnlock()
-	return fake.getBillableEventRowsArgsForCall[i].filter
+	return fake.getBillableEventRowsArgsForCall[i].ctx, fake.getBillableEventRowsArgsForCall[i].filter
 }
 
 func (fake *FakeEventStore) GetBillableEventRowsReturns(result1 eventio.BillableEventRows, result2 error) {
@@ -586,7 +662,7 @@ func (fake *FakeEventStore) GetBillableEventsReturnsOnCall(i int, result1 []even
 	}{result1, result2}
 }
 
-func (fake *FakeEventStore) ForecastBillableEventRows(events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+func (fake *FakeEventStore) ForecastBillableEventRows(ctx context.Context, events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
 	var eventsCopy []eventio.UsageEvent
 	if events != nil {
 		eventsCopy = make([]eventio.UsageEvent, len(events))
@@ -595,13 +671,14 @@ func (fake *FakeEventStore) ForecastBillableEventRows(events []eventio.UsageEven
 	fake.forecastBillableEventRowsMutex.Lock()
 	ret, specificReturn := fake.forecastBillableEventRowsReturnsOnCall[len(fake.forecastBillableEventRowsArgsForCall)]
 	fake.forecastBillableEventRowsArgsForCall = append(fake.forecastBillableEventRowsArgsForCall, struct {
+		ctx    context.Context
 		events []eventio.UsageEvent
 		filter eventio.EventFilter
-	}{eventsCopy, filter})
-	fake.recordInvocation("ForecastBillableEventRows", []interface{}{eventsCopy, filter})
+	}{ctx, eventsCopy, filter})
+	fake.recordInvocation("ForecastBillableEventRows", []interface{}{ctx, eventsCopy, filter})
 	fake.forecastBillableEventRowsMutex.Unlock()
 	if fake.ForecastBillableEventRowsStub != nil {
-		return fake.ForecastBillableEventRowsStub(events, filter)
+		return fake.ForecastBillableEventRowsStub(ctx, events, filter)
 	}
 	if specificReturn {
 		return ret.result1, ret.result2
@@ -615,10 +692,10 @@ func (fake *FakeEventStore) ForecastBillableEventRowsCallCount() int {
 	return len(fake.forecastBillableEventRowsArgsForCall)
 }
 
-func (fake *FakeEventStore) ForecastBillableEventRowsArgsForCall(i int) ([]eventio.UsageEvent, eventio.EventFilter) {
+func (fake *FakeEventStore) ForecastBillableEventRowsArgsForCall(i int) (context.Context, []eventio.UsageEvent, eventio.EventFilter) {
 	fake.forecastBillableEventRowsMutex.RLock()
 	defer fake.forecastBillableEventRowsMutex.RUnlock()
-	return fake.forecastBillableEventRowsArgsForCall[i].events, fake.forecastBillableEventRowsArgsForCall[i].filter
+	return fake.forecastBillableEventRowsArgsForCall[i].ctx, fake.forecastBillableEventRowsArgsForCall[i].events, fake.forecastBillableEventRowsArgsForCall[i].filter
 }
 
 func (fake *FakeEventStore) ForecastBillableEventRowsReturns(result1 eventio.BillableEventRows, result2 error) {
@@ -700,6 +777,297 @@ func (fake *FakeEventStore) ForecastBillableEventsReturnsOnCall(i int, result1 [
 	}{result1, result2}
 }
 
+func (fake *FakeEventStore) GetConsolidatedBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	fake.getConsolidatedBillableEventRowsMutex.Lock()
+	ret, specificReturn := fake.getConsolidatedBillableEventRowsReturnsOnCall[len(fake.getConsolidatedBillableEventRowsArgsForCall)]
+	fake.getConsolidatedBillableEventRowsArgsForCall = append(fake.getConsolidatedBillableEventRowsArgsForCall, struct {
+		ctx    context.Context
+		filter eventio.EventFilter
+	}{ctx, filter})
+	fake.recordInvocation("GetConsolidatedBillableEventRows", []interface{}{ctx, filter})
+	fake.getConsolidatedBillableEventRowsMutex.Unlock()
+	if fake.GetConsolidatedBillableEventRowsStub != nil {
+		return fake.GetConsolidatedBillableEventRowsStub(ctx, filter)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getConsolidatedBillableEventRowsReturns.result1, fake.getConsolidatedBillableEventRowsReturns.result2
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventRowsCallCount() int {
+	fake.getConsolidatedBillableEventRowsMutex.RLock()
+	defer fake.getConsolidatedBillableEventRowsMutex.RUnlock()
+	return len(fake.getConsolidatedBillableEventRowsArgsForCall)
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventRowsArgsForCall(i int) (context.Context, eventio.EventFilter) {
+	fake.getConsolidatedBillableEventRowsMutex.RLock()
+	defer fake.getConsolidatedBillableEventRowsMutex.RUnlock()
+	return fake.getConsolidatedBillableEventRowsArgsForCall[i].ctx, fake.getConsolidatedBillableEventRowsArgsForCall[i].filter
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventRowsReturns(result1 eventio.BillableEventRows, result2 error) {
+	fake.GetConsolidatedBillableEventRowsStub = nil
+	fake.getConsolidatedBillableEventRowsReturns = struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventRowsReturnsOnCall(i int, result1 eventio.BillableEventRows, result2 error) {
+	fake.GetConsolidatedBillableEventRowsStub = nil
+	if fake.getConsolidatedBillableEventRowsReturnsOnCall == nil {
+		fake.getConsolidatedBillableEventRowsReturnsOnCall = make(map[int]struct {
+			result1 eventio.BillableEventRows
+			result2 error
+		})
+	}
+	fake.getConsolidatedBillableEventRowsReturnsOnCall[i] = struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEvents(filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
+	fake.getConsolidatedBillableEventsMutex.Lock()
+	ret, specificReturn := fake.getConsolidatedBillableEventsReturnsOnCall[len(fake.getConsolidatedBillableEventsArgsForCall)]
+	fake.getConsolidatedBillableEventsArgsForCall = append(fake.getConsolidatedBillableEventsArgsForCall, struct {
+		filter eventio.EventFilter
+	}{filter})
+	fake.recordInvocation("GetConsolidatedBillableEvents", []interface{}{filter})
+	fake.getConsolidatedBillableEventsMutex.Unlock()
+	if fake.GetConsolidatedBillableEventsStub != nil {
+		return fake.GetConsolidatedBillableEventsStub(filter)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.getConsolidatedBillableEventsReturns.result1, fake.getConsolidatedBillableEventsReturns.result2
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventsCallCount() int {
+	fake.getConsolidatedBillableEventsMutex.RLock()
+	defer fake.getConsolidatedBillableEventsMutex.RUnlock()
+	return len(fake.getConsolidatedBillableEventsArgsForCall)
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventsArgsForCall(i int) eventio.EventFilter {
+	fake.getConsolidatedBillableEventsMutex.RLock()
+	defer fake.getConsolidatedBillableEventsMutex.RUnlock()
+	return fake.getConsolidatedBillableEventsArgsForCall[i].filter
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventsReturns(result1 []eventio.BillableEvent, result2 error) {
+	fake.GetConsolidatedBillableEventsStub = nil
+	fake.getConsolidatedBillableEventsReturns = struct {
+		result1 []eventio.BillableEvent
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) GetConsolidatedBillableEventsReturnsOnCall(i int, result1 []eventio.BillableEvent, result2 error) {
+	fake.GetConsolidatedBillableEventsStub = nil
+	if fake.getConsolidatedBillableEventsReturnsOnCall == nil {
+		fake.getConsolidatedBillableEventsReturnsOnCall = make(map[int]struct {
+			result1 []eventio.BillableEvent
+			result2 error
+		})
+	}
+	fake.getConsolidatedBillableEventsReturnsOnCall[i] = struct {
+		result1 []eventio.BillableEvent
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) IsRangeConsolidated(filter eventio.EventFilter) (bool, error) {
+	fake.isRangeConsolidatedMutex.Lock()
+	ret, specificReturn := fake.isRangeConsolidatedReturnsOnCall[len(fake.isRangeConsolidatedArgsForCall)]
+	fake.isRangeConsolidatedArgsForCall = append(fake.isRangeConsolidatedArgsForCall, struct {
+		filter eventio.EventFilter
+	}{filter})
+	fake.recordInvocation("IsRangeConsolidated", []interface{}{filter})
+	fake.isRangeConsolidatedMutex.Unlock()
+	if fake.IsRangeConsolidatedStub != nil {
+		return fake.IsRangeConsolidatedStub(filter)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	return fake.isRangeConsolidatedReturns.result1, fake.isRangeConsolidatedReturns.result2
+}
+
+func (fake *FakeEventStore) IsRangeConsolidatedCallCount() int {
+	fake.isRangeConsolidatedMutex.RLock()
+	defer fake.isRangeConsolidatedMutex.RUnlock()
+	return len(fake.isRangeConsolidatedArgsForCall)
+}
+
+func (fake *FakeEventStore) IsRangeConsolidatedArgsForCall(i int) eventio.EventFilter {
+	fake.isRangeConsolidatedMutex.RLock()
+	defer fake.isRangeConsolidatedMutex.RUnlock()
+	return fake.isRangeConsolidatedArgsForCall[i].filter
+}
+
+func (fake *FakeEventStore) IsRangeConsolidatedReturns(result1 bool, result2 error) {
+	fake.IsRangeConsolidatedStub = nil
+	fake.isRangeConsolidatedReturns = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) IsRangeConsolidatedReturnsOnCall(i int, result1 bool, result2 error) {
+	fake.IsRangeConsolidatedStub = nil
+	if fake.isRangeConsolidatedReturnsOnCall == nil {
+		fake.isRangeConsolidatedReturnsOnCall = make(map[int]struct {
+			result1 bool
+			result2 error
+		})
+	}
+	fake.isRangeConsolidatedReturnsOnCall[i] = struct {
+		result1 bool
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) ConsolidateAll() error {
+	fake.consolidateAllMutex.Lock()
+	ret, specificReturn := fake.consolidateAllReturnsOnCall[len(fake.consolidateAllArgsForCall)]
+	fake.consolidateAllArgsForCall = append(fake.consolidateAllArgsForCall, struct{}{})
+	fake.recordInvocation("ConsolidateAll", []interface{}{})
+	fake.consolidateAllMutex.Unlock()
+	if fake.ConsolidateAllStub != nil {
+		return fake.ConsolidateAllStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.consolidateAllReturns.result1
+}
+
+func (fake *FakeEventStore) ConsolidateAllCallCount() int {
+	fake.consolidateAllMutex.RLock()
+	defer fake.consolidateAllMutex.RUnlock()
+	return len(fake.consolidateAllArgsForCall)
+}
+
+func (fake *FakeEventStore) ConsolidateAllReturns(result1 error) {
+	fake.ConsolidateAllStub = nil
+	fake.consolidateAllReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateAllReturnsOnCall(i int, result1 error) {
+	fake.ConsolidateAllStub = nil
+	if fake.consolidateAllReturnsOnCall == nil {
+		fake.consolidateAllReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.consolidateAllReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonths(startAt string, endAt string) error {
+	fake.consolidateFullMonthsMutex.Lock()
+	ret, specificReturn := fake.consolidateFullMonthsReturnsOnCall[len(fake.consolidateFullMonthsArgsForCall)]
+	fake.consolidateFullMonthsArgsForCall = append(fake.consolidateFullMonthsArgsForCall, struct {
+		startAt string
+		endAt   string
+	}{startAt, endAt})
+	fake.recordInvocation("ConsolidateFullMonths", []interface{}{startAt, endAt})
+	fake.consolidateFullMonthsMutex.Unlock()
+	if fake.ConsolidateFullMonthsStub != nil {
+		return fake.ConsolidateFullMonthsStub(startAt, endAt)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.consolidateFullMonthsReturns.result1
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsCallCount() int {
+	fake.consolidateFullMonthsMutex.RLock()
+	defer fake.consolidateFullMonthsMutex.RUnlock()
+	return len(fake.consolidateFullMonthsArgsForCall)
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsArgsForCall(i int) (string, string) {
+	fake.consolidateFullMonthsMutex.RLock()
+	defer fake.consolidateFullMonthsMutex.RUnlock()
+	return fake.consolidateFullMonthsArgsForCall[i].startAt, fake.consolidateFullMonthsArgsForCall[i].endAt
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsReturns(result1 error) {
+	fake.ConsolidateFullMonthsStub = nil
+	fake.consolidateFullMonthsReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateFullMonthsReturnsOnCall(i int, result1 error) {
+	fake.ConsolidateFullMonthsStub = nil
+	if fake.consolidateFullMonthsReturnsOnCall == nil {
+		fake.consolidateFullMonthsReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.consolidateFullMonthsReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) Consolidate(filter eventio.EventFilter) error {
+	fake.consolidateMutex.Lock()
+	ret, specificReturn := fake.consolidateReturnsOnCall[len(fake.consolidateArgsForCall)]
+	fake.consolidateArgsForCall = append(fake.consolidateArgsForCall, struct {
+		filter eventio.EventFilter
+	}{filter})
+	fake.recordInvocation("Consolidate", []interface{}{filter})
+	fake.consolidateMutex.Unlock()
+	if fake.ConsolidateStub != nil {
+		return fake.ConsolidateStub(filter)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.consolidateReturns.result1
+}
+
+func (fake *FakeEventStore) ConsolidateCallCount() int {
+	fake.consolidateMutex.RLock()
+	defer fake.consolidateMutex.RUnlock()
+	return len(fake.consolidateArgsForCall)
+}
+
+func (fake *FakeEventStore) ConsolidateArgsForCall(i int) eventio.EventFilter {
+	fake.consolidateMutex.RLock()
+	defer fake.consolidateMutex.RUnlock()
+	return fake.consolidateArgsForCall[i].filter
+}
+
+func (fake *FakeEventStore) ConsolidateReturns(result1 error) {
+	fake.ConsolidateStub = nil
+	fake.consolidateReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeEventStore) ConsolidateReturnsOnCall(i int, result1 error) {
+	fake.ConsolidateStub = nil
+	if fake.consolidateReturnsOnCall == nil {
+		fake.consolidateReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.consolidateReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -725,6 +1093,18 @@ func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	defer fake.forecastBillableEventRowsMutex.RUnlock()
 	fake.forecastBillableEventsMutex.RLock()
 	defer fake.forecastBillableEventsMutex.RUnlock()
+	fake.getConsolidatedBillableEventRowsMutex.RLock()
+	defer fake.getConsolidatedBillableEventRowsMutex.RUnlock()
+	fake.getConsolidatedBillableEventsMutex.RLock()
+	defer fake.getConsolidatedBillableEventsMutex.RUnlock()
+	fake.isRangeConsolidatedMutex.RLock()
+	defer fake.isRangeConsolidatedMutex.RUnlock()
+	fake.consolidateAllMutex.RLock()
+	defer fake.consolidateAllMutex.RUnlock()
+	fake.consolidateFullMonthsMutex.RLock()
+	defer fake.consolidateFullMonthsMutex.RUnlock()
+	fake.consolidateMutex.RLock()
+	defer fake.consolidateMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

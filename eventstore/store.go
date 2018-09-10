@@ -84,6 +84,7 @@ func (s *EventStore) Init() error {
 		"create_compose_audit_events.sql",
 		"create_orgs.sql",
 		"create_spaces.sql",
+		"create_consolidated_billable_events.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.execFile(tx, sqlFile)
@@ -680,7 +681,7 @@ func (s *EventStore) execFile(tx *sql.Tx, filename string) error {
 }
 
 // queryJSON returns rows as a json blobs, which makes it easier to decode into structs.
-func (s *EventStore) queryJSON(tx *sql.Tx, q string, args ...interface{}) (*sql.Rows, error) {
+func queryJSON(tx *sql.Tx, q string, args ...interface{}) (*sql.Rows, error) {
 	return tx.Query(fmt.Sprintf(`
 		with q as ( %s )
 		select row_to_json(q.*) from q;

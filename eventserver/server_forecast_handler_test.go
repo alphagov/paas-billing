@@ -125,7 +125,7 @@ var _ = Describe("ForecastEventsHandler", func() {
 		defer e.Shutdown(ctx)
 
 		Expect(fakeStore.ForecastBillableEventRowsCallCount()).To(Equal(1))
-		requestedInputEvents, requestedFilter := fakeStore.ForecastBillableEventRowsArgsForCall(0)
+		_, requestedInputEvents, requestedFilter := fakeStore.ForecastBillableEventRowsArgsForCall(0)
 		requestedInputEventsJSON, err := json.Marshal(requestedInputEvents)
 		Expect(err).ToNot(HaveOccurred())
 

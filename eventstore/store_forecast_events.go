@@ -1,6 +1,7 @@
 package eventstore
 
 import (
+	"context"
 	"database/sql"
 
 	"github.com/alphagov/paas-billing/eventio"
@@ -16,8 +17,8 @@ const (
 	DummySpaceName = "my-space"
 )
 
-func (s *EventStore) ForecastBillableEventRows(events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
-	tx, err := s.db.Begin()
+func (s *EventStore) ForecastBillableEventRows(ctx context.Context, events []eventio.UsageEvent, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +76,10 @@ func (s *EventStore) forecastBillableEventRows(tx *sql.Tx, events []eventio.Usag
 }
 
 func (s *EventStore) ForecastBillableEvents(input []eventio.UsageEvent, filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
-	rows, err := s.ForecastBillableEventRows(input, filter)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rows, err := s.ForecastBillableEventRows(ctx, input, filter)
 	if err != nil {
 		return nil, err
 	}
