@@ -1,6 +1,7 @@
 package eventstore
 
 import (
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -15,8 +16,8 @@ var _ eventio.BillableEventReader = &EventStore{}
 // this to iterate over rows without buffering all into memory. You must call
 // rows.Close when you are done to release the connection. Use GetBillableEvents
 // if you intend on buffering everything into memory.
-func (s *EventStore) GetBillableEventRows(filter eventio.EventFilter) (eventio.BillableEventRows, error) {
-	tx, err := s.db.Begin()
+func (s *EventStore) GetBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -46,7 +47,7 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 		return nil, err
 	}
 
-	return &BillableEventRows{rows, tx}, nil
+	return &BillableEventRows{rows}, nil
 }
 
 // GetBillableEvents returns a slice of billable events for the given filter.
@@ -54,7 +55,10 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 // you use the GetBillableEventRows version to avoid buffering everything into
 // memory
 func (s *EventStore) GetBillableEvents(filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
-	rows, err := s.GetBillableEventRows(filter)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rows, err := s.GetBillableEventRows(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +79,6 @@ func (s *EventStore) GetBillableEvents(filter eventio.EventFilter) ([]eventio.Bi
 
 type BillableEventRows struct {
 	rows *sql.Rows
-	tx   *sql.Tx
 }
 
 // Next moves the row cursor to the next iteration. Returns false if no more
@@ -92,7 +95,6 @@ func (ber *BillableEventRows) Err() error {
 
 // Close ends the query connection. You must call this. So stick it in a defer.
 func (ber *BillableEventRows) Close() error {
-	ber.tx.Rollback()
 	return ber.rows.Close()
 }
 

@@ -1,6 +1,7 @@
 package eventserver
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 
@@ -30,8 +31,11 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 		if err := filter.Validate(); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
-		// query the store
 
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// query the store
 		rowOfRows := RowOfRows{}
 		defer rowOfRows.Close()
 
@@ -46,9 +50,9 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 			}
 			var rows eventio.BillableEventRows
 			if isConsolidated {
-				rows, err = consolidatedStore.GetConsolidatedBillableEventRows(monthFilter)
+				rows, err = consolidatedStore.GetConsolidatedBillableEventRows(storeCtx, monthFilter)
 			} else {
-				rows, err = store.GetBillableEventRows(monthFilter)
+				rows, err = store.GetBillableEventRows(storeCtx, monthFilter)
 			}
 			if err != nil {
 				return err

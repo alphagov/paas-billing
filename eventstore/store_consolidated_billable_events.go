@@ -1,6 +1,7 @@
 package eventstore
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"os"
@@ -15,8 +16,8 @@ const (
 	DefaultConsolidationStartDate = "2017-07-01"
 )
 
-func (e *EventStore) GetConsolidatedBillableEventRows(filter eventio.EventFilter) (eventio.BillableEventRows, error) {
-	tx, err := e.db.Begin()
+func (e *EventStore) GetConsolidatedBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	tx, err := e.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +85,14 @@ func (e *EventStore) getConsolidatedBillableEventRows(tx *sql.Tx, filter eventio
 	if err != nil {
 		return nil, err
 	}
-	return &BillableEventRows{rows, tx}, nil
+	return &BillableEventRows{rows}, nil
 }
 
 func (e *EventStore) GetConsolidatedBillableEvents(filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
-	rows, err := e.GetConsolidatedBillableEventRows(filter)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	rows, err := e.GetConsolidatedBillableEventRows(ctx, filter)
 	if err != nil {
 		return nil, err
 	}

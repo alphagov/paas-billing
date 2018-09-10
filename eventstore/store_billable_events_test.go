@@ -1,6 +1,7 @@
 package eventstore_test
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -67,7 +68,10 @@ var _ = Describe("GetBillableEvents", func() {
 
 		Expect(db.Schema.Refresh()).To(Succeed())
 
-		rows, err := db.Schema.GetBillableEventRows(eventio.EventFilter{
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		rows, err := db.Schema.GetBillableEventRows(storeCtx, eventio.EventFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2001-02-01",
 		})
@@ -158,7 +162,10 @@ var _ = Describe("GetBillableEvents", func() {
 
 		Expect(db.Schema.Refresh()).To(Succeed())
 
-		rows, err := db.Schema.GetBillableEventRows(eventio.EventFilter{
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		rows, err := db.Schema.GetBillableEventRows(storeCtx, eventio.EventFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2001-02-01",
 		})
@@ -249,7 +256,10 @@ var _ = Describe("GetBillableEvents", func() {
 
 		Expect(db.Schema.Refresh()).To(Succeed())
 
-		rows, err := db.Schema.GetBillableEventRows(eventio.EventFilter{
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		rows, err := db.Schema.GetBillableEventRows(storeCtx, eventio.EventFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2001-02-01",
 		})
@@ -344,7 +354,10 @@ var _ = Describe("GetBillableEvents", func() {
 
 		Expect(db.Schema.Refresh()).To(Succeed())
 
-		rows, err := db.Schema.GetBillableEventRows(eventio.EventFilter{
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		rows, err := db.Schema.GetBillableEventRows(storeCtx, eventio.EventFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2001-02-01",
 		})

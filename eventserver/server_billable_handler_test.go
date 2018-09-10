@@ -162,7 +162,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		defer e.Shutdown(ctx)
 
 		Expect(fakeStore.GetBillableEventRowsCallCount()).To(Equal(1))
-		filter := fakeStore.GetBillableEventRowsArgsForCall(0)
+		_, filter := fakeStore.GetBillableEventRowsArgsForCall(0)
 		Expect(filter.RangeStart).To(Equal("2001-01-01"))
 		Expect(filter.RangeStop).To(Equal("2001-01-02"))
 		Expect(filter.OrgGUIDs).To(Equal([]string{orgGUID1}))
@@ -212,7 +212,7 @@ var _ = Describe("BillableEventsHandler", func() {
 
 		Expect(fakeStore.GetBillableEventRowsCallCount()).To(Equal(1))
 		Expect(fakeStore.GetConsolidatedBillableEventRowsCallCount()).To(Equal(0))
-		filter := fakeStore.GetBillableEventRowsArgsForCall(0)
+		_, filter := fakeStore.GetBillableEventRowsArgsForCall(0)
 		Expect(filter.RangeStart).To(Equal("2001-01-01"))
 		Expect(filter.RangeStop).To(Equal("2001-01-02"))
 		Expect(filter.OrgGUIDs).To(Equal([]string{orgGUID1}))
@@ -257,11 +257,15 @@ var _ = Describe("BillableEventsHandler", func() {
 
 		Expect(fakeStore.GetBillableEventRowsCallCount()).To(Equal(2))
 		Expect(fakeStore.GetConsolidatedBillableEventRowsCallCount()).To(Equal(2))
+		_, filter1 := fakeStore.GetBillableEventRowsArgsForCall(0)
+		_, filter2 := fakeStore.GetConsolidatedBillableEventRowsArgsForCall(0)
+		_, filter3 := fakeStore.GetConsolidatedBillableEventRowsArgsForCall(1)
+		_, filter4 := fakeStore.GetBillableEventRowsArgsForCall(1)
 		receivedFilters := []eventio.EventFilter{
-			fakeStore.GetBillableEventRowsArgsForCall(0),
-			fakeStore.GetConsolidatedBillableEventRowsArgsForCall(0),
-			fakeStore.GetConsolidatedBillableEventRowsArgsForCall(1),
-			fakeStore.GetBillableEventRowsArgsForCall(1),
+			filter1,
+			filter2,
+			filter3,
+			filter4,
 		}
 		Expect(receivedFilters).To(Equal([]eventio.EventFilter{
 			{RangeStart: "2001-01-15", RangeStop: "2001-02-01", OrgGUIDs: []string{orgGUID1}},
@@ -310,7 +314,7 @@ var _ = Describe("BillableEventsHandler", func() {
 
 		Expect(fakeStore.GetBillableEventRowsCallCount()).To(Equal(0))
 		Expect(fakeStore.GetConsolidatedBillableEventRowsCallCount()).To(Equal(1))
-		filter := fakeStore.GetConsolidatedBillableEventRowsArgsForCall(0)
+		_, filter := fakeStore.GetConsolidatedBillableEventRowsArgsForCall(0)
 		Expect(filter.RangeStart).To(Equal("2001-01-01"))
 		Expect(filter.RangeStop).To(Equal("2001-02-01"))
 		Expect(filter.OrgGUIDs).To(Equal([]string{orgGUID1}))
