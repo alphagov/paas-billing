@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -85,23 +86,35 @@ func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 }
 
 func Main(logger lager.Logger) error {
+
 	cfg, err := NewConfigFromEnv()
 	if err != nil {
 		return err
 	}
 	cfg.Logger = logger
 
-	cfDataCollector(cfg.DatabaseURL, cfg.Logger)
-
 	app, err := New(globalContext, cfg)
 	if err != nil {
 		return err
 	}
 
+	switch command := os.Args[1]; command {
+	case "collector":
+		return startCollector(app, cfg)
+	case "api":
+		return startAPI(app, cfg)
+	default:
+		return fmt.Errorf("Subcommand %s not recognised", command)
+	}
+}
+
+func startCollector(app *App, cfg Config) error {
+
+	cfDataCollector(cfg.DatabaseURL, cfg.Logger)
+
 	if err := app.Init(); err != nil {
 		return err
 	}
-
 	if err := app.StartAppEventCollector(); err != nil {
 		return err
 	}
@@ -113,16 +126,19 @@ func Main(logger lager.Logger) error {
 	if err := app.StartEventProcessor(); err != nil {
 		return err
 	}
-
-	if err := app.StartEventServer(); err != nil {
-		return err
-	}
-
 	if err := app.StartHistoricDataCollector(); err != nil {
 		return err
 	}
 
-	logger.Info("started")
+	cfg.Logger.Info("started collector")
+	return app.Wait()
+}
+
+func startAPI(app *App, cfg Config) error {
+	if err := app.StartEventServer(); err != nil {
+		return err
+	}
+	cfg.Logger.Info("started API")
 	return app.Wait()
 }
 
