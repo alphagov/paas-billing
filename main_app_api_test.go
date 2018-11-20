@@ -109,7 +109,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(err).ToNot(HaveOccurred())
 		q := u.Query()
 		q.Set("org_guid", anOrgGUIDWithEvents)
-		q.Set("range_start", "epoch")
+		q.Set("range_start", "1970-01-01")
 		q.Set("range_stop", "2030-01-01")
 		u.RawQuery = q.Encode()
 
@@ -154,7 +154,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(err).ToNot(HaveOccurred())
 		q := u.Query()
 		q.Set("org_guid", anOrgGUIDWithEvents)
-		q.Set("range_start", "epoch")
+		q.Set("range_start", "1970-01-01")
 		q.Set("range_stop", "2030-01-01")
 		u.RawQuery = q.Encode()
 
@@ -205,7 +205,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(err).ToNot(HaveOccurred())
 		q := u.Query()
 		q.Set("org_guid", eventstore.DummyOrgGUID)
-		q.Set("range_start", "epoch")
+		q.Set("range_start", "1970-01-01")
 		q.Set("range_stop", "2030-01-01")
 		q.Set("events", inputEventsJSON)
 		u.RawQuery = q.Encode()
