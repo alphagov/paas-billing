@@ -16,20 +16,6 @@ import (
 	"code.cloudfoundry.org/lager"
 )
 
-var globalContext context.Context
-
-func init() {
-	ctx, shutdown := context.WithCancel(context.Background())
-	globalContext = ctx
-	go func() {
-		sigChan := make(chan os.Signal, 1)
-		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
-		defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
-		<-sigChan
-		shutdown()
-	}()
-}
-
 func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 	client, err := cfclient.NewClient(&cfclient.Config{
 		ApiAddress:        os.Getenv("CF_API_ADDRESS"),
@@ -85,7 +71,7 @@ func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 	return nil
 }
 
-func Main(logger lager.Logger) error {
+func Main(ctx context.Context, logger lager.Logger) error {
 
 	cfg, err := NewConfigFromEnv()
 	if err != nil {
@@ -93,7 +79,7 @@ func Main(logger lager.Logger) error {
 	}
 	cfg.Logger = logger
 
-	app, err := New(globalContext, cfg)
+	app, err := New(ctx, cfg)
 	if err != nil {
 		return err
 	}
@@ -143,10 +129,20 @@ func startAPI(app *App, cfg Config) error {
 }
 
 func main() {
+	ctx, shutdown := context.WithCancel(context.Background())
+
+	go func() {
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		defer signal.Reset(syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+		shutdown()
+	}()
+
 	logger := getDefaultLogger()
 	logger.Info("starting")
 	defer logger.Info("stopped")
-	if err := Main(logger); err != nil {
+	if err := Main(ctx, logger); err != nil {
 		logger.Error("exit-error", err)
 		os.Exit(1)
 	}
