@@ -25,7 +25,7 @@ func authorize(c echo.Context, uaa auth.Authenticator, orgs []string) (bool, err
 
 	isAdmin, err := authorizer.Admin()
 	if err != nil {
-		return false, fmt.Errorf("invalid credentials", err)
+		return false, fmt.Errorf("invalid credentials: %s", err)
 	}
 	if isAdmin {
 		return true, nil
@@ -33,7 +33,7 @@ func authorize(c echo.Context, uaa auth.Authenticator, orgs []string) (bool, err
 
 	hasBillingAccess, err := authorizer.HasBillingAccess(orgs)
 	if err != nil {
-		return false, fmt.Errorf("invalid credentials", err)
+		return false, fmt.Errorf("invalid credentials: %s", err)
 	}
 	if hasBillingAccess {
 		return true, nil
