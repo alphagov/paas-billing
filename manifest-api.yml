@@ -1,0 +1,12 @@
+---
+applications:
+ - name: paas-billing-api
+   memory: 128M
+   disk_quota: 100M
+   instances: 2
+   buildpacks:
+   - go_buildpack
+   health-check-type: http
+   env:
+     GOPACKAGENAME: github.com/alphagov/paas-billing
+   command: ./bin/paas-billing api

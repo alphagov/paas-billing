@@ -1,11 +1,13 @@
 ---
 applications:
- - name: paas-billing
+ - name: paas-billing-collector
    memory: 128M
    disk_quota: 100M
    instances: 1
-   buildpack: go_buildpack
+   buildpacks:
+   - go_buildpack
    health-check-type: process
+   no-route: true
    env:
      GOPACKAGENAME: github.com/alphagov/paas-billing
-   command: ./bin/paas-billing
+   command: ./bin/paas-billing collector
