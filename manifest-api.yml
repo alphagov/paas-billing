@@ -4,8 +4,7 @@ applications:
    memory: 128M
    disk_quota: 100M
    instances: 2
-   buildpacks:
-   - go_buildpack
+   buildpack: go_buildpack
    health-check-type: http
    env:
      GOPACKAGENAME: github.com/alphagov/paas-billing
