@@ -10,13 +10,8 @@ import (
 	"os/exec"
 	"time"
 
-	"context"
-	"sync"
-
-	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
-	"github.com/alphagov/paas-billing/fakes"
 	"github.com/alphagov/paas-billing/testenv"
 	"github.com/labstack/echo"
 	. "github.com/onsi/ginkgo"
@@ -34,6 +29,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 	var (
 		err                 error
 		session             *Session
+		session_collector   *Session
 		tempDB              *testenv.TempDB
 		anOrgGUIDWithEvents string
 		validAuthToken      = os.Getenv("TEST_AUTH_TOKEN")
@@ -59,32 +55,18 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 	})
 
 	By("Starting the app", func() {
-		cmd := exec.Command(CMD)
-		session, err = Start(cmd, GinkgoWriter, GinkgoWriter)
+		api := exec.Command(BinaryPath, "api")
+		collector := exec.Command(BinaryPath, "collector")
+		session, err = Start(api, GinkgoWriter, GinkgoWriter)
+		Expect(err).ToNot(HaveOccurred())
+		session_collector, err = Start(collector, GinkgoWriter, GinkgoWriter)
 		Expect(err).ToNot(HaveOccurred())
 		Eventually(session.Out, 10*time.Second).Should(Say("paas-billing.starting"))
 	})
 
 	defer By("Killing the app (if it hasn't already been shutdown)", func() {
 		session.Kill()
-	})
-
-	By("Waiting for the EventStore to report it has been initialized", func() {
-		Eventually(session.Out, 20*time.Second).Should(Say("paas-billing.store.initializing"))
-		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.store.initialized"))
-	})
-
-	By("Waiting for the HistoricDataStore to report it has been initialized", func() {
-		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.historic-data-store.initialized"))
-	})
-
-	By("Ensuring Service/ServicePlan data exists after HistoricDataStore.Init", func() {
-		Expect(
-			tempDB.Get(`select count(*) from service_plans`),
-		).To(BeNumerically(">", 0), "expected some service_plans to be collected during init")
-		Expect(
-			tempDB.Get(`select count(*) from services`),
-		).To(BeNumerically(">", 0), "expected some services to be collected during init")
+		session_collector.Kill()
 	})
 
 	By("Waiting for the EventServer to report it has started", func() {
@@ -100,7 +82,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 	By("Waiting for some events to be processed in the database", func() {
 		Eventually(func() interface{} {
 			return tempDB.Get(`select count(*) from events`)
-		}, 5*time.Minute).Should(BeNumerically(">", 0), "expected some events to processed")
+		}, 5*time.Second).Should(BeNumerically(">", 0), "expected some events to processed")
 		anOrgGUIDWithEvents = tempDB.Get(`select org_guid::text from events limit 1`).(string)
 		Expect(anOrgGUIDWithEvents).ToNot(BeEmpty())
 	})
@@ -127,7 +109,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(err).ToNot(HaveOccurred())
 		q := u.Query()
 		q.Set("org_guid", anOrgGUIDWithEvents)
-		q.Set("range_start", "epoch")
+		q.Set("range_start", "1970-01-01")
 		q.Set("range_stop", "2030-01-01")
 		u.RawQuery = q.Encode()
 
@@ -172,7 +154,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(err).ToNot(HaveOccurred())
 		q := u.Query()
 		q.Set("org_guid", anOrgGUIDWithEvents)
-		q.Set("range_start", "epoch")
+		q.Set("range_start", "1970-01-01")
 		q.Set("range_stop", "2030-01-01")
 		u.RawQuery = q.Encode()
 
@@ -223,7 +205,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		Expect(err).ToNot(HaveOccurred())
 		q := u.Query()
 		q.Set("org_guid", eventstore.DummyOrgGUID)
-		q.Set("range_start", "epoch")
+		q.Set("range_start", "1970-01-01")
 		q.Set("range_stop", "2030-01-01")
 		q.Set("events", inputEventsJSON)
 		u.RawQuery = q.Encode()
@@ -256,63 +238,5 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 
 	By("Waiting until the process exits cleanly", func() {
 		Eventually(session, 60*time.Second).Should(Exit(0))
-	})
-})
-
-var _ = Describe("runRefreshAndConsolidateLoop", func() {
-	var (
-		fakeStore *fakes.FakeEventStore
-		logger    lager.Logger
-	)
-
-	BeforeEach(func() {
-		fakeStore = &fakes.FakeEventStore{}
-		logger = lager.NewLogger("test")
-	})
-
-	It("should call Refresh and Consolidate every 'Schedule'", func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		wg := sync.WaitGroup{}
-		defer wg.Wait()
-		defer cancel()
-
-		go func() {
-			wg.Add(1)
-			runRefreshAndConsolidateLoop(ctx, logger, 1*time.Nanosecond, fakeStore)
-			wg.Done()
-		}()
-
-		Eventually(func() int {
-			return fakeStore.RefreshCallCount()
-		}).Should(BeNumerically(">=", 1))
-
-		Eventually(func() int {
-			return fakeStore.ConsolidateAllCallCount()
-		}).Should(BeNumerically(">=", 1))
-	})
-
-	It("should not call Consolidate if Refresh fails", func() {
-		fakeStore.RefreshReturns(fmt.Errorf("some-error"))
-
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-
-		wg := sync.WaitGroup{}
-		defer wg.Wait()
-		defer cancel()
-
-		go func() {
-			wg.Add(1)
-			runRefreshAndConsolidateLoop(ctx, logger, 1*time.Nanosecond, fakeStore)
-			wg.Done()
-		}()
-
-		Eventually(func() int {
-			return fakeStore.RefreshCallCount()
-		}).Should(BeNumerically(">=", 2))
-
-		Consistently(func() int {
-			return fakeStore.ConsolidateAllCallCount()
-		}).Should(BeNumerically("==", 0))
 	})
 })

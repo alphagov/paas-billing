@@ -8,11 +8,11 @@ import (
 	"testing"
 )
 
-var CMD string
+var BinaryPath string
 
 var _ = BeforeSuite(func() {
 	var err error
-	CMD, err = gexec.Build("github.com/alphagov/paas-billing")
+	BinaryPath, err = gexec.Build("github.com/alphagov/paas-billing")
 	Expect(err).ToNot(HaveOccurred())
 })
 

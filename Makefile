@@ -6,7 +6,16 @@ APP_ROOT ?= $(PWD)
 bin/paas-billing: clean
 	go build -o $@ .
 
-run-dev: bin/paas-billing
+run-dev: bin/paas-billing run-dev-exports
+	{ ./bin/paas-billing collector & ./bin/paas-billing api ; } | ./scripts/colorize
+
+run-dev-collector: bin/paas-billing run-dev-exports
+	./bin/paas-billing collector | ./scripts/colorize
+
+run-dev-api: bin/paas-billing run-dev-exports
+	./bin/paas-billing api | ./scripts/colorize
+
+run-dev-exports:
 	## Runs the application with local credentials
 	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
 	$(eval export CF_CLIENT_ID=paas-billing)
@@ -15,7 +24,7 @@ run-dev: bin/paas-billing
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	./bin/paas-billing | ./scripts/colorize
+	@true
 
 .PHONY: test
 test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go fakes/fake_cf_data_client.go
@@ -36,7 +45,7 @@ smoke:
 	$(eval export TEST_AUTH_TOKEN=$(shell cf oauth-token))
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	echo "smoke test enabled against ${CF_API_ADDRESS}"
-	ginkgo -nodes=2 .
+	ginkgo -nodes=2 -v -progress .
 
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
 	counterfeiter -o $@ $< UsageEventsAPI

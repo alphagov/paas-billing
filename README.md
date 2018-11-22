@@ -40,13 +40,22 @@ You will need:
 
 * `Go v1.9+`
 
-To build the application run:
+To build the application run the default make target:
 
 ```
 make
 ```
 
 You should then get a binary in `bin/paas-billing`.
+
+The application has two commands to run the following components:
+ - **api**: Runs the tenant-facing API server which can be scaled to any number of instances. Only queries the database.
+ - **collector**: Runs all the processes to regularly collect usage information and produce billing data. There should be no multiple instances running.
+
+E.g. to run the API you should use the following command:
+```
+./bin/paas-billing api
+```
 
 ## Configuration
 
@@ -483,13 +492,20 @@ You will need:
 * The aws cli tools and relevent keys
 * A paas-cf dev environment
 
-Use the provided `run-dev` make target to run the application and connect it to a development instance of paas-cf:
+Use the provided `run-dev` make target to run all application components and connect it to a development instance of paas-cf:
 
 ```
 make run-dev
 ```
 
 The task will extract the necessary secrets for Cloud Foundry and set up the important environment variables.
+
+If you want to run the application components separately, then you should use the appropriate make targets:
+
+```
+make run-dev-api
+make run-dev-collector
+```
 
 ### Run the tests
 
@@ -501,7 +517,8 @@ make test
 
 If you have a development environment setup that works with `run-dev` you can run a basic smoke test against it via:
 
+**BROKEN** Currently the smoke tests are broken.
+
 ```
 make smoke
 ```
-
