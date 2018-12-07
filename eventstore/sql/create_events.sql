@@ -216,7 +216,12 @@ INSERT INTO events with
 	event_ranges as (
 		select
 			*,
-			tstzrange(created_at, lead(created_at, 1, now()) over resource_states) as duration
+			tstzrange(created_at,
+				lead(created_at, 1,
+					case when event_type = 'staging' then created_at
+					else now() end
+				) over resource_states
+			) as duration
 		from
 			raw_events_with_injected_values
 		window
