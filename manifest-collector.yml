@@ -2,6 +2,7 @@
 applications:
  - name: paas-billing-collector
    memory: 128M
+   stack: cflinuxfs3
    disk_quota: 100M
    instances: 1
    buildpack: go_buildpack
