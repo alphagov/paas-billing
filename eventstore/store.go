@@ -123,32 +123,46 @@ func (s *EventStore) Refresh() error {
 func (s *EventStore) refresh(tx *sql.Tx) error {
 	startTime := time.Now()
 	s.logger.Info("started-processing-events")
+	s.logger.Info("started-drop_ephemeral_objects")
 	// drop all the projection data
 	if err := s.execFile(tx, "drop_ephemeral_objects.sql"); err != nil {
 		return err
 	}
+	s.logger.Info("finished-drop_ephemeral_objects")
+	s.logger.Info("started-create_ephemeral_objects")
 	// create the ephemeral configuration objects (pricing/plans/etc)
 	if err := s.execFile(tx, "create_ephemeral_objects.sql"); err != nil {
 		return err
 	}
+	s.logger.Info("finished-create_ephemeral_objects")
+	s.logger.Info("started-create_events")
 	// reset the event normalization
 	if err := s.execFile(tx, "create_events.sql"); err != nil {
 		return err
 	}
+	s.logger.Info("finished-create_events")
+	s.logger.Info("started-initVATRates")
 	// populate the config
 	if err := s.initVATRates(tx); err != nil {
 		return err
 	}
+	s.logger.Info("finished-initVATRates")
+	s.logger.Info("started-initCurrencyRates")
 	if err := s.initCurrencyRates(tx); err != nil {
 		return err
 	}
+	s.logger.Info("finished-initCurrencyRates")
+	s.logger.Info("started-initPlans")
 	if err := s.initPlans(tx); err != nil {
 		return err
 	}
+	s.logger.Info("finished-initPlans")
+	s.logger.Info("started-create_billable_event_components")
 	// create the billable components view of the data
 	if err := s.execFile(tx, "create_billable_event_components.sql"); err != nil {
 		return err
 	}
+	s.logger.Info("finished-create_billable_event_components")
 	s.logger.Info("finished-processing-events", lager.Data{
 		"elapsed": time.Since(startTime),
 	})
