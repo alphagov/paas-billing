@@ -61,11 +61,15 @@ func (s *EventStore) Init() error {
 	s.logger.Info("initializing")
 	ctx, cancel := context.WithTimeout(s.ctx, DefaultInitTimeout)
 	defer cancel()
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
 	sqlFiles := []string{
+		"create_custom_types.sql",
 		"create_services.sql",
 		"create_service_plans.sql",
 		"drop_ephemeral_objects.sql",
@@ -77,7 +81,7 @@ func (s *EventStore) Init() error {
 			return err
 		}
 	}
-	defer tx.Rollback()
+
 	sqlFiles = []string{
 		"create_app_usage_events.sql",
 		"create_service_usage_events.sql",
