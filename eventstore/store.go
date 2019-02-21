@@ -72,7 +72,7 @@ func (s *EventStore) Init() error {
 		"create_custom_types.sql",
 		"create_services.sql",
 		"create_service_plans.sql",
-		"drop_ephemeral_objects.sql",
+		"create_base_objects.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.execFile(tx, sqlFile)
