@@ -1,3 +1,8 @@
+DROP TABLE IF EXISTS pricing_plan_components;
+DROP TABLE IF EXISTS pricing_plans;
+DROP TABLE IF EXISTS vat_rates;
+DROP TABLE IF EXISTS currency_rates;
+
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE OR REPLACE FUNCTION to_seconds(tstzrange) RETURNS numeric AS $$
@@ -123,9 +128,6 @@ END; $$ LANGUAGE plpgsql IMMUTABLE;
 
 -------------------------------------- SCHEMA
 
-CREATE TYPE vat_code AS ENUM ('Standard', 'Reduced', 'Zero');
-CREATE TYPE currency_code AS ENUM ('USD', 'GBP', 'EUR');
-
 CREATE TABLE pricing_plans (
 	plan_guid uuid NOT NULL,
 	valid_from timestamptz NOT NULL,
@@ -189,7 +191,3 @@ CREATE TABLE pricing_plan_components (
 	CONSTRAINT formula_must_not_be_blank CHECK (length(trim(formula)) > 0)
 );
 CREATE TRIGGER tgr_ppc_validate_formula BEFORE INSERT OR UPDATE ON pricing_plan_components FOR EACH ROW EXECUTE PROCEDURE validate_formula();
-
-
-CREATE TYPE resource_state AS ENUM ('STARTED', 'STOPPED');
-

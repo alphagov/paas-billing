@@ -61,42 +61,52 @@ func (s *EventStore) Init() error {
 	s.logger.Info("initializing")
 	ctx, cancel := context.WithTimeout(s.ctx, DefaultInitTimeout)
 	defer cancel()
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
+	defer tx.Rollback()
+
 	sqlFiles := []string{
+		"create_custom_types.sql",
 		"create_services.sql",
 		"create_service_plans.sql",
-		"drop_ephemeral_objects.sql",
+		"create_base_objects.sql",
+		"create_orgs.sql",
+		"create_spaces.sql",
 	}
 	for _, sqlFile := range sqlFiles {
-		err := s.execFile(tx, sqlFile)
+		err := s.runSQLFile(tx, sqlFile)
 		if err != nil {
-			s.logger.Error(fmt.Sprintf("init-failed:%s", sqlFile), err)
+			s.logger.Error("init", err)
 			return err
 		}
 	}
-	defer tx.Rollback()
-	sqlFiles = []string{
+	if err := s.initVATRates(tx); err != nil {
+		return fmt.Errorf("failed to init VAT rates: %s", err)
+	}
+	if err := s.initCurrencyRates(tx); err != nil {
+		return fmt.Errorf("failed to init currency rates: %s", err)
+	}
+	if err := s.initPlans(tx); err != nil {
+		return fmt.Errorf("failed to init plans: %s", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	if err := s.runSQLFilesInTransaction(
+		ctx,
 		"create_app_usage_events.sql",
 		"create_service_usage_events.sql",
 		"create_compose_audit_events.sql",
-		"create_orgs.sql",
-		"create_spaces.sql",
 		"create_consolidated_billable_events.sql",
-	}
-	for _, sqlFile := range sqlFiles {
-		err := s.execFile(tx, sqlFile)
-		if err != nil {
-			s.logger.Error(fmt.Sprintf("init-failed:%s", sqlFile), err)
-			return err
-		}
-	}
-	if err := s.refresh(tx); err != nil {
+	); err != nil {
 		return err
 	}
-	if err := tx.Commit(); err != nil {
+
+	if err := s.regenerateEvents(); err != nil {
 		return err
 	}
 	s.logger.Info("initialized")
@@ -106,66 +116,47 @@ func (s *EventStore) Init() error {
 // Refresh triggers regeneration of the cached normalized view of the event dat and rebuilds the
 // billable components. Ideally you should do this once a day
 func (s *EventStore) Refresh() error {
+	return s.regenerateEvents()
+}
+
+func (s *EventStore) regenerateEvents() error {
 	ctx, cancel := context.WithTimeout(s.ctx, DefaultRefreshTimeout)
 	defer cancel()
+
+	if err := s.runSQLFilesInTransaction(
+		ctx,
+		"create_events.sql",
+	); err != nil {
+		return err
+	}
+
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
-	if err := s.refresh(tx); err != nil {
-		return err
-	}
-	return tx.Commit()
-}
 
-// refresh rebuilds the schema in the given transaction
-func (s *EventStore) refresh(tx *sql.Tx) error {
-	startTime := time.Now()
-	s.logger.Info("started-processing-events")
-	s.logger.Info("started-drop_ephemeral_objects")
-	// drop all the projection data
-	if err := s.execFile(tx, "drop_ephemeral_objects.sql"); err != nil {
+	if s.cfg.IgnoreMissingPlans {
+		if err := s.generateMissingPlans(tx); err != nil {
+			return err
+		}
+	}
+
+	if err := checkPlanConsistency(tx); err != nil {
 		return err
 	}
-	s.logger.Info("finished-drop_ephemeral_objects")
-	s.logger.Info("started-create_ephemeral_objects")
-	// create the ephemeral configuration objects (pricing/plans/etc)
-	if err := s.execFile(tx, "create_ephemeral_objects.sql"); err != nil {
+
+	if err := tx.Commit(); err != nil {
 		return err
 	}
-	s.logger.Info("finished-create_ephemeral_objects")
-	s.logger.Info("started-create_events")
-	// reset the event normalization
-	if err := s.execFile(tx, "create_events.sql"); err != nil {
+
+	if err := s.runSQLFilesInTransaction(
+		ctx,
+		"create_billable_event_components.sql",
+	); err != nil {
 		return err
 	}
-	s.logger.Info("finished-create_events")
-	s.logger.Info("started-initVATRates")
-	// populate the config
-	if err := s.initVATRates(tx); err != nil {
-		return err
-	}
-	s.logger.Info("finished-initVATRates")
-	s.logger.Info("started-initCurrencyRates")
-	if err := s.initCurrencyRates(tx); err != nil {
-		return err
-	}
-	s.logger.Info("finished-initCurrencyRates")
-	s.logger.Info("started-initPlans")
-	if err := s.initPlans(tx); err != nil {
-		return err
-	}
-	s.logger.Info("finished-initPlans")
-	s.logger.Info("started-create_billable_event_components")
-	// create the billable components view of the data
-	if err := s.execFile(tx, "create_billable_event_components.sql"); err != nil {
-		return err
-	}
-	s.logger.Info("finished-create_billable_event_components")
-	s.logger.Info("finished-processing-events", lager.Data{
-		"elapsed": time.Since(startTime),
-	})
+
 	return nil
 }
 
@@ -253,17 +244,7 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 		}
 	}
 
-	if s.cfg.IgnoreMissingPlans {
-		if err := s.generateMissingPlans(tx); err != nil {
-			return err
-		}
-	}
-
 	if err := checkPricingComponents(tx); err != nil {
-		return err
-	}
-
-	if err := checkPlanConsistency(tx); err != nil {
 		return err
 	}
 
@@ -677,20 +658,42 @@ func checkPlanConsistency(tx *sql.Tx) error {
 	return nil
 }
 
-// execFile executes an sql file in the given transaction
-func (s *EventStore) execFile(tx *sql.Tx, filename string) error {
+func (s *EventStore) runSQLFilesInTransaction(ctx context.Context, filenames ...string) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	for _, filename := range filenames {
+		if err := s.runSQLFile(tx, filename); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
+	startTime := time.Now()
+	s.logger.Info("run-sql-file", map[string]interface{}{"sqlFile": filename})
+
+	defer func() {
+		s.logger.Info("finish-sql-file", lager.Data{
+			"sqlFile": filename,
+			"elapsed": time.Since(startTime),
+		})
+	}()
+
 	schemaFilename := schemaFile(filename)
 	sql, err := ioutil.ReadFile(schemaFilename)
 	if err != nil {
 		return fmt.Errorf("failed to execute sql file %s: %s", schemaFilename, err)
 	}
-	s.logger.Info("executing-sql", lager.Data{
-		"filename": filename,
-	})
+
 	_, err = tx.Exec(string(sql))
 	if err != nil {
 		return wrapPqError(err, schemaFilename)
 	}
+
 	return nil
 }
 

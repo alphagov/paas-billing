@@ -1,5 +1,6 @@
+DROP FUNCTION IF EXISTS generate_billable_event_components();
 
-CREATE TABLE billable_event_components (
+CREATE TABLE billable_event_components_temp (
 	event_guid uuid NOT NULL,
 	resource_guid uuid NOT NULL,
 	resource_name text NOT NULL,
@@ -16,7 +17,7 @@ CREATE TABLE billable_event_components (
 	memory_in_mb numeric NOT NULL,
 	storage_in_mb numeric NOT NULL,
 	component_name text NOT NULL,
-	component_formula text NOT NULL, 
+	component_formula text NOT NULL,
 	currency_code currency_code NOT NULL,
 	currency_rate numeric NOT NULL,
 	vat_code vat_code NOT NULL,
@@ -26,7 +27,7 @@ CREATE TABLE billable_event_components (
 	CONSTRAINT no_empty_duration CHECK (not isempty(duration))
 );
 
-CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF billable_event_components AS $$
+CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF billable_event_components_temp AS $$
 	with
 	valid_pricing_plans as (
 		select
@@ -93,9 +94,15 @@ CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF bi
 		and vvr.valid_for && (ev.duration * vpp.valid_for * vcr.valid_for)
 ; $$ LANGUAGE SQL;
 
-INSERT INTO billable_event_components (select * from generate_billable_event_components());
+INSERT INTO billable_event_components_temp (select * from generate_billable_event_components());
 
-CREATE INDEX billable_event_components_org_idx on billable_event_components (org_guid);
-CREATE INDEX billable_event_components_space_idx on billable_event_components (space_guid);
-CREATE INDEX billable_event_components_duration_idx on billable_event_components using gist (duration);
+CREATE INDEX billable_event_components_temp_org_idx on billable_event_components_temp (org_guid);
+CREATE INDEX billable_event_components_temp_space_idx on billable_event_components_temp (space_guid);
+CREATE INDEX billable_event_components_temp_duration_idx on billable_event_components_temp using gist (duration);
 
+DROP TABLE IF EXISTS billable_event_components;
+ALTER TABLE billable_event_components_temp RENAME TO billable_event_components;
+ALTER INDEX billable_event_components_temp_pkey RENAME TO billable_event_components_pkey;
+ALTER INDEX billable_event_components_temp_org_idx RENAME TO billable_event_components_org_idx;
+ALTER INDEX billable_event_components_temp_space_idx RENAME TO billable_event_components_space_idx;
+ALTER INDEX billable_event_components_temp_duration_idx RENAME TO billable_event_components_duration_idx;

@@ -1,4 +1,4 @@
-CREATE TABLE events (
+CREATE TABLE events_temp (
 	event_guid uuid PRIMARY KEY NOT NULL,
 	resource_guid uuid NOT NULL,
 	resource_name text NOT NULL,
@@ -22,7 +22,7 @@ CREATE TABLE events (
 -- extract useful stuff from usage events
 -- we treat both apps and services as "resources" so normalize the fields
 -- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
-INSERT INTO events with
+INSERT INTO events_temp with
 	raw_events as (
 		(
 			select
@@ -310,8 +310,17 @@ INSERT INTO events with
 		event_sequence, event_guid
 ;
 
-CREATE INDEX events_org_idx ON events (org_guid);
-CREATE INDEX events_space_idx ON events (space_guid);
-CREATE INDEX events_resource_idx ON events (resource_guid);
-CREATE INDEX events_duration_idx ON events using gist (duration);
-CREATE INDEX events_plan_idx ON events (plan_guid);
+CREATE INDEX events_org_temp_idx ON events_temp (org_guid);
+CREATE INDEX events_space_temp_idx ON events_temp (space_guid);
+CREATE INDEX events_resource_temp_idx ON events_temp (resource_guid);
+CREATE INDEX events_duration_temp_idx ON events_temp using gist (duration);
+CREATE INDEX events_plan_temp_idx ON events_temp (plan_guid);
+
+DROP TABLE IF EXISTS events;
+ALTER TABLE events_temp RENAME TO events;
+ALTER INDEX events_temp_pkey RENAME TO events_pkey;
+ALTER INDEX events_org_temp_idx RENAME TO events_org_idx;
+ALTER INDEX events_space_temp_idx RENAME TO events_space_idx;
+ALTER INDEX events_resource_temp_idx RENAME TO events_resource_idx;
+ALTER INDEX events_duration_temp_idx RENAME TO events_duration_idx;
+ALTER INDEX events_plan_temp_idx RENAME TO events_plan_idx;
