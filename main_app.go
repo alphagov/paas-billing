@@ -142,11 +142,9 @@ func (app *App) StartHistoricDataCollector() error {
 		for {
 			if err := app.historicDataStore.CollectServices(); err != nil {
 				logger.Error("collect-services", err)
-				continue
 			}
 			if err := app.historicDataStore.CollectServicePlans(); err != nil {
 				logger.Error("collect-service-plans", err)
-				continue
 			}
 			time.Sleep(app.cfg.HistoricDataCollector.Schedule)
 		}

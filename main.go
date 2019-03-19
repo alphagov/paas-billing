@@ -52,19 +52,15 @@ func cfDataCollector(databaseUrl string, logger lager.Logger) error {
 		for {
 			if err := cfHistoricData.CollectServices(); err != nil {
 				logger.Error("collect-services", err)
-				continue
 			}
 			if err := cfHistoricData.CollectServicePlans(); err != nil {
 				logger.Error("collect-service-plans", err)
-				continue
 			}
 			if err := cfHistoricData.CollectOrgs(); err != nil {
 				logger.Error("collect-orgs", err)
-				continue
 			}
 			if err := cfHistoricData.CollectSpaces(); err != nil {
 				logger.Error("collect-spaces", err)
-				continue
 			}
 			time.Sleep(10 * time.Second)
 		}
