@@ -146,6 +146,13 @@ func (app *App) StartHistoricDataCollector() error {
 			if err := app.historicDataStore.CollectServicePlans(); err != nil {
 				logger.Error("collect-service-plans", err)
 			}
+			if err := app.historicDataStore.CollectOrgs(); err != nil {
+				logger.Error("collect-orgs", err)
+			}
+			if err := app.historicDataStore.CollectSpaces(); err != nil {
+				logger.Error("collect-spaces", err)
+			}
+
 			time.Sleep(app.cfg.HistoricDataCollector.Schedule)
 		}
 	}()
