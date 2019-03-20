@@ -2,75 +2,14 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
-
-	"github.com/alphagov/paas-billing/cfstore"
-	cfclient "github.com/cloudfoundry-community/go-cfclient"
 
 	"code.cloudfoundry.org/lager"
 )
-
-func cfDataCollector(databaseUrl string, logger lager.Logger) error {
-	client, err := cfclient.NewClient(&cfclient.Config{
-		ApiAddress:        os.Getenv("CF_API_ADDRESS"),
-		Username:          os.Getenv("CF_USERNAME"),
-		Password:          os.Getenv("CF_PASSWORD"),
-		ClientID:          os.Getenv("CF_CLIENT_ID"),
-		ClientSecret:      os.Getenv("CF_CLIENT_SECRET"),
-		SkipSslValidation: os.Getenv("CF_SKIP_SSL_VALIDATION") == "true",
-		Token:             os.Getenv("CF_TOKEN"),
-		UserAgent:         os.Getenv("CF_USER_AGENT"),
-		HttpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
-	})
-	if err != nil {
-		return err
-	}
-	db, err := sql.Open("postgres", databaseUrl)
-	if err != nil {
-		return err
-	}
-	cfHistoricData, err := cfstore.New(cfstore.Config{
-		Client: &cfstore.Client{Client: client},
-		DB:     db,
-	})
-	if err != nil {
-		return err
-	}
-	if err := cfHistoricData.Init(); err != nil {
-		return err
-	}
-	go func() {
-		for {
-			if err := cfHistoricData.CollectServices(); err != nil {
-				logger.Error("collect-services", err)
-				continue
-			}
-			if err := cfHistoricData.CollectServicePlans(); err != nil {
-				logger.Error("collect-service-plans", err)
-				continue
-			}
-			if err := cfHistoricData.CollectOrgs(); err != nil {
-				logger.Error("collect-orgs", err)
-				continue
-			}
-			if err := cfHistoricData.CollectSpaces(); err != nil {
-				logger.Error("collect-spaces", err)
-				continue
-			}
-			time.Sleep(10 * time.Second)
-		}
-	}()
-	return nil
-}
 
 func Main(ctx context.Context, logger lager.Logger) error {
 
@@ -99,9 +38,6 @@ func Main(ctx context.Context, logger lager.Logger) error {
 }
 
 func startCollector(app *App, cfg Config) error {
-
-	cfDataCollector(cfg.DatabaseURL, cfg.Logger)
-
 	if err := app.Init(); err != nil {
 		return err
 	}
