@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS consolidated_billable_events (
   space_name text NOT NULL,
 
   plan_guid uuid NOT NULL,
+  quota_definition_guid uuid NOT NULL,
 
   number_of_nodes integer,
   memory_in_mb integer,
@@ -50,4 +51,3 @@ CREATE TABLE IF NOT EXISTS consolidated_billable_events (
 
   PRIMARY KEY (consolidated_range, event_guid, plan_guid)
 );
-

@@ -34,9 +34,10 @@ type EventInfo struct {
 }
 
 type TestScenario struct {
-	plans  map[planKey]*eventio.PricingPlan
-	orgs   map[string]string
-	spaces map[spaceKey]string
+	plans     map[planKey]*eventio.PricingPlan
+	orgs      map[string]string
+	orgQuotas map[string]string
+	spaces    map[spaceKey]string
 
 	apps map[appKey]string
 
@@ -54,6 +55,7 @@ func NewTestScenario(baseTimeStr string) *TestScenario {
 	scenario := TestScenario{
 		plans:     map[planKey]*eventio.PricingPlan{},
 		orgs:      map[string]string{},
+		orgQuotas: map[string]string{},
 		spaces:    map[spaceKey]string{},
 		apps:      map[appKey]string{},
 		appEvents: map[appKey][]Row{},
@@ -89,6 +91,7 @@ func (t *TestScenario) Open(cfg eventstore.Config) (*TempDB, error) {
 	}
 
 	t.FlushAppEvents(db)
+	t.FlushEntities(db, cfg)
 
 	return db, err
 }
@@ -101,6 +104,24 @@ func (t *TestScenario) FlushAppEvents(db *TempDB) error {
 		}
 	}
 	t.appEvents = map[appKey][]Row{}
+	return nil
+}
+
+func (t *TestScenario) FlushEntities(db *TempDB, cfg eventstore.Config) error {
+	for orgName, orgGUID := range t.orgs {
+		err := db.Insert("orgs", Row{
+			"guid":                  orgGUID,
+			"valid_from":            "epoch",
+			"name":                  orgName,
+			"created_at":            "epoch",
+			"updated_at":            "epoch",
+			"quota_definition_guid": t.orgQuotas[orgGUID],
+		})
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -158,7 +179,9 @@ func (t *TestScenario) AddComputePlan() {
 
 func (t *TestScenario) GetOrgGUID(orgName string) string {
 	if _, ok := t.orgs[orgName]; !ok {
-		t.orgs[orgName] = uuid.NewV4().String()
+		orgUUID := uuid.NewV4().String()
+		t.orgs[orgName] = orgUUID
+		t.orgQuotas[orgUUID] = uuid.NewV4().String()
 	}
 	return t.orgs[orgName]
 }
