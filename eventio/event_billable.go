@@ -56,24 +56,25 @@ type Price struct {
 }
 
 type BillableEvent struct {
-	EventGUID     string `json:"event_guid"`
-	EventStart    string `json:"event_start"`
-	EventStop     string `json:"event_stop"`
-	ResourceGUID  string `json:"resource_guid"`
-	ResourceName  string `json:"resource_name"`
-	ResourceType  string `json:"resource_type"`
-	OrgGUID       string `json:"org_guid"`
-	OrgName       string `json:"org_name"`
-	SpaceGUID     string `json:"space_guid"`
-	SpaceName     string `json:"space_name"`
-	PlanGUID      string `json:"plan_guid"`
-	PlanName      string `json:"plan_name"`
-	ServiceGUID   string `json:"service_guid"`
-	ServiceName   string `json:"service_name"`
-	NumberOfNodes int64  `json:"number_of_nodes"`
-	MemoryInMB    int64  `json:"memory_in_mb"`
-	StorageInMB   int64  `json:"storage_in_mb"`
-	Price         Price  `json:"price"`
+	EventGUID           string `json:"event_guid"`
+	EventStart          string `json:"event_start"`
+	EventStop           string `json:"event_stop"`
+	ResourceGUID        string `json:"resource_guid"`
+	ResourceName        string `json:"resource_name"`
+	ResourceType        string `json:"resource_type"`
+	OrgGUID             string `json:"org_guid"`
+	OrgName             string `json:"org_name"`
+	SpaceGUID           string `json:"space_guid"`
+	SpaceName           string `json:"space_name"`
+	PlanGUID            string `json:"plan_guid"`
+	PlanName            string `json:"plan_name"`
+	QuotaDefinitionGUID string `json:"quota_definition_guid"`
+	ServiceGUID         string `json:"service_guid"`
+	ServiceName         string `json:"service_name"`
+	NumberOfNodes       int64  `json:"number_of_nodes"`
+	MemoryInMB          int64  `json:"memory_in_mb"`
+	StorageInMB         int64  `json:"storage_in_mb"`
+	Price               Price  `json:"price"`
 }
 
 func (e *BillableEvent) Scan(src interface{}) error {

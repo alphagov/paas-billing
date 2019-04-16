@@ -158,36 +158,39 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 		),
 		components_with_price as (
 			select
-				event_guid,
-				resource_guid,
-				resource_name,
-				resource_type,
-				org_guid,
-				org_name,
-				space_guid,
-				space_name,
-				plan_guid,
-				plan_name,
-				duration * filtered_range as duration,
-				number_of_nodes,
-				memory_in_mb,
-				storage_in_mb,
-				component_name,
-				component_formula,
-				currency_code,
-				currency_rate,
-				vat_code,
-				vat_rate,
+				b.event_guid,
+				b.resource_guid,
+				b.resource_name,
+				b.resource_type,
+				b.org_guid,
+				b.org_name,
+				o.quota_definition_guid,
+				b.space_guid,
+				b.space_name,
+				b.plan_guid,
+				b.plan_name,
+				b.duration * filtered_range as duration,
+				b.number_of_nodes,
+				b.memory_in_mb,
+				b.storage_in_mb,
+				b.component_name,
+				b.component_formula,
+				b.currency_code,
+				b.currency_rate,
+				b.vat_code,
+				b.vat_rate,
 				(eval_formula(
-					memory_in_mb,
-					storage_in_mb,
-					number_of_nodes,
-					duration * filtered_range,
-					component_formula
-				) * currency_rate) as price_ex_vat
+				b.memory_in_mb,
+				b.storage_in_mb,
+				b.number_of_nodes,
+				b.duration * filtered_range,
+				b.component_formula
+				) * b.currency_rate) as price_ex_vat
 			from
-				billable_event_components,
-				filtered_range
+			    filtered_range,
+				billable_event_components b
+			left join
+				orgs o on b.org_guid = o.guid
 			where
 				duration && filtered_range
 				%s
@@ -204,6 +207,7 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				resource_type,
 				org_guid,
 				org_name,
+				quota_definition_guid,
 				space_guid,
 				space_name,
 				plan_guid,
@@ -235,6 +239,7 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				resource_type,
 				org_guid,
 				org_name,
+				quota_definition_guid,
 				space_guid,
 				space_name,
 				plan_guid,

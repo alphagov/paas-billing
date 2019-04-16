@@ -288,6 +288,7 @@ curl -s -G -H "Authorization: $(cf oauth-token)" 'http://localhost:8881/billable
 		"org_guid":        "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 		"space_guid":      "276f4886-ac40-492d-a8cd-b2646637ba76",
 		"plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+		"quota_definition_guid": "dcb680a9-b190-4453-a2d1-cdb1377e42f4",
 		"number_of_nodes": 1,
 		"memory_in_mb":    1024,
 		"storage_in_mb":   0,
