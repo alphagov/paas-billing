@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS consolidated_billable_events (
   space_name text NOT NULL,
 
   plan_guid uuid NOT NULL,
-  quota_definition_guid uuid NOT NULL,
+  quota_definition_guid uuid,
 
   number_of_nodes integer,
   memory_in_mb integer,
@@ -51,3 +51,13 @@ CREATE TABLE IF NOT EXISTS consolidated_billable_events (
 
   PRIMARY KEY (consolidated_range, event_guid, plan_guid)
 );
+
+DO $$
+  BEGIN
+    BEGIN
+      ALTER TABLE consolidated_billable_events ADD COLUMN quota_definition_guid uuid;
+    EXCEPTION
+      WHEN duplicate_column THEN RAISE NOTICE 'column quota_definition_guid already exists in consolidated_billable_events.';
+    END;
+  END;
+$$;
