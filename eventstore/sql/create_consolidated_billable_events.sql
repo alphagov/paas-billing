@@ -52,5 +52,12 @@ CREATE TABLE IF NOT EXISTS consolidated_billable_events (
   PRIMARY KEY (consolidated_range, event_guid, plan_guid)
 );
 
-ALTER TABLE consolidated_billable_events
-  ADD COLUMN IF NOT EXISTS quota_definition_guid uuid;
+DO $$
+  BEGIN
+    BEGIN
+      ALTER TABLE consolidated_billable_events ADD COLUMN quota_definition_guid uuid;
+    EXCEPTION
+      WHEN duplicate_column THEN RAISE NOTICE 'column quota_definition_guid already exists in consolidated_billable_events.';
+    END;
+  END;
+$$;
