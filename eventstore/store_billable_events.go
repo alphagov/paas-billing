@@ -178,7 +178,6 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				b.vat_code,
 				b.vat_rate,
 				'GBP' as currency_code,
-				b.currency_rate,
 				(eval_formula(
 					b.memory_in_mb,
 					b.storage_in_mb,
@@ -226,8 +225,7 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 						'inc_vat', (price_ex_vat * (1 + vat_rate))::text,
 						'vat_rate', (vat_rate)::text,
 						'vat_code', vat_code,
-						'currency_code', currency_code,
-						'currency_rate', (currency_rate)::text
+						'currency_code', currency_code
 					))
 				) as price
 			from

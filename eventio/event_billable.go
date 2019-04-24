@@ -44,7 +44,6 @@ type PriceComponent struct {
 	VatRate      string `json:"vat_rate"`
 	VatCode      string `json:"vat_code"`
 	CurrencyCode string `json:"currency_code"`
-	CurrencyRate string `json:"currency_rate"`
 	IncVAT       string `json:"inc_vat"`
 	ExVAT        string `json:"ex_vat"`
 }
