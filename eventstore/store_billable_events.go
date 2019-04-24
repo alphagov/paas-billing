@@ -175,16 +175,16 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				b.storage_in_mb,
 				b.component_name,
 				b.component_formula,
-				b.currency_code,
-				b.currency_rate,
 				b.vat_code,
 				b.vat_rate,
+				'GBP' as currency_code,
+				b.currency_rate,
 				(eval_formula(
-				b.memory_in_mb,
-				b.storage_in_mb,
-				b.number_of_nodes,
-				b.duration * filtered_range,
-				b.component_formula
+					b.memory_in_mb,
+					b.storage_in_mb,
+					b.number_of_nodes,
+					b.duration * filtered_range,
+					b.component_formula
 				) * b.currency_rate) as price_ex_vat
 			from
 			    filtered_range,

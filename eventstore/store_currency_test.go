@@ -324,7 +324,7 @@ var _ = Describe("Currency Conversion", func() {
 		Expect(events[0].Price.Details[0].CurrencyCode).To(Equal("GBP"))
 		Expect(events[0].Price.Details[1].ExVAT).To(Equal("200"))
 		Expect(events[0].Price.Details[1].IncVAT).To(Equal("240.0"))
-		Expect(events[0].Price.Details[1].CurrencyCode).To(Equal("USD"))
+		Expect(events[0].Price.Details[1].CurrencyCode).To(Equal("GBP"))
 	})
 
 })
