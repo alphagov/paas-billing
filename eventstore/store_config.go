@@ -27,7 +27,7 @@ func (cfg *Config) AddCurrencyRate(c eventio.CurrencyRate) {
 
 var _ eventio.PricingPlanReader = &EventStore{}
 
-func (s *EventStore) GetPricingPlans(filter eventio.PricingPlanFilter) ([]eventio.PricingPlan, error) {
+func (s *EventStore) GetPricingPlans(filter eventio.TimeRangeFilter) ([]eventio.PricingPlan, error) {
 	if err := filter.Validate(); err != nil {
 		return nil, err
 	}

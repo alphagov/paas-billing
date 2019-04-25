@@ -85,7 +85,12 @@ func (filter *EventFilter) Validate() error {
 	return nil
 }
 
-func (filter *PricingPlanFilter) Validate() error {
+type TimeRangeFilter struct {
+	RangeStart string
+	RangeStop  string
+}
+
+func (filter *TimeRangeFilter) Validate() error {
 	if err := validateDateString("start", filter.RangeStart); err != nil {
 		return err
 	}
@@ -103,9 +108,4 @@ func validateDateString(name string, value string) error {
 		)
 	}
 	return nil
-}
-
-type PricingPlanFilter struct {
-	RangeStart string
-	RangeStop  string
 }

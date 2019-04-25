@@ -425,7 +425,7 @@ var _ = Describe("Store", func() {
 		err = store.Refresh()
 		Expect(err).ToNot(HaveOccurred())
 
-		plans, err := store.GetPricingPlans(eventio.PricingPlanFilter{
+		plans, err := store.GetPricingPlans(eventio.TimeRangeFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2002-01-01",
 		})
