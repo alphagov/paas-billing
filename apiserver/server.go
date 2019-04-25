@@ -1,4 +1,4 @@
-package eventserver
+package apiserver
 
 import (
 	"context"
@@ -7,8 +7,8 @@ import (
 
 	"code.cloudfoundry.org/lager"
 
+	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )

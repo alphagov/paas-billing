@@ -1,4 +1,4 @@
-package eventserver
+package apiserver
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 
 	"strings"
 
+	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/labstack/echo"
 )
 

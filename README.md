@@ -32,7 +32,7 @@ The repository contains the following packages:
 * `eventcollector` - EventCollector's periodically poll for events via an eventio.EventFetcher
 * `eventfetchers/cffetcher` - an `eventio.EventFetcher` that gets [cf usage events](http://apidocs.cloudfoundry.org/272/app_usage_events/list_all_app_usage_events.html)
 * `eventstore` - implements `eventio.EventWriter` to persist eventio.RawEvents from collectors and implements `eventio.BillableEventReader` to read out the processed events.
-* `eventserver` - an HTTP server that allows reading data from the store
+* `apiserver` - an HTTP server that allows reading data from the store
 
 ## Installation
 
@@ -190,7 +190,7 @@ The collectors/fetchers can be configured via the following environment variable
 
 ### `GET /usage_events`
 
-UsageEvents are the normalized, processed events. Each event represents some kind of resource usage over a period of time. 
+UsageEvents are the normalized, processed events. Each event represents some kind of resource usage over a period of time.
 
 A single event might represent a Cloudfoundry app running for 20mins, with 64MB memory and 3x instances. Another event might represent a medium mysql database that was running for 3hrs.
 

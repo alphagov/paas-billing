@@ -61,7 +61,7 @@ func startCollector(app *App, cfg Config) error {
 }
 
 func startAPI(app *App, cfg Config) error {
-	if err := app.StartEventServer(); err != nil {
+	if err := app.StartAPIServer(); err != nil {
 		return err
 	}
 	cfg.Logger.Info("started API")

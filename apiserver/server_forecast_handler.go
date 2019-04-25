@@ -1,32 +1,48 @@
-package eventserver
+package apiserver
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
 	"net/http"
 
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/eventserver/auth"
+	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/labstack/echo"
 )
 
-func UsageEventsHandler(store eventio.UsageEventReader, uaa auth.Authenticator) echo.HandlerFunc {
+func ForecastEventsHandler(store eventio.BillableEventForecaster) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		requestedOrgs := c.Request().URL.Query()["org_guid"]
-		if ok, err := authorize(c, uaa, requestedOrgs); err != nil {
-			return echo.NewHTTPError(http.StatusUnauthorized, err)
-		} else if !ok {
-			return echo.NewHTTPError(http.StatusUnauthorized, "unauthorized")
+		requestedOrgGUIDs := c.Request().URL.Query()["org_guid"]
+		for _, guid := range requestedOrgGUIDs {
+			if guid != eventstore.DummyOrgGUID {
+				return echo.NewHTTPError(http.StatusForbidden, fmt.Errorf("you are not authorized to forecast events for org '%s'", guid))
+			}
 		}
 		// parse params
 		filter := eventio.EventFilter{
 			RangeStart: c.QueryParam("range_start"),
 			RangeStop:  c.QueryParam("range_stop"),
-			OrgGUIDs:   requestedOrgs,
+			OrgGUIDs:   []string{eventstore.DummyOrgGUID},
 		}
 		if err := filter.Validate(); err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, err)
 		}
+		inputEventData := c.QueryParam("events")
+		if inputEventData == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, errors.New("events param is required"))
+		}
+		var inputEvents []eventio.UsageEvent
+		if err := json.Unmarshal([]byte(inputEventData), &inputEvents); err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err)
+		}
+
+		storeCtx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
 		// query the store
-		rows, err := store.GetUsageEventRows(filter)
+		rows, err := store.ForecastBillableEventRows(storeCtx, inputEvents, filter)
 		if err != nil {
 			return err
 		}
@@ -64,5 +80,6 @@ func UsageEventsHandler(store eventio.UsageEventReader, uaa auth.Authenticator) 
 		}
 		c.Response().Flush()
 		return rows.Err()
+
 	}
 }

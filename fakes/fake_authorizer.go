@@ -4,7 +4,7 @@ package fakes
 import (
 	"sync"
 
-	"github.com/alphagov/paas-billing/eventserver/auth"
+	"github.com/alphagov/paas-billing/apiserver/auth"
 )
 
 type FakeAuthorizer struct {
