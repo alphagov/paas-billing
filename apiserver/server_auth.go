@@ -1,10 +1,10 @@
-package eventserver
+package apiserver
 
 import (
 	"errors"
 	"fmt"
 
-	"github.com/alphagov/paas-billing/eventserver/auth"
+	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/labstack/echo"
 )
 

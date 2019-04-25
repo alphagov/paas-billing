@@ -1,4 +1,4 @@
-package eventserver_test
+package apiserver_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,5 +9,5 @@ import (
 
 func TestServer(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "EventServer")
+	RunSpecs(t, "APIServer")
 }

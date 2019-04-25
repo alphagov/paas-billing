@@ -69,7 +69,7 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 		session_collector.Kill()
 	})
 
-	By("Waiting for the EventServer to report it has started", func() {
+	By("Waiting for the APIServer to report it has started", func() {
 		Eventually(session.Out, 60*time.Second).Should(Say("paas-billing.api.started"))
 	})
 

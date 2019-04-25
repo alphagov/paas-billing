@@ -1,4 +1,4 @@
-package eventserver_test
+package apiserver_test
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/alphagov/paas-billing/fakes"
 	"github.com/labstack/echo"
 
-	. "github.com/alphagov/paas-billing/eventserver"
+	. "github.com/alphagov/paas-billing/apiserver"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

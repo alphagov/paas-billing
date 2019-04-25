@@ -1,4 +1,4 @@
-package eventserver
+package apiserver
 
 import (
 	"errors"

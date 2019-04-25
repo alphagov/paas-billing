@@ -59,10 +59,10 @@ fakes/fake_event_fetcher.go: eventio/event_fetcher.go
 fakes/fake_event_store.go: eventio/*.go
 	counterfeiter -o $@ $< EventStore
 
-fakes/fake_authorizer.go: eventserver/auth/authorizer.go
+fakes/fake_authorizer.go: apiserver/auth/authorizer.go
 	counterfeiter -o $@ $< Authorizer
 
-fakes/fake_authenticator.go: eventserver/auth/authenticator.go
+fakes/fake_authenticator.go: apiserver/auth/authenticator.go
 	counterfeiter -o $@ $< Authenticator
 
 fakes/fake_billable_event_rows.go: eventio/event_billable.go

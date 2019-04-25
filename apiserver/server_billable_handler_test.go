@@ -1,4 +1,4 @@
-package eventserver_test
+package apiserver_test
 
 import (
 	"context"
@@ -14,8 +14,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	. "github.com/alphagov/paas-billing/apiserver"
 	"github.com/alphagov/paas-billing/eventio"
-	. "github.com/alphagov/paas-billing/eventserver"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

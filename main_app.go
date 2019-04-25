@@ -10,11 +10,11 @@ import (
 	"github.com/alphagov/paas-billing/cfstore"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-billing/apiserver"
+	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventcollector"
 	"github.com/alphagov/paas-billing/eventfetchers/cffetcher"
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/eventserver"
-	"github.com/alphagov/paas-billing/eventserver/auth"
 	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/cloudfoundry-community/go-cfclient"
 	"github.com/pkg/errors"
@@ -76,7 +76,7 @@ func (app *App) startUsageEventCollector(kind cffetcher.Kind) error {
 	})
 }
 
-func (app *App) StartEventServer() error {
+func (app *App) StartAPIServer() error {
 	name := "api"
 	logger := app.logger.Session(name)
 	uaaConfig, err := auth.CreateConfigFromEnv()
@@ -86,14 +86,14 @@ func (app *App) StartEventServer() error {
 	apiAuthenticator := &auth.UAA{
 		Config: uaaConfig,
 	}
-	apiServer := eventserver.New(eventserver.Config{
+	apiServer := apiserver.New(apiserver.Config{
 		Store:         app.store,
 		Authenticator: apiAuthenticator,
 		Logger:        logger,
 	})
 	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
-		return eventserver.ListenAndServe(
+		return apiserver.ListenAndServe(
 			app.ctx,
 			logger,
 			apiServer,
