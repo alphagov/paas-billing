@@ -9,19 +9,28 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("GetPricingPlans", func() {
-
+var _ = Describe("GetVATRates", func() {
 	var (
 		cfg eventstore.Config
 	)
 
-	It("should return all the configured plans", func() {
+	It("should return all the configured VAT rates", func() {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
+					Code:      "Zero",
+					ValidFrom: "1970-01-01T00:00:00+00:00",
+					Rate:      0.0,
+				},
+				{
+					Code:      "Reduced",
+					ValidFrom: "1970-01-01T00:00:00+00:00",
+					Rate:      0.05,
+				},
+				{
 					Code:      "Standard",
+					ValidFrom: "1970-01-01T00:00:00+00:00",
 					Rate:      0.2,
-					ValidFrom: "epoch",
 				},
 			},
 			CurrencyRates: []eventio.CurrencyRate{
@@ -77,16 +86,12 @@ var _ = Describe("GetPricingPlans", func() {
 
 		Expect(store.Refresh()).To(Succeed())
 
-		plans, err := store.GetPricingPlans(eventio.TimeRangeFilter{
+		vatRates, err := store.GetVATRates(eventio.TimeRangeFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2018-01-01",
 		})
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(len(plans)).To(BeNumerically("==", 2), "expected two plans to be returned")
-
-		Expect(plans[0]).To(Equal(cfg.PricingPlans[0]), "expected first returned plan to match PLAN1 data")
-		Expect(plans[1]).To(Equal(cfg.PricingPlans[1]), "expected second returned plan to match PLAN2 data")
+		Expect(vatRates).To(ConsistOf(cfg.VATRates), "expected returned VAT rates to match expected data")
 	})
 
 })

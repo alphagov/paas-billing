@@ -9,26 +9,30 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("GetPricingPlans", func() {
-
+var _ = Describe("GetCurrencyRates", func() {
 	var (
 		cfg eventstore.Config
 	)
 
-	It("should return all the configured plans", func() {
+	It("should return all the configured currency rates", func() {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
 					Code:      "Standard",
 					Rate:      0.2,
-					ValidFrom: "epoch",
+					ValidFrom: "1970-01-01T00:00:00+00:00",
 				},
 			},
 			CurrencyRates: []eventio.CurrencyRate{
 				{
+					Code:      "USD",
+					Rate:      0.8,
+					ValidFrom: "1970-01-01T00:00:00+00:00",
+				},
+				{
 					Code:      "GBP",
 					Rate:      1,
-					ValidFrom: "epoch",
+					ValidFrom: "1970-01-01T00:00:00+00:00",
 				},
 			},
 			PricingPlans: []eventio.PricingPlan{
@@ -77,16 +81,12 @@ var _ = Describe("GetPricingPlans", func() {
 
 		Expect(store.Refresh()).To(Succeed())
 
-		plans, err := store.GetPricingPlans(eventio.TimeRangeFilter{
+		currencyRates, err := store.GetCurrencyRates(eventio.TimeRangeFilter{
 			RangeStart: "2001-01-01",
 			RangeStop:  "2018-01-01",
 		})
 		Expect(err).ToNot(HaveOccurred())
-
-		Expect(len(plans)).To(BeNumerically("==", 2), "expected two plans to be returned")
-
-		Expect(plans[0]).To(Equal(cfg.PricingPlans[0]), "expected first returned plan to match PLAN1 data")
-		Expect(plans[1]).To(Equal(cfg.PricingPlans[1]), "expected second returned plan to match PLAN2 data")
+		Expect(currencyRates).To(ConsistOf(cfg.CurrencyRates), "expected returned currency rates to match expected data")
 	})
 
 })

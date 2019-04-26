@@ -8,11 +8,19 @@ import (
 )
 
 type FakeBillableEventRows struct {
+	NextStub        func() bool
+	nextMutex       sync.RWMutex
+	nextArgsForCall []struct{}
+	nextReturns     struct {
+		result1 bool
+	}
+	nextReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	CloseStub        func() error
 	closeMutex       sync.RWMutex
-	closeArgsForCall []struct {
-	}
-	closeReturns struct {
+	closeArgsForCall []struct{}
+	closeReturns     struct {
 		result1 error
 	}
 	closeReturnsOnCall map[int]struct {
@@ -20,31 +28,17 @@ type FakeBillableEventRows struct {
 	}
 	ErrStub        func() error
 	errMutex       sync.RWMutex
-	errArgsForCall []struct {
-	}
-	errReturns struct {
+	errArgsForCall []struct{}
+	errReturns     struct {
 		result1 error
 	}
 	errReturnsOnCall map[int]struct {
 		result1 error
 	}
-	EventStub        func() (*eventio.BillableEvent, error)
-	eventMutex       sync.RWMutex
-	eventArgsForCall []struct {
-	}
-	eventReturns struct {
-		result1 *eventio.BillableEvent
-		result2 error
-	}
-	eventReturnsOnCall map[int]struct {
-		result1 *eventio.BillableEvent
-		result2 error
-	}
 	EventJSONStub        func() ([]byte, error)
 	eventJSONMutex       sync.RWMutex
-	eventJSONArgsForCall []struct {
-	}
-	eventJSONReturns struct {
+	eventJSONArgsForCall []struct{}
+	eventJSONReturns     struct {
 		result1 []byte
 		result2 error
 	}
@@ -52,25 +46,65 @@ type FakeBillableEventRows struct {
 		result1 []byte
 		result2 error
 	}
-	NextStub        func() bool
-	nextMutex       sync.RWMutex
-	nextArgsForCall []struct {
+	EventStub        func() (*eventio.BillableEvent, error)
+	eventMutex       sync.RWMutex
+	eventArgsForCall []struct{}
+	eventReturns     struct {
+		result1 *eventio.BillableEvent
+		result2 error
 	}
-	nextReturns struct {
-		result1 bool
-	}
-	nextReturnsOnCall map[int]struct {
-		result1 bool
+	eventReturnsOnCall map[int]struct {
+		result1 *eventio.BillableEvent
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
 
+func (fake *FakeBillableEventRows) Next() bool {
+	fake.nextMutex.Lock()
+	ret, specificReturn := fake.nextReturnsOnCall[len(fake.nextArgsForCall)]
+	fake.nextArgsForCall = append(fake.nextArgsForCall, struct{}{})
+	fake.recordInvocation("Next", []interface{}{})
+	fake.nextMutex.Unlock()
+	if fake.NextStub != nil {
+		return fake.NextStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	return fake.nextReturns.result1
+}
+
+func (fake *FakeBillableEventRows) NextCallCount() int {
+	fake.nextMutex.RLock()
+	defer fake.nextMutex.RUnlock()
+	return len(fake.nextArgsForCall)
+}
+
+func (fake *FakeBillableEventRows) NextReturns(result1 bool) {
+	fake.NextStub = nil
+	fake.nextReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeBillableEventRows) NextReturnsOnCall(i int, result1 bool) {
+	fake.NextStub = nil
+	if fake.nextReturnsOnCall == nil {
+		fake.nextReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.nextReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *FakeBillableEventRows) Close() error {
 	fake.closeMutex.Lock()
 	ret, specificReturn := fake.closeReturnsOnCall[len(fake.closeArgsForCall)]
-	fake.closeArgsForCall = append(fake.closeArgsForCall, struct {
-	}{})
+	fake.closeArgsForCall = append(fake.closeArgsForCall, struct{}{})
 	fake.recordInvocation("Close", []interface{}{})
 	fake.closeMutex.Unlock()
 	if fake.CloseStub != nil {
@@ -79,8 +113,7 @@ func (fake *FakeBillableEventRows) Close() error {
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.closeReturns
-	return fakeReturns.result1
+	return fake.closeReturns.result1
 }
 
 func (fake *FakeBillableEventRows) CloseCallCount() int {
@@ -89,15 +122,7 @@ func (fake *FakeBillableEventRows) CloseCallCount() int {
 	return len(fake.closeArgsForCall)
 }
 
-func (fake *FakeBillableEventRows) CloseCalls(stub func() error) {
-	fake.closeMutex.Lock()
-	defer fake.closeMutex.Unlock()
-	fake.CloseStub = stub
-}
-
 func (fake *FakeBillableEventRows) CloseReturns(result1 error) {
-	fake.closeMutex.Lock()
-	defer fake.closeMutex.Unlock()
 	fake.CloseStub = nil
 	fake.closeReturns = struct {
 		result1 error
@@ -105,8 +130,6 @@ func (fake *FakeBillableEventRows) CloseReturns(result1 error) {
 }
 
 func (fake *FakeBillableEventRows) CloseReturnsOnCall(i int, result1 error) {
-	fake.closeMutex.Lock()
-	defer fake.closeMutex.Unlock()
 	fake.CloseStub = nil
 	if fake.closeReturnsOnCall == nil {
 		fake.closeReturnsOnCall = make(map[int]struct {
@@ -121,8 +144,7 @@ func (fake *FakeBillableEventRows) CloseReturnsOnCall(i int, result1 error) {
 func (fake *FakeBillableEventRows) Err() error {
 	fake.errMutex.Lock()
 	ret, specificReturn := fake.errReturnsOnCall[len(fake.errArgsForCall)]
-	fake.errArgsForCall = append(fake.errArgsForCall, struct {
-	}{})
+	fake.errArgsForCall = append(fake.errArgsForCall, struct{}{})
 	fake.recordInvocation("Err", []interface{}{})
 	fake.errMutex.Unlock()
 	if fake.ErrStub != nil {
@@ -131,8 +153,7 @@ func (fake *FakeBillableEventRows) Err() error {
 	if specificReturn {
 		return ret.result1
 	}
-	fakeReturns := fake.errReturns
-	return fakeReturns.result1
+	return fake.errReturns.result1
 }
 
 func (fake *FakeBillableEventRows) ErrCallCount() int {
@@ -141,15 +162,7 @@ func (fake *FakeBillableEventRows) ErrCallCount() int {
 	return len(fake.errArgsForCall)
 }
 
-func (fake *FakeBillableEventRows) ErrCalls(stub func() error) {
-	fake.errMutex.Lock()
-	defer fake.errMutex.Unlock()
-	fake.ErrStub = stub
-}
-
 func (fake *FakeBillableEventRows) ErrReturns(result1 error) {
-	fake.errMutex.Lock()
-	defer fake.errMutex.Unlock()
 	fake.ErrStub = nil
 	fake.errReturns = struct {
 		result1 error
@@ -157,8 +170,6 @@ func (fake *FakeBillableEventRows) ErrReturns(result1 error) {
 }
 
 func (fake *FakeBillableEventRows) ErrReturnsOnCall(i int, result1 error) {
-	fake.errMutex.Lock()
-	defer fake.errMutex.Unlock()
 	fake.ErrStub = nil
 	if fake.errReturnsOnCall == nil {
 		fake.errReturnsOnCall = make(map[int]struct {
@@ -170,66 +181,10 @@ func (fake *FakeBillableEventRows) ErrReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeBillableEventRows) Event() (*eventio.BillableEvent, error) {
-	fake.eventMutex.Lock()
-	ret, specificReturn := fake.eventReturnsOnCall[len(fake.eventArgsForCall)]
-	fake.eventArgsForCall = append(fake.eventArgsForCall, struct {
-	}{})
-	fake.recordInvocation("Event", []interface{}{})
-	fake.eventMutex.Unlock()
-	if fake.EventStub != nil {
-		return fake.EventStub()
-	}
-	if specificReturn {
-		return ret.result1, ret.result2
-	}
-	fakeReturns := fake.eventReturns
-	return fakeReturns.result1, fakeReturns.result2
-}
-
-func (fake *FakeBillableEventRows) EventCallCount() int {
-	fake.eventMutex.RLock()
-	defer fake.eventMutex.RUnlock()
-	return len(fake.eventArgsForCall)
-}
-
-func (fake *FakeBillableEventRows) EventCalls(stub func() (*eventio.BillableEvent, error)) {
-	fake.eventMutex.Lock()
-	defer fake.eventMutex.Unlock()
-	fake.EventStub = stub
-}
-
-func (fake *FakeBillableEventRows) EventReturns(result1 *eventio.BillableEvent, result2 error) {
-	fake.eventMutex.Lock()
-	defer fake.eventMutex.Unlock()
-	fake.EventStub = nil
-	fake.eventReturns = struct {
-		result1 *eventio.BillableEvent
-		result2 error
-	}{result1, result2}
-}
-
-func (fake *FakeBillableEventRows) EventReturnsOnCall(i int, result1 *eventio.BillableEvent, result2 error) {
-	fake.eventMutex.Lock()
-	defer fake.eventMutex.Unlock()
-	fake.EventStub = nil
-	if fake.eventReturnsOnCall == nil {
-		fake.eventReturnsOnCall = make(map[int]struct {
-			result1 *eventio.BillableEvent
-			result2 error
-		})
-	}
-	fake.eventReturnsOnCall[i] = struct {
-		result1 *eventio.BillableEvent
-		result2 error
-	}{result1, result2}
-}
-
 func (fake *FakeBillableEventRows) EventJSON() ([]byte, error) {
 	fake.eventJSONMutex.Lock()
 	ret, specificReturn := fake.eventJSONReturnsOnCall[len(fake.eventJSONArgsForCall)]
-	fake.eventJSONArgsForCall = append(fake.eventJSONArgsForCall, struct {
-	}{})
+	fake.eventJSONArgsForCall = append(fake.eventJSONArgsForCall, struct{}{})
 	fake.recordInvocation("EventJSON", []interface{}{})
 	fake.eventJSONMutex.Unlock()
 	if fake.EventJSONStub != nil {
@@ -238,8 +193,7 @@ func (fake *FakeBillableEventRows) EventJSON() ([]byte, error) {
 	if specificReturn {
 		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.eventJSONReturns
-	return fakeReturns.result1, fakeReturns.result2
+	return fake.eventJSONReturns.result1, fake.eventJSONReturns.result2
 }
 
 func (fake *FakeBillableEventRows) EventJSONCallCount() int {
@@ -248,15 +202,7 @@ func (fake *FakeBillableEventRows) EventJSONCallCount() int {
 	return len(fake.eventJSONArgsForCall)
 }
 
-func (fake *FakeBillableEventRows) EventJSONCalls(stub func() ([]byte, error)) {
-	fake.eventJSONMutex.Lock()
-	defer fake.eventJSONMutex.Unlock()
-	fake.EventJSONStub = stub
-}
-
 func (fake *FakeBillableEventRows) EventJSONReturns(result1 []byte, result2 error) {
-	fake.eventJSONMutex.Lock()
-	defer fake.eventJSONMutex.Unlock()
 	fake.EventJSONStub = nil
 	fake.eventJSONReturns = struct {
 		result1 []byte
@@ -265,8 +211,6 @@ func (fake *FakeBillableEventRows) EventJSONReturns(result1 []byte, result2 erro
 }
 
 func (fake *FakeBillableEventRows) EventJSONReturnsOnCall(i int, result1 []byte, result2 error) {
-	fake.eventJSONMutex.Lock()
-	defer fake.eventJSONMutex.Unlock()
 	fake.EventJSONStub = nil
 	if fake.eventJSONReturnsOnCall == nil {
 		fake.eventJSONReturnsOnCall = make(map[int]struct {
@@ -280,71 +224,62 @@ func (fake *FakeBillableEventRows) EventJSONReturnsOnCall(i int, result1 []byte,
 	}{result1, result2}
 }
 
-func (fake *FakeBillableEventRows) Next() bool {
-	fake.nextMutex.Lock()
-	ret, specificReturn := fake.nextReturnsOnCall[len(fake.nextArgsForCall)]
-	fake.nextArgsForCall = append(fake.nextArgsForCall, struct {
-	}{})
-	fake.recordInvocation("Next", []interface{}{})
-	fake.nextMutex.Unlock()
-	if fake.NextStub != nil {
-		return fake.NextStub()
+func (fake *FakeBillableEventRows) Event() (*eventio.BillableEvent, error) {
+	fake.eventMutex.Lock()
+	ret, specificReturn := fake.eventReturnsOnCall[len(fake.eventArgsForCall)]
+	fake.eventArgsForCall = append(fake.eventArgsForCall, struct{}{})
+	fake.recordInvocation("Event", []interface{}{})
+	fake.eventMutex.Unlock()
+	if fake.EventStub != nil {
+		return fake.EventStub()
 	}
 	if specificReturn {
-		return ret.result1
+		return ret.result1, ret.result2
 	}
-	fakeReturns := fake.nextReturns
-	return fakeReturns.result1
+	return fake.eventReturns.result1, fake.eventReturns.result2
 }
 
-func (fake *FakeBillableEventRows) NextCallCount() int {
-	fake.nextMutex.RLock()
-	defer fake.nextMutex.RUnlock()
-	return len(fake.nextArgsForCall)
+func (fake *FakeBillableEventRows) EventCallCount() int {
+	fake.eventMutex.RLock()
+	defer fake.eventMutex.RUnlock()
+	return len(fake.eventArgsForCall)
 }
 
-func (fake *FakeBillableEventRows) NextCalls(stub func() bool) {
-	fake.nextMutex.Lock()
-	defer fake.nextMutex.Unlock()
-	fake.NextStub = stub
+func (fake *FakeBillableEventRows) EventReturns(result1 *eventio.BillableEvent, result2 error) {
+	fake.EventStub = nil
+	fake.eventReturns = struct {
+		result1 *eventio.BillableEvent
+		result2 error
+	}{result1, result2}
 }
 
-func (fake *FakeBillableEventRows) NextReturns(result1 bool) {
-	fake.nextMutex.Lock()
-	defer fake.nextMutex.Unlock()
-	fake.NextStub = nil
-	fake.nextReturns = struct {
-		result1 bool
-	}{result1}
-}
-
-func (fake *FakeBillableEventRows) NextReturnsOnCall(i int, result1 bool) {
-	fake.nextMutex.Lock()
-	defer fake.nextMutex.Unlock()
-	fake.NextStub = nil
-	if fake.nextReturnsOnCall == nil {
-		fake.nextReturnsOnCall = make(map[int]struct {
-			result1 bool
+func (fake *FakeBillableEventRows) EventReturnsOnCall(i int, result1 *eventio.BillableEvent, result2 error) {
+	fake.EventStub = nil
+	if fake.eventReturnsOnCall == nil {
+		fake.eventReturnsOnCall = make(map[int]struct {
+			result1 *eventio.BillableEvent
+			result2 error
 		})
 	}
-	fake.nextReturnsOnCall[i] = struct {
-		result1 bool
-	}{result1}
+	fake.eventReturnsOnCall[i] = struct {
+		result1 *eventio.BillableEvent
+		result2 error
+	}{result1, result2}
 }
 
 func (fake *FakeBillableEventRows) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
+	fake.nextMutex.RLock()
+	defer fake.nextMutex.RUnlock()
 	fake.closeMutex.RLock()
 	defer fake.closeMutex.RUnlock()
 	fake.errMutex.RLock()
 	defer fake.errMutex.RUnlock()
-	fake.eventMutex.RLock()
-	defer fake.eventMutex.RUnlock()
 	fake.eventJSONMutex.RLock()
 	defer fake.eventJSONMutex.RUnlock()
-	fake.nextMutex.RLock()
-	defer fake.nextMutex.RUnlock()
+	fake.eventMutex.RLock()
+	defer fake.eventMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
