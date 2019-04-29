@@ -164,7 +164,6 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				b.resource_type,
 				b.org_guid,
 				b.org_name,
-				o.quota_definition_guid,
 				b.space_guid,
 				b.space_name,
 				b.plan_guid,
@@ -189,13 +188,20 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 			from
 			    filtered_range,
 				billable_event_components b
-			left join
-				orgs o on b.org_guid = o.guid
 			where
 				duration && filtered_range
 				%s
 			order by
 				lower(duration) asc
+		),
+		components_with_price_and_org_quota as (
+			select
+				c.*, o.quota_definition_guid
+			from
+				components_with_price c
+			left join
+				(select quota_definition_guid, guid from orgs) o
+			on c.org_guid = o.guid
 		),
 		billable_events as (
 			select
@@ -231,7 +237,7 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 					))
 				) as price
 			from
-				components_with_price
+				components_with_price_and_org_quota
 			group by
 				event_guid,
 				resource_guid,
