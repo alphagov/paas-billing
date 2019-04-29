@@ -164,7 +164,6 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				b.resource_type,
 				b.org_guid,
 				b.org_name,
-				o.quota_definition_guid,
 				b.space_guid,
 				b.space_name,
 				b.plan_guid,
@@ -189,8 +188,6 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 			from
 			    filtered_range,
 				billable_event_components b
-			left join
-				orgs o on b.org_guid = o.guid
 			where
 				duration && filtered_range
 				%s
@@ -207,7 +204,7 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 				resource_type,
 				org_guid,
 				org_name,
-				quota_definition_guid,
+				null::uuid as quota_definition_guid,
 				space_guid,
 				space_name,
 				plan_guid,
