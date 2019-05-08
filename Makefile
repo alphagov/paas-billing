@@ -30,7 +30,7 @@ run-dev-exports:
 test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go fakes/fake_cf_data_client.go
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE)
+	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skipPackage acceptance_tests
 
 .PHONY: smoke
 smoke:
@@ -46,6 +46,12 @@ smoke:
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	echo "smoke test enabled against ${CF_API_ADDRESS}"
 	ginkgo -nodes=2 -v -progress .
+
+.PHONY: acceptance
+acceptance:
+	$(eval export BILLING_API_URL ?= http://127.0.0.1:8881)
+	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
+	ginkgo -r acceptance_tests
 
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
 	counterfeiter -o $@ $< UsageEventsAPI

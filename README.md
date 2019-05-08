@@ -510,16 +510,27 @@ make run-dev-collector
 
 ### Run the tests
 
+#### Unit tests
 Use the provided `test` make target to run unit tests
 
 ```
 make test
 ```
 
+#### Smoke tests
 If you have a development environment setup that works with `run-dev` you can run a basic smoke test against it via:
 
 **BROKEN** Currently the smoke tests are broken.
 
 ```
 make smoke
+```
+
+#### Acceptance tests
+Use the provided `acceptance` make target to run acceptance tests. To override the billing API URL, set the 
+`BILLING_API_URL` environment variable. As with other tests, the environment must have an active CF session
+
+```
+cf login -a $API_ENDPOINT -u $USERNAME -p $PASSWORD
+make acceptance
 ```
