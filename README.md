@@ -38,7 +38,7 @@ The repository contains the following packages:
 
 You will need:
 
-* `Go v1.9+`
+* `Go v1.11+`
 
 To build the application run the default make target:
 
@@ -467,7 +467,7 @@ curl -s -G 'http://localhost:8881/pricing_plans' \
 
 You will need:
 
-* `dep` for dependency management.
+* `go` 1.11+ for using `go mod`
 * `ginkgo` for running tests
 * `counterfeiter` for generating test mocks: `go get github.com/maxbrunsfeld/counterfeiter`
 * `postgres 9.5` database (you can use docker to spin one up)

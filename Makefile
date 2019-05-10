@@ -4,7 +4,8 @@ CF_API_ADDRESS ?= $(shell cf target | awk '/api endpoint/ {print $$3}')
 APP_ROOT ?= $(PWD)
 
 bin/paas-billing: clean
-	go build -o $@ .
+	$(eval export GO111MODULE=on)
+	go build -mod=vendor -o $@ .
 
 run-dev: bin/paas-billing run-dev-exports
 	{ ./bin/paas-billing collector & ./bin/paas-billing api ; } | ./scripts/colorize
@@ -30,6 +31,8 @@ run-dev-exports:
 test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go fakes/fake_cf_data_client.go
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
+	$(eval export GO111MODULE=on)
+	$(eval export GOFLAGS=-mod=vendor)
 	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE)
 
 .PHONY: smoke
@@ -45,6 +48,8 @@ smoke:
 	$(eval export TEST_AUTH_TOKEN=$(shell cf oauth-token))
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	echo "smoke test enabled against ${CF_API_ADDRESS}"
+	$(eval export GO111MODULE=on)
+	$(eval export GOFLAGS=-mod=vendor)
 	ginkgo -nodes=2 -v -progress .
 
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
