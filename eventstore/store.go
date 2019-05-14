@@ -24,8 +24,8 @@ const (
 	ComputeServiceGUID    = "4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b"
 	TaskPlanGUID          = "ebfa9453-ef66-450c-8c37-d53dfd931038"
 	StagingPlanGUID       = "9d071c77-7a68-4346-9981-e8dafac95b6f"
-	DefaultInitTimeout    = 25 * time.Minute
-	DefaultRefreshTimeout = 25 * time.Minute
+	DefaultInitTimeout    = 2 * time.Hour
+	DefaultRefreshTimeout = 2 * time.Hour
 	DefaultStoreTimeout   = 45 * time.Second
 	DefaultQueryTimeout   = 45 * time.Second
 )

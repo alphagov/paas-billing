@@ -40,7 +40,7 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Collector.MinWaitTime).To(Equal(3 * time.Second))
 		Expect(cfg.CFFetcher.RecordMinAge).To(Equal(10 * time.Minute))
 		Expect(cfg.CFFetcher.FetchLimit).To(Equal(50))
-		Expect(cfg.Processor.Schedule).To(Equal(30 * time.Minute))
+		Expect(cfg.Processor.Schedule).To(Equal(6 * time.Hour))
 		Expect(cfg.ServerPort).To(Equal(8881))
 	})
 
