@@ -43,6 +43,7 @@ func New(cfg Config) *echo.Echo {
 	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
 	e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
 	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
+	e.GET("/totals", TotalCostHandler(cfg.Store))
 
 	e.GET("/", status)
 
