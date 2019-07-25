@@ -29,6 +29,7 @@ type Config struct {
 	ServerPort            int
 	Processor             ProcessorConfig
 	HistoricDataCollector cfstore.Config
+	NewRelic              newrelic.Config
 }
 
 func (cfg Config) ConfigFile() (string, error) {
@@ -101,6 +102,7 @@ func NewConfigFromEnv() (cfg Config, err error) {
 			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 30*time.Minute),
 		},
 		ServerPort: getEnvWithDefaultInt("PORT", 8881),
+		NewRelic:   newrelic.NewConfig("paas-billing", "NEW_RELIC_LICENSE_KEY"),
 	}
 	return cfg, nil
 }

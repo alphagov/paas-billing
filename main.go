@@ -12,7 +12,6 @@ import (
 )
 
 func Main(ctx context.Context, logger lager.Logger) error {
-
 	cfg, err := NewConfigFromEnv()
 	if err != nil {
 		return err

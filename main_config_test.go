@@ -26,6 +26,7 @@ var _ = Describe("Config", func() {
 		os.Unsetenv("CF_SKIP_SSL_VALIDATION")
 		os.Unsetenv("CF_TOKEN")
 		os.Unsetenv("CF_USER_AGENT")
+		os.Unsetenv("NEW_RELIC_LICENSE_KEY")
 		os.Unsetenv("PROCESSOR_SCHEDULE")
 		os.Unsetenv("PORT")
 	})
@@ -154,6 +155,13 @@ var _ = Describe("Config", func() {
 		cfg, err := NewConfigFromEnv()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.CFFetcher.ClientConfig.UserAgent).To(Equal("set-in-test"))
+	})
+
+	It("should set NewRelic.License from NEW_RELIC_LICENSE_KEY", func() {
+		os.Setenv("NEW_RELIC_LICENSE_KEY", "set-in-test")
+		cfg, err := NewConfigFromEnv()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.NewRelic.License).To(Equal("set-in-test"))
 	})
 
 	It("should set Processor.Schedule from PROCESSOR_SCHEDULE", func() {
