@@ -61,6 +61,7 @@ func (e *CFEventFetcher) FetchEvents(ctx context.Context, lastEvent *eventio.Raw
 		"after_guid": guid,
 		"limit":      fetchLimit,
 	})
+	startTime := time.Now()
 	usageEvents, err := e.client.Get(guid, fetchLimit, recordMinAge)
 	if err != nil {
 		return nil, err
@@ -79,6 +80,7 @@ func (e *CFEventFetcher) FetchEvents(ctx context.Context, lastEvent *eventio.Raw
 	e.logger.Info("fetched", lager.Data{
 		"last_guid":   guid,
 		"event_count": len(events),
+		"elapsed":     time.Since(startTime).String(),
 	})
 
 	return events, nil
