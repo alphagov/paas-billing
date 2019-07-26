@@ -2,7 +2,9 @@ package eventstore
 
 import (
 	"encoding/json"
+	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventio"
 )
 
@@ -17,6 +19,8 @@ func (s *EventStore) GetCurrencyRates(filter eventio.TimeRangeFilter) ([]eventio
 		return nil, err
 	}
 	defer tx.Rollback()
+
+	startTime := time.Now()
 	rows, err := queryJSON(tx, `
         with
         valid_currency_rates as (
@@ -44,8 +48,17 @@ func (s *EventStore) GetCurrencyRates(filter eventio.TimeRangeFilter) ([]eventio
             valid_from
     `, filter.RangeStart, filter.RangeStop)
 	if err != nil {
+		s.logger.Error("get-currency-rates-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": time.Since(startTime).String(),
+		})
 		return nil, err
 	}
+	s.logger.Info("get-currency-rates-query", lager.Data{
+		"filter":  filter,
+		"elapsed": time.Since(startTime).String(),
+	})
+
 	defer rows.Close()
 	currencyRates := []eventio.CurrencyRate{}
 	for rows.Next() {
