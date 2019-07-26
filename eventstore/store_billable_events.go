@@ -17,6 +17,8 @@ var _ eventio.BillableEventReader = &EventStore{}
 // rows.Close when you are done to release the connection. Use GetBillableEvents
 // if you intend on buffering everything into memory.
 func (s *EventStore) GetBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	txn := s.NewRelic.StartTransaction("getBillableEventRows", nil, nil)
+	ctx := newrelic.NewContext(ctx, txn)
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err

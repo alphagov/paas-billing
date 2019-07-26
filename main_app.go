@@ -17,6 +17,7 @@ import (
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/cloudfoundry-community/go-cfclient"
+	_ "github.com/newrelic/go-agent/_integrations/nrpq"
 	"github.com/pkg/errors"
 )
 
@@ -28,6 +29,7 @@ type App struct {
 	logger            lager.Logger
 	cfg               Config
 	Shutdown          context.CancelFunc
+	NewRelic          newrelic.Application
 }
 
 func (app *App) Init() error {
@@ -60,6 +62,7 @@ func (app *App) startUsageEventCollector(kind cffetcher.Kind) error {
 		ClientConfig: app.cfg.CFFetcher.ClientConfig,
 		FetchLimit:   app.cfg.CFFetcher.FetchLimit,
 		RecordMinAge: app.cfg.CFFetcher.RecordMinAge,
+		NewRelic:     app.NewRelic,
 	})
 	if err != nil {
 		return err
@@ -70,6 +73,7 @@ func (app *App) startUsageEventCollector(kind cffetcher.Kind) error {
 		Fetcher:     fetcher,
 		Schedule:    app.cfg.Collector.Schedule,
 		MinWaitTime: app.cfg.Collector.MinWaitTime,
+		NewRelic:    app.NewRelic,
 	})
 	return app.start(name, logger, func() error {
 		return collector.Run(app.ctx)
@@ -90,6 +94,7 @@ func (app *App) StartAPIServer() error {
 		Store:         app.store,
 		Authenticator: apiAuthenticator,
 		Logger:        logger,
+		NewRelic:      app.NewRelic,
 	})
 	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
@@ -191,11 +196,16 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		cfg.Logger = lager.NewLogger("app")
 	}
 
+	newRelic, err := newrelic.NewApplication(cfg.NewRelic)
+	if err != nil {
+		return err
+	}
+
 	if cfg.Store == nil {
 		if cfg.DatabaseURL == "" {
 			return nil, fmt.Errorf("Store or DatabaseURL must be provided in Config")
 		}
-		db, err := sql.Open("postgres", cfg.DatabaseURL)
+		db, err := sql.Open("nrpostgres", cfg.DatabaseURL)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to connect to database")
 		}
@@ -203,7 +213,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		if err != nil {
 			return nil, err
 		}
-		store, err := eventstore.NewFromConfig(ctx, db, cfg.Logger.Session("store"), planConfigFile)
+		store, err := eventstore.NewFromConfig(ctx, db, cfg.Logger.Session("store"), planConfigFile, newRelic)
 		if err != nil {
 			return nil, err
 		}
@@ -234,6 +244,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		store:             cfg.Store,
 		historicDataStore: historicDataStore,
 		logger:            cfg.Logger,
+		NewRelic:          newRelic,
 	}
 
 	return app, nil
