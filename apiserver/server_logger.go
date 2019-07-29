@@ -1,6 +1,7 @@
 package apiserver
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -153,7 +154,31 @@ func (l *Logger) SetHeader(_ string) {
 	panic("not implemented")
 }
 
-func NewLogger(logger lager.Logger) echo.Logger {
+var _ echo.Logger = &Logger{}
+
+// Write writes len(p) bytes from p to the underlying data stream.
+// It returns the number of bytes written from p (0 <= n <= len(p)) and
+// any error encountered that caused the write to stop early. Write must
+// return a non-nil error if it returns n < len(p). Write must not modify
+// the slice data, even temporarily.
+//
+// So…
+// * Always say you wrote all the data.
+// * Never return an error?
+// * Parse the data as JSON without ever modifying the slice.
+func (l *Logger) Write(p []byte) (int, error) {
+	logMessage := map[string]interface{}{}
+	err := json.Unmarshal(p, &logMessage)
+	if err != nil {
+		return 0, err
+	}
+	l.lager.Info("logger-middleware", logMessage)
+	return len(p), nil
+}
+
+var _ io.Writer = &Logger{}
+
+func NewLogger(logger lager.Logger) *Logger {
 	return &Logger{
 		lager:  logger,
 		action: "log",
