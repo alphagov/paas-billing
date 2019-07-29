@@ -79,10 +79,10 @@ func (e *CFEventFetcher) FetchEvents(ctx context.Context, lastEvent *eventio.Raw
 	}
 	elapsed := time.Since(startTime)
 	e.logger.Info("fetched", lager.Data{
-		"last_guid":      guid,
-		"event_count":    len(events),
-		"elapsed":        elapsed.String(),
-		"elapsed_millis": string(int64(elapsed / time.Millisecond)),
+		"last_guid":     guid,
+		"event_count":   len(events),
+		"elapsed":       elapsed.String(),
+		"elapse_millis": string(int64(elapsed / time.Millisecond)),
 	})
 
 	return events, nil

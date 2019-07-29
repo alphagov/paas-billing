@@ -50,16 +50,16 @@ func (s *EventStore) GetVATRates(filter eventio.TimeRangeFilter) ([]eventio.VATR
 	elapsed := time.Since(startTime)
 	if err != nil {
 		s.logger.Error("get-vat-rates-query", err, lager.Data{
-			"filter":         filter,
-			"elapsed":        elapsed.String(),
-			"elapsed_millis": int64(elapsed / time.Millisecond),
+			"filter":        filter,
+			"elapsed":       elapsed.String(),
+			"elapse_millis": int64(elapsed / time.Millisecond),
 		})
 		return nil, err
 	}
 	s.logger.Info("get-vat-rates-query", lager.Data{
-		"filter":         filter,
-		"elapsed":        elapsed.String(),
-		"elapsed_millis": int64(elapsed / time.Millisecond),
+		"filter":        filter,
+		"elapsed":       elapsed.String(),
+		"elapse_millis": int64(elapsed / time.Millisecond),
 	})
 
 	defer rows.Close()
