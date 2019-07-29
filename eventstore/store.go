@@ -680,8 +680,8 @@ func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
 		elapsed := time.Since(startTime)
 		s.logger.Info("finish-sql-file", lager.Data{
 			"sqlFile":    filename,
-			"elapsed":    elapsed.String(),
-			"elapsed_ms": int64(elapsed / time.Millisecond),
+			"first_one":  elapsed.String(),
+			"second_one": int64(elapsed / time.Millisecond),
 		})
 	}()
 

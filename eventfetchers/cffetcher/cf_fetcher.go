@@ -81,8 +81,8 @@ func (e *CFEventFetcher) FetchEvents(ctx context.Context, lastEvent *eventio.Raw
 	e.logger.Info("fetched", lager.Data{
 		"last_guid":   guid,
 		"event_count": len(events),
-		"elapsed":     elapsed.String(),
-		"elapsed_ms":  int64(elapsed / time.Millisecond),
+		"first_one":   elapsed.String(),
+		"second_one":  int64(elapsed / time.Millisecond),
 	})
 
 	return events, nil

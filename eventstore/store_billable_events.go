@@ -50,15 +50,15 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 	if err != nil {
 		s.logger.Error("get-billable-event-rows-query", err, lager.Data{
 			"filter":     filter,
-			"elapsed":    elapsed.String(),
-			"elapsed_ms": int64(elapsed / time.Millisecond),
+			"first_one":  elapsed.String(),
+			"second_one": int64(elapsed / time.Millisecond),
 		})
 		return nil, err
 	}
 	s.logger.Info("get-billable-event-rows-query", lager.Data{
 		"filter":     filter,
-		"elapsed":    elapsed.String(),
-		"elapsed_ms": int64(elapsed / time.Millisecond),
+		"first_one":  elapsed.String(),
+		"second_one": int64(elapsed / time.Millisecond),
 	})
 
 	return &BillableEventRows{rows}, nil
