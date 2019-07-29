@@ -51,13 +51,13 @@ func (s *EventStore) GetCurrencyRates(filter eventio.TimeRangeFilter) ([]eventio
 	if err != nil {
 		s.logger.Error("get-currency-rates-query", err, lager.Data{
 			"filter":  filter,
-			"elapsed": int64(elapsed / time.Millisecond),
+			"elapsed": int64(elapsed),
 		})
 		return nil, err
 	}
 	s.logger.Info("get-currency-rates-query", lager.Data{
 		"filter":  filter,
-		"elapsed": int64(elapsed / time.Millisecond),
+		"elapsed": int64(elapsed),
 	})
 
 	defer rows.Close()
