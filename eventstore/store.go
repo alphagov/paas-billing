@@ -679,9 +679,9 @@ func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
 	defer func() {
 		elapsed := time.Since(startTime)
 		s.logger.Info("finish-sql-file", lager.Data{
-			"sqlFile":    filename,
-			"first_one":  elapsed.String(),
-			"second_one": int64(elapsed / time.Millisecond),
+			"sqlFile":        filename,
+			"elapsed":        elapsed.String(),
+			"elapsed_millis": string(int64(elapsed / time.Millisecond)),
 		})
 	}()
 
