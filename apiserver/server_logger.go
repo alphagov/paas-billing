@@ -134,11 +134,11 @@ func (l *Logger) SetLevel(newLvl log.Lvl) {
 }
 
 func (l *Logger) Prefix() string {
-	panic("notimp")
+	panic("not implemented")
 }
 
 func (l *Logger) SetPrefix(p string) {
-	panic("notimp")
+	panic("not implemented")
 }
 
 func (l *Logger) Output() io.Writer {
@@ -146,7 +146,11 @@ func (l *Logger) Output() io.Writer {
 }
 
 func (l *Logger) SetOutput(w io.Writer) {
-	panic("notimp")
+	panic("not implemented")
+}
+
+func (l *Logger) SetHeader(_ string) {
+	panic("not implemented")
 }
 
 func NewLogger(logger lager.Logger) echo.Logger {
