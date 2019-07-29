@@ -82,16 +82,14 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 	elapsed := time.Since(startTime)
 	if err != nil {
 		s.logger.Error("get-usage-event-rows-query", err, lager.Data{
-			"filter":       filter,
-			"elapsed":      elapsed.String(),
-			"elapsemillis": int64(elapsed / time.Millisecond),
+			"filter":  filter,
+			"elapsed": int64(elapsed / time.Millisecond),
 		})
 		return nil, err
 	}
 	s.logger.Info("get-usage-event-rows-query", lager.Data{
-		"filter":       filter,
-		"elapsed":      elapsed.String(),
-		"elapsemillis": int64(elapsed / time.Millisecond),
+		"filter":  filter,
+		"elapsed": int64(elapsed / time.Millisecond),
 	})
 	return &UsageEventRows{rows, tx}, nil
 }

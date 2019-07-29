@@ -65,10 +65,9 @@ func (c *EventCollector) Run(ctx context.Context) error {
 			c.eventsCollected += len(collectedEvents)
 			elapsed := time.Since(startTime)
 			c.logger.Info("collected", lager.Data{
-				"count":        len(collectedEvents),
-				"kind":         c.fetcher.Kind(),
-				"elapsed":      elapsed.String(),
-				"elapsemillis": int64(elapsed / time.Millisecond),
+				"count":   len(collectedEvents),
+				"kind":    c.fetcher.Kind(),
+				"elapsed": int64(elapsed / time.Millisecond),
 			})
 		case <-ctx.Done():
 			return nil
