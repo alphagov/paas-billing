@@ -34,7 +34,11 @@ func New(cfg Config) *echo.Echo {
 	}
 
 	if cfg.Logger != nil {
-		e.Logger = NewLogger(cfg.Logger)
+		echoCompatibleLogger := NewLogger(cfg.Logger)
+		e.Logger = echoCompatibleLogger
+		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+			Output: echoCompatibleLogger,
+		}))
 	}
 
 	e.GET("/vat_rates", VATRatesHandler(cfg.Store))

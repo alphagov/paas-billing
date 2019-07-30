@@ -44,7 +44,7 @@ var _ = Describe("Errors", func() {
 		e.ServeHTTP(res, req)
 		Expect(res.Code).To(Equal(500))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
-		Expect(res.Body.String()).To(Equal(`{"error":"internal server error"}`))
+		Expect(res.Body.String()).To(MatchJSON(`{"error":"internal server error"}`))
 	})
 
 	It("should return 'internal server error' for unknown errors", func() {
@@ -56,7 +56,7 @@ var _ = Describe("Errors", func() {
 		e.ServeHTTP(res, req)
 		Expect(res.Code).To(Equal(500))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
-		Expect(res.Body.String()).To(Equal(`{"error":"internal server error"}`))
+		Expect(res.Body.String()).To(MatchJSON(`{"error":"internal server error"}`))
 	})
 
 	It("should pass-through errors of type echo.HTTPError (with message type string)", func() {
@@ -68,7 +68,7 @@ var _ = Describe("Errors", func() {
 		e.ServeHTTP(res, req)
 		Expect(res.Code).To(Equal(http.StatusTeapot))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
-		Expect(res.Body.String()).To(Equal(`{"error":"friendly-string-message"}`))
+		Expect(res.Body.String()).To(MatchJSON(`{"error":"friendly-string-message"}`))
 	})
 
 	It("should pass-through errors of type echo.HTTPError (with message type error)", func() {
@@ -80,7 +80,7 @@ var _ = Describe("Errors", func() {
 		e.ServeHTTP(res, req)
 		Expect(res.Code).To(Equal(http.StatusTeapot))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
-		Expect(res.Body.String()).To(Equal(`{"error":"friendly-error-message"}`))
+		Expect(res.Body.String()).To(MatchJSON(`{"error":"friendly-error-message"}`))
 	})
 
 })
