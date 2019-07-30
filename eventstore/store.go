@@ -676,24 +676,31 @@ func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
 	startTime := time.Now()
 	s.logger.Info("run-sql-file", map[string]interface{}{"sqlFile": filename})
 
-	defer func() {
-		s.logger.Info("finish-sql-file", lager.Data{
-			"sqlFile": filename,
-			"elapsed": time.Since(startTime),
-		})
-	}()
-
 	schemaFilename := schemaFile(filename)
 	sql, err := ioutil.ReadFile(schemaFilename)
 	if err != nil {
-		return fmt.Errorf("failed to execute sql file %s: %s", schemaFilename, err)
+		err = fmt.Errorf("failed to execute sql file %s: %s", schemaFilename, err)
+		s.logger.Error("finish-sql-file", err, lager.Data{
+			"sqlFile": filename,
+			"elapsed": int64(time.Since(startTime)),
+		})
+		return err
 	}
 
 	_, err = tx.Exec(string(sql))
 	if err != nil {
-		return wrapPqError(err, schemaFilename)
+		err = wrapPqError(err, schemaFilename)
+		s.logger.Error("finish-sql-file", err, lager.Data{
+			"sqlFile": filename,
+			"elapsed": int64(time.Since(startTime)),
+		})
+		return err
 	}
 
+	s.logger.Info("finish-sql-file", lager.Data{
+		"sqlFile": filename,
+		"elapsed": int64(time.Since(startTime)),
+	})
 	return nil
 }
 

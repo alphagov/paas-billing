@@ -57,6 +57,8 @@ func (e *EventStore) getConsolidatedBillableEventRows(tx *sql.Tx, filter eventio
 	if len(filterConditions) > 0 {
 		filterQuery = " and " + strings.Join(filterConditions, " and ")
 	}
+
+	startTime := time.Now()
 	rows, err := queryJSON(tx, fmt.Sprintf(`
 		select
 			event_guid,
@@ -82,9 +84,18 @@ func (e *EventStore) getConsolidatedBillableEventRows(tx *sql.Tx, filter eventio
 			%s
 		order by event_guid
 	`, filterQuery), args...)
+	elapsed := time.Since(startTime)
 	if err != nil {
+		e.logger.Error("get-consolidated-billable-event-rows-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
 		return nil, err
 	}
+	e.logger.Info("get-consolidated-billable-event-rows-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
 	return &BillableEventRows{rows}, nil
 }
 
@@ -129,13 +140,23 @@ func (e *EventStore) isRangeConsolidated(tx *sql.Tx, filter eventio.EventFilter)
 	if err := filter.Validate(); err != nil {
 		return false, err
 	}
+	startTime := time.Now()
 	rows, err := tx.Query(
 		"SELECT 1 FROM consolidation_history where consolidated_range=$1::tstzrange",
 		fmt.Sprintf("[%s, %s)", filter.RangeStart, filter.RangeStop),
 	)
+	elapsed := time.Since(startTime)
 	if err != nil {
+		e.logger.Error("is-range-consolidated-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
 		return false, err
 	}
+	e.logger.Info("is-range-consolidated-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
 	defer rows.Close()
 	return rows.Next(), nil
 }
@@ -240,6 +261,7 @@ func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 		return fmt.Errorf("consolidate must be called without an organisations filter (i.e. for all orgs)")
 	}
 
+	startTime := time.Now()
 	_, err := tx.Exec(`
 				insert into consolidation_history (
 					consolidated_range,
@@ -250,9 +272,18 @@ func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 				)`,
 		fmt.Sprintf("[%s, %s)", filter.RangeStart, filter.RangeStop),
 		time.Now())
+	elapsed := time.Since(startTime)
 	if err != nil {
+		e.logger.Error("consolidation-history-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
 		return err
 	}
+	e.logger.Info("consolidation-history-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
 
 	query, args, err := WithBillableEvents(`
 			insert into consolidated_billable_events (
@@ -301,10 +332,21 @@ func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 	if err != nil {
 		return err
 	}
+
+	startTime = time.Now()
 	_, err = tx.Exec(query, args...)
+	elapsed = time.Since(startTime)
 	if err != nil {
+		e.logger.Error("consolidation-insert-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
 		return err
 	}
+	e.logger.Info("consolidation-insert-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
 
 	return nil
 }

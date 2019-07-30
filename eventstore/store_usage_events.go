@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventio"
 )
 
@@ -48,6 +50,8 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 	if len(filterConditions) > 0 {
 		filterQuery = " and " + strings.Join(filterConditions, " and ")
 	}
+
+	startTime := time.Now()
 	rows, err := queryJSON(tx, fmt.Sprintf(`
 		select
 			event_guid,
@@ -75,9 +79,18 @@ func (s *EventStore) getUsageEventRows(tx *sql.Tx, filter eventio.EventFilter) (
 		order by
 			lower(duration), event_guid
 	`, filterQuery), args...)
+	elapsed := time.Since(startTime)
 	if err != nil {
+		s.logger.Error("get-usage-event-rows-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
 		return nil, err
 	}
+	s.logger.Info("get-usage-event-rows-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
 	return &UsageEventRows{rows, tx}, nil
 }
 

@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventio"
 )
 
@@ -42,10 +44,20 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 		return nil, err
 	}
 
+	startTime := time.Now()
 	rows, err := queryJSON(tx, query, args...)
+	elapsed := time.Since(startTime)
 	if err != nil {
+		s.logger.Error("get-billable-event-rows-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
 		return nil, err
 	}
+	s.logger.Info("get-billable-event-rows-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
 
 	return &BillableEventRows{rows}, nil
 }
