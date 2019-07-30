@@ -80,6 +80,9 @@ func main() {
 	}()
 
 	logger := getDefaultLogger()
+	if deployment := os.Getenv("DEPLOY_ENV"); deployment != "" {
+		logger = logger.WithData(lager.Data{"deployment": deployment})
+	}
 	logger.Info("starting")
 	defer logger.Info("stopped")
 	if err := Main(ctx, logger); err != nil {
