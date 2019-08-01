@@ -22,6 +22,7 @@ CREATE TABLE billable_event_components_temp (
 	currency_rate numeric NOT NULL,
 	vat_code vat_code NOT NULL,
 	vat_rate numeric NOT NULL,
+	cost_for_duration numeric NOT NULL,
 
 	PRIMARY KEY (event_guid, plan_guid, duration, component_name),
 	CONSTRAINT no_empty_duration CHECK (not isempty(duration))
@@ -77,7 +78,14 @@ CREATE OR REPLACE FUNCTION generate_billable_event_components() RETURNS SETOF bi
 		vcr.code as currency_code,
 		vcr.rate as currency_rate,
 		vvr.code as vat_code,
-		vvr.rate as vat_rate
+		vvr.rate as vat_rate,
+		(eval_formula(
+			coalesce(ev.memory_in_mb, vpp.memory_in_mb)::numeric,
+			coalesce(ev.storage_in_mb, vpp.storage_in_mb)::numeric,
+			coalesce(ev.number_of_nodes, vpp.number_of_nodes)::integer,
+			ev.duration * vpp.valid_for * vcr.valid_for * vvr.valid_for,
+			ppc.formula
+		) * vcr.rate) as cost_for_duration
 	from
 		events ev
 	left join

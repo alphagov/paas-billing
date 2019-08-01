@@ -29,6 +29,7 @@ type EventStore interface {
 	RawEventWriter
 	RawEventReader
 	UsageEventReader
+	TotalCostReader
 	BillableEventReader
 	BillableEventForecaster
 	ConsolidatedBillableEventReader
