@@ -285,7 +285,7 @@ func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 		"elapsed": int64(elapsed),
 	})
 
-	query, args, err := WithBillableEvents(`
+	query, args, err := WithBillableEvents("", `
 			insert into consolidated_billable_events (
 				consolidated_range,
 

@@ -23,7 +23,7 @@ func (s *EventStore) GetBillableEventRows(ctx context.Context, filter eventio.Ev
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.getBillableEventRows(tx, filter)
+	rows, err := s.getBillableEventRows(tx, "", filter)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -31,12 +31,13 @@ func (s *EventStore) GetBillableEventRows(ctx context.Context, filter eventio.Ev
 	return rows, nil
 }
 
-func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+func (s *EventStore) getBillableEventRows(tx *sql.Tx, prequery string, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
 	if err := filter.Validate(); err != nil {
 		return nil, err
 	}
 
 	query, args, err := WithBillableEvents(
+		prequery,
 		`select * from billable_events`,
 		filter,
 	)
@@ -142,7 +143,7 @@ func (ber *BillableEventRows) Event() (*eventio.BillableEvent, error) {
 // Other included tables are:
 //  - components_with_price: Components and formulas selected for this filter
 //  - filtered range: time range of the filter
-func WithBillableEvents(query string, filter eventio.EventFilter, args ...interface{}) (string, []interface{}, error) {
+func WithBillableEvents(prequery string, query string, filter eventio.EventFilter, args ...interface{}) (string, []interface{}, error) {
 	if err := filter.Validate(); err != nil {
 		return query, args, err
 	}
@@ -165,6 +166,7 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 
 	wrappedQuery := fmt.Sprintf(`
 		with
+		%s
 		filtered_range as (
 			select $%d::tstzrange as filtered_range
 		),
@@ -258,10 +260,13 @@ func WithBillableEvents(query string, filter eventio.EventFilter, args ...interf
 	  )
 	  %s
 	  `,
+		prequery,
 		durationArgPosition,
 		filterQuery,
 		query,
 	)
+
+	fmt.Println(wrappedQuery)
 
 	return wrappedQuery, args, nil
 }
