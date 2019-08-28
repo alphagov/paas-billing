@@ -22,9 +22,9 @@ func (s *EventStore) ForecastBillableEventRows(ctx context.Context, events []eve
 	if err != nil {
 		return nil, err
 	}
+	defer tx.Rollback()
 	rows, err := s.forecastBillableEventRows(tx, events, filter)
 	if err != nil {
-		tx.Rollback()
 		return nil, err
 	}
 	return rows, nil
