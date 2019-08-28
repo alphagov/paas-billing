@@ -39,9 +39,9 @@ INSERT INTO events_temp with
 				'app'::text as plan_name,                                  -- plan name for all compute resources
 				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
 				'app'::text as service_name,
-				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
-				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
-				'0'::numeric as storage_in_mb,
+				coalesce(raw_message->>'instance_count', '1')::integer as number_of_nodes,
+				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::integer as memory_in_mb,
+				'0'::integer as storage_in_mb,
 				(raw_message->>'state')::resource_state as state
 			from
 				app_usage_events
@@ -63,9 +63,9 @@ INSERT INTO events_temp with
 				(raw_message->>'service_plan_name') as plan_name,
 				(raw_message->>'service_guid')::uuid as service_guid,
 				(raw_message->>'service_label') as service_name,
-				NULL::numeric as number_of_nodes,
-				NULL::numeric as memory_in_mb,
-				NULL::numeric as storage_in_mb,
+				NULL::integer as number_of_nodes,
+				NULL::integer as memory_in_mb,
+				NULL::integer as storage_in_mb,
 				(case
 					when (raw_message->>'state') = 'CREATED' then 'STARTED'
 					when (raw_message->>'state') = 'DELETED' then 'STOPPED'
@@ -91,9 +91,9 @@ INSERT INTO events_temp with
 				'task'::text as plan_name,                                  -- plan name for all task resources
 				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
 				'app'::text as service_name,
-				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
-				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
-				'0'::numeric as storage_in_mb,
+				coalesce(raw_message->>'instance_count', '1')::integer as number_of_nodes,
+				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::integer as memory_in_mb,
+				'0'::integer as storage_in_mb,
 				(case
 					when (raw_message->>'state') = 'TASK_STARTED' then 'STARTED'
 					when (raw_message->>'state') = 'TASK_STOPPED' then 'STOPPED'
@@ -118,9 +118,9 @@ INSERT INTO events_temp with
 				'staging'::text as plan_name,                                  -- plan name for all staging of resources
 				'4f6f0a18-cdd4-4e51-8b6b-dc39b696e61b'::uuid as service_guid,
 				'app'::text as service_name,
-				'1'::numeric as number_of_nodes,
-				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
-				'0'::numeric as storage_in_mb,
+				'1'::integer as number_of_nodes,
+				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::integer as memory_in_mb,
+				'0'::integer as storage_in_mb,
 				(case
 					when (raw_message->>'state') = 'STAGING_STARTED' then 'STARTED'
 					when (raw_message->>'state') = 'STAGING_STOPPED' then 'STOPPED'
@@ -151,9 +151,9 @@ INSERT INTO events_temp with
 				(s.raw_message->>'service_plan_name') as plan_name,
 				(s.raw_message->>'service_guid')::uuid as service_guid,
 				(s.raw_message->>'service_label') as service_name,
-				NULL::numeric as number_of_nodes,
-				(pg_size_bytes(c.raw_message->'data'->>'memory') / 1024 / 1024)::numeric as memory_in_mb,
-				(pg_size_bytes(c.raw_message->'data'->>'storage') / 1024 / 1024)::numeric as storage_in_mb,
+				NULL::integer as number_of_nodes,
+				(pg_size_bytes(c.raw_message->'data'->>'memory') / 1024 / 1024)::integer as memory_in_mb,
+				(pg_size_bytes(c.raw_message->'data'->>'storage') / 1024 / 1024)::integer as storage_in_mb,
 				'STARTED'::resource_state as state
 			from
 				compose_audit_events c
