@@ -540,7 +540,7 @@ var _ = Describe("Store", func() {
 		Entry("not midnight (different timezone)", "2017-04-01T00:00:00+01:00"),
 	)
 
-	DescribeTable("reject currency_rates with valid_from that isn't the start of the month",
+	DescribeTable("allow currency_rates with valid_from that isn't the first day of the month",
 		func(timestamp string) {
 			db, err := testenv.Open(eventstore.Config{
 				CurrencyRates: []eventio.CurrencyRate{
@@ -554,9 +554,28 @@ var _ = Describe("Store", func() {
 			if err == nil {
 				db.Close()
 			}
-			Expect(err).To(MatchError(ContainSubstring(`violates check constraint "valid_from_start_of_month"`)))
+			Expect(err).ToNot(HaveOccurred())
 		},
 		Entry("not first day of month", "2017-04-04T00:00:00Z"),
+		Entry("first day of month", "2017-05-01T00:00:00Z"),
+	)
+
+	DescribeTable("reject currency_rates with valid_from that isn't the start of a day",
+		func(timestamp string) {
+			db, err := testenv.Open(eventstore.Config{
+				CurrencyRates: []eventio.CurrencyRate{
+					{
+						ValidFrom: timestamp,
+						Code:      "USD",
+						Rate:      0.8,
+					},
+				},
+			})
+			if err == nil {
+				db.Close()
+			}
+			Expect(err).To(MatchError(ContainSubstring(`violates check constraint "valid_from_start_of_day"`)))
+		},
 		Entry("not midnight (hour)", "2017-04-01T01:00:00Z"),
 		Entry("not midnight (minute)", "2017-04-01T00:01:00Z"),
 		Entry("not midnight (second)", "2017-04-01T01:00:01Z"),
