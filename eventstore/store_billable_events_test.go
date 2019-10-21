@@ -851,6 +851,103 @@ var _ = Describe("GetBillableEvents", func() {
 	})
 
 	/*---------------------------------------------------------------------------------------*
+	     2017-01-01                        2017-01-15                           2017-02-05   .
+	         |                                 |                                     |   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [===============================APP1====================================]   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [==============================PLAN1====================================]   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	 .   .   [==========CurrencyRate1==========][==========CurrencyRate2=============]   .   .
+	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
+	----------------------------------------------------------------------------------------*/
+	It("should return a single BillingEvent with two pricing components when the event intersects two CurrencyRates in the same month", func() {
+		cfg.AddPlan(eventio.PricingPlan{
+			PlanGUID:  eventstore.ComputePlanGUID,
+			ValidFrom: "2017-01-01",
+			Name:      "PLAN1",
+			Components: []eventio.PricingPlanComponent{
+				{
+					Name:         "compute",
+					Formula:      "1",
+					CurrencyCode: "GBP",
+					VATCode:      "Standard",
+				},
+			},
+		})
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
+			Code:      "GBP",
+			Rate:      2,
+			ValidFrom: "2017-01-15",
+		})
+
+		db, err := testenv.Open(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"guid":        "ee28a570-f485-48e1-87d0-98b7b8b66dfa",
+				"created_at":  "2017-01-01T00:00Z",
+				"raw_message": json.RawMessage(`{"state": "STARTED", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 1, "previous_state": "STARTED", "memory_in_mb_per_instance": 1024}`),
+			},
+			testenv.Row{
+				"guid":        "33d0aaad-e064-4dc7-8709-0212d96c7c3f",
+				"created_at":  "2017-02-05T00:00Z",
+				"raw_message": json.RawMessage(`{"state": "STOPPED", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 1, "previous_state": "STARTED", "memory_in_mb_per_instance": 1024}`),
+			},
+		)).To(Succeed())
+
+		Expect(db.Schema.Refresh()).To(Succeed())
+
+		events, err := db.Schema.GetBillableEvents(eventio.EventFilter{
+			RangeStart: "2017-01-01",
+			RangeStop:  "2017-03-01",
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(len(events)).To(BeNumerically("==", 1), "expected a single event to be returned")
+
+		Expect(testenv.Time(events[0].EventStart)).To(
+			BeTemporally("==", testenv.Time("2017-01-01T00:00:00+00:00")),
+			"start time should be 2017-01-01",
+		)
+		Expect(testenv.Time(events[0].EventStop)).To(
+			BeTemporally("==", testenv.Time("2017-02-05T00:00:00+00:00")),
+			"stop time should be 2017-02-05",
+		)
+
+		Expect(events[0].Price).To(Equal(eventio.Price{
+			IncVAT: "3.6",
+			ExVAT:  "3",
+			Details: []eventio.PriceComponent{
+				{
+					Name:         "compute",
+					PlanName:     "PLAN1",
+					Start:        "2017-01-01T00:00:00+00:00",
+					Stop:         "2017-01-15T00:00:00+00:00",
+					VatRate:      "0.2",
+					VatCode:      "Standard",
+					CurrencyCode: "GBP",
+					IncVAT:       "1.2",
+					ExVAT:        "1",
+				},
+				{
+					Name:         "compute",
+					PlanName:     "PLAN1",
+					Start:        "2017-01-15T00:00:00+00:00",
+					Stop:         "2017-02-05T00:00:00+00:00",
+					VatRate:      "0.2",
+					VatCode:      "Standard",
+					CurrencyCode: "GBP",
+					IncVAT:       "2.4",
+					ExVAT:        "2",
+				},
+			},
+		}))
+	})
+
+	/*---------------------------------------------------------------------------------------*
 	     2017-01-01           2017-02-01   2017-03-01     2017-04-01            2017-05-01   .
 	         |                     |           |              |                      |   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .

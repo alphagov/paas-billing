@@ -153,14 +153,23 @@ CREATE TABLE IF NOT EXISTS currency_rates(
 	rate numeric NOT NULL,
 
 	PRIMARY KEY (code, valid_from),
-	CONSTRAINT rate_must_be_greater_than_zero CHECK (rate > 0),
-	CONSTRAINT valid_from_start_of_month CHECK (
-	  (extract (day from valid_from)) = 1 AND
-	  (extract (hour from valid_from)) = 0 AND
-	  (extract (minute from valid_from)) = 0 AND
-	  (extract (second from valid_from)) = 0
-	)
+	CONSTRAINT rate_must_be_greater_than_zero CHECK (rate > 0)
 );
+
+DO $$
+BEGIN
+  BEGIN
+    ALTER TABLE currency_rates ADD CONSTRAINT valid_from_start_of_day CHECK (
+      (extract (hour from valid_from)) = 0 AND
+      (extract (minute from valid_from)) = 0 AND
+      (extract (second from valid_from)) = 0
+    );
+  EXCEPTION
+    WHEN duplicate_object THEN RAISE NOTICE 'currency_rates.valid_from_start_of_day constraint already exists';
+  END;
+END $$;
+
+ALTER TABLE currency_rates DROP CONSTRAINT IF EXISTS valid_from_start_of_month;
 
 CREATE TABLE IF NOT EXISTS vat_rates (
 	code vat_code NOT NULL,
