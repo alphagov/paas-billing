@@ -30,7 +30,7 @@ CREATE VIEW pricing_plans_with_duration AS (
       valid_from,
       LEAD(valid_from, 1, 'infinity') OVER (
         PARTITION BY
-          plan_guid
+          plan_id
         ORDER BY
           valid_from
         ROWS BETWEEN current row AND 1 following
@@ -42,10 +42,10 @@ CREATE VIEW pricing_plans_with_duration AS (
 
 CREATE VIEW pricing_plan_components_with_vat_currency_with_duration AS (
   SELECT
-    pp.pricing_plan_sequence,
-    cr.currency_rate_sequence,
-    vr.vat_rate_sequence,
-    pp.plan_guid,
+    pp.sequence AS pricing_plan_sequence,
+    cr.sequence AS currency_rate_sequence,
+    vr.sequence AS vat_rate_sequence,
+    pp.plan_id AS pricing_plan_id,
     pp.metadata AS metadata,
     pp.name AS pricing_plan_name,
     ppc.name AS pricing_component_name,

@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS currency_rates(
   code text NOT NULL,
   valid_from timestamptz NOT NULL,
   rate numeric NOT NULL,
-  currency_rate_sequence SERIAL,
+  sequence SERIAL,
 
   PRIMARY KEY (code, valid_from),
   CONSTRAINT rate_must_be_greater_than_zero CHECK (rate > 0)
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS vat_rates (
   code text NOT NULL,
   valid_from timestamptz NOT NULL,
   rate numeric NOT NULL,
-  vat_rate_sequence SERIAL,
+  sequence SERIAL,
 
   PRIMARY KEY (code, valid_from),
   CONSTRAINT rate_must_be_greater_than_zero CHECK (rate >= 0),
