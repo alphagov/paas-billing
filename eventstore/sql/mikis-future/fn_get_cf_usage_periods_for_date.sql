@@ -35,95 +35,62 @@
 -- at all for future days. We only figure out the sequence of events for today.
 -- Question is–where is the crossover point and will we reach it within two years?
 
-CREATE OR REPLACE FUNCTION cf_usage_events_still_active_from_previous_days(
+CREATE OR REPLACE FUNCTION cf_usage_events_relevant_to_day_in_sequence(
   day date
-) RETURNS SETOF cf_usage_events LANGUAGE plpgsql AS $$
-BEGIN
-  -- The principle here:
-  --   Resources that stopped being used partway through yesterday
-  --   won't have a timespan that goes right up unto the end of the day.
-  --   Resources that stopped exactly at midnight will extend onto this
-  --   new day and do still need to be considered.
-  --   Resources that haven't stopped are given a timespan right up to
-  --   midnight, and the time range non-inclusively includes midnight.
-  --   So we can find non-stopped things that way.
-  --   Alternately we can add a boolean for timespans that only ended
-  --   because of the end of the day, but that's less neat.
-  RETURN QUERY SELECT
-      events.*
-    FROM
-      spans
-    INNER JOIN events ON
-      spans.from_seq = events.seq
-    WHERE
-      UPPER(timespan) = day::TIMESTAMPTZ
-      AND running -- we filter out non-running spans elsewhere, but this makes sure
-    ;
-END $$;
-
-CREATE OR REPLACE FUNCTION cf_usage_events_on_day(
-  day date
-) RETURNS SETOF cf_usage_events LANGUAGE plpgsql AS $$
-BEGIN
-  RETURN QUERY SELECT * FROM events WHERE created_at::date = day;
-END $$;
-
-CREATE OR REPLACE FUNCTION cf_usage_events_relevant_to_day(
-  day date
-) RETURNS SETOF cf_usage_events LANGUAGE plpgsql AS $$
-BEGIN
-  RETURN QUERY
-    SELECT cf_usage_events_still_active_from_previous_days(day)
-    UNION ALL
-    SELECT events_on_this_day(day);
-END $$;
-
-CREATE OR REPLACE FUNCTION cf_usage_events_in_sequence(
-  relevant_cf_usage_events TABLE(...),
-) RETURNS SETOF cf_usage_periods LANGUAGE plpgsql AS $$
+) RETURNS TABLE(
+  start_event_guid UUID,
+  from_time TIMESTAMPTZ,
+  stop_event_guid UUID,
+  to_time TIMESTAMPTZ,
+  in_use BOOLEAN
+) LANGUAGE plpgsql AS $$
 BEGIN
   RETURN QUERY SELECT
-      seq AS from_seq,
-      created_at AS from_time,
-      LEAD(seq) OVER next_resource_event AS to_seq,
+      guid AS start_event_guid,
+      max_time(created_at, day::TIMESTAMPTZ) AS from_time,
+      LEAD(guid) OVER next_resource_event AS stop_event_guid,
       LEAD(created_at) OVER next_resource_event AS to_time,
-      running,
+      cf_usage_events_relevant_to_day.in_use
     FROM
-      relevant_cf_usage_events
+      cf_usage_events_relevant_to_day(day)
     WINDOW
       next_resource_event AS (
-        PARTITION BY thing
+        PARTITION BY resource_type, resource_guid, pricing_plan_id
         ORDER BY created_at ASC
         ROWS BETWEEN CURRENT ROW AND 1 FOLLOWING
       )
     ORDER BY
-      created_at ASC;
+      created_at ASC
+    ;
 END $$;
 
 CREATE OR REPLACE FUNCTION get_cf_usage_periods_for_date(
-  day date,
+  day date
 ) RETURNS SETOF cf_usage_periods LANGUAGE plpgsql AS $$
 DECLARE
-  end_of_day TIMESTAMPTZ := LOWER(TSTZRANGE(NOW(), day::TIMESTAMPTZ + INTERVAL '1 DAY'))
+  end_of_day_or_now TIMESTAMPTZ := min_time(TSTZRANGE(NOW(), day::TIMESTAMPTZ + INTERVAL '1 DAY'));
 BEGIN
   RETURN QUERY
-    WITH events_in_sequence AS (
-      SELECT * FROM cf_usage_events_in_sequence(cf_usage_events_relevant_to_day(day));
-    )
+    WITH
+      events_in_sequence AS (
+        SELECT * FROM cf_usage_events_relevant_to_day_in_sequence(day)
+      )
     SELECT
-        from_seq,
-        to_seq,
+        start_event_guid,
+        stop_event_guid,
         TSTZRANGE(
           from_time,
-          COALESCE(to_time, end_of_day),
+          COALESCE(to_time, end_of_day_or_now),
           '[)'
-        ) AS timespan
+        ) AS timerange
       FROM
         events_in_sequence
       WHERE
-        running
+        --to_time > from_time
+        --AND in_use
+        in_use
       ORDER BY
-        from_seq,
-        timespan
+        start_event_guid,
+        timerange
       ;
 END $$;
