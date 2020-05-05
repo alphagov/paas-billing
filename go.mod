@@ -1,6 +1,6 @@
 module github.com/alphagov/paas-billing
 
-go 1.12
+go 1.13
 
 require (
 	code.cloudfoundry.org/lager v0.0.0-20180322215153-25ee72f227fe
