@@ -1,5 +1,11 @@
 # paas-billing
 
+⚠️
+When merging pull requests,
+please use the [gds-cli](https://github.com/alphagov/gds-cli)
+or [github_merge_sign](https://rubygems.org/gems/github_merge_sign)
+⚠️
+
 * [Overview](#overview)
 * [Installation](#installation)
 * [Configuration](#configuration)
