@@ -1,6 +1,5 @@
 # paas-billing
 
-
 ⚠️
 When merging pull requests,
 please use the [gds-cli](https://github.com/alphagov/gds-cli)
