@@ -9,6 +9,6 @@ applications:
    health-check-type: process
    no-route: true
    env:
-     GOVERSION: go1.13
+     GOVERSION: go1.15
      GOPACKAGENAME: github.com/alphagov/paas-billing
    command: ./bin/paas-billing collector
