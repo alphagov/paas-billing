@@ -1,12 +1,15 @@
 # code.cloudfoundry.org/lager v0.0.0-20180322215153-25ee72f227fe
+## explicit
 code.cloudfoundry.org/lager
 # github.com/Masterminds/semver v1.4.2
 github.com/Masterminds/semver
 # github.com/cloudfoundry-community/go-cfclient v0.0.0-20180727221732-7900c3c65270
+## explicit
 github.com/cloudfoundry-community/go-cfclient
 # github.com/cloudfoundry/gofileutils v0.0.0-20170111115228-4d0c80011a0f
 github.com/cloudfoundry/gofileutils/fileutils
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
+## explicit
 github.com/dgrijalva/jwt-go
 # github.com/golang/protobuf v1.1.0
 github.com/golang/protobuf/proto
@@ -17,14 +20,19 @@ github.com/hpcloud/tail/util
 github.com/hpcloud/tail/watch
 github.com/hpcloud/tail/winfile
 # github.com/labstack/echo v3.3.10+incompatible
+## explicit
 github.com/labstack/echo
 github.com/labstack/echo/middleware
+# github.com/labstack/echo/v4 v4.1.6
+## explicit
 # github.com/labstack/gommon v0.2.9
+## explicit
 github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
 github.com/labstack/gommon/random
 # github.com/lib/pq v0.0.0-20180327071824-d34b9ff171c2
+## explicit
 github.com/lib/pq
 github.com/lib/pq/oid
 # github.com/mattn/go-colorable v0.1.2
@@ -32,6 +40,7 @@ github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.8
 github.com/mattn/go-isatty
 # github.com/onsi/ginkgo v1.6.0
+## explicit
 github.com/onsi/ginkgo
 github.com/onsi/ginkgo/config
 github.com/onsi/ginkgo/extensions/table
@@ -52,6 +61,7 @@ github.com/onsi/ginkgo/reporters/stenographer/support/go-colorable
 github.com/onsi/ginkgo/reporters/stenographer/support/go-isatty
 github.com/onsi/ginkgo/types
 # github.com/onsi/gomega v1.4.1
+## explicit
 github.com/onsi/gomega
 github.com/onsi/gomega/format
 github.com/onsi/gomega/gbytes
@@ -67,8 +77,10 @@ github.com/onsi/gomega/matchers/support/goraph/node
 github.com/onsi/gomega/matchers/support/goraph/util
 github.com/onsi/gomega/types
 # github.com/pkg/errors v0.8.0
+## explicit
 github.com/pkg/errors
 # github.com/satori/go.uuid v1.2.0
+## explicit
 github.com/satori/go.uuid
 # github.com/valyala/bytebufferpool v1.0.0
 github.com/valyala/bytebufferpool
@@ -85,6 +97,7 @@ golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20180724155351-3d292e4d0cdc
+## explicit
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
