@@ -319,12 +319,12 @@ var _ = Describe("Currency Conversion", func() {
 		Expect(len(events)).To(BeNumerically("==", 1), "expected a single event to be returned")
 		Expect(len(events[0].Price.Details)).To(BeNumerically("==", 2), "expected two event components to be returned")
 
-		Expect(events[0].Price.Details[0].ExVAT).To(Equal("1"))
-		Expect(events[0].Price.Details[0].IncVAT).To(Equal("1.2"))
-		Expect(events[0].Price.Details[0].CurrencyCode).To(Equal("GBP"))
-		Expect(events[0].Price.Details[1].ExVAT).To(Equal("200"))
-		Expect(events[0].Price.Details[1].IncVAT).To(Equal("240.0"))
+		Expect(events[0].Price.Details[1].ExVAT).To(Equal("1"))
+		Expect(events[0].Price.Details[1].IncVAT).To(Equal("1.2"))
 		Expect(events[0].Price.Details[1].CurrencyCode).To(Equal("GBP"))
+		Expect(events[0].Price.Details[0].ExVAT).To(Equal("200"))
+		Expect(events[0].Price.Details[0].IncVAT).To(Equal("240.0"))
+		Expect(events[0].Price.Details[0].CurrencyCode).To(Equal("GBP"))
 	})
 
 })
