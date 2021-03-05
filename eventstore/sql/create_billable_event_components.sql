@@ -168,7 +168,7 @@ BEGIN
 	HAVING COUNT(*) > 1;
 
 	-- Join to events_extract, updating the formula so it does not contain ceil() for the entries where the Postgres RDS has been updated during the month.
-	UPDATE events_extract SET component_formula = '($storage_in_mb/1024) * ceil($time_in_seconds)/2678400 * 0.127'
+	UPDATE events_extract SET component_formula = '($storage_in_mb/1024) * 0.127 * ceil($time_in_seconds)/2678400'
 	FROM rds_upgrades u
 	WHERE events_extract.component_formula = '($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.127'
 	AND   u.num > 1
@@ -181,7 +181,7 @@ BEGIN
 	AND   ( u.change_month = events_extract.lower_change_month
 			OR u.change_month = events_extract.upper_change_month );
 
-	UPDATE events_extract SET component_formula = '($storage_in_mb/1024) * ceil($time_in_seconds)/2678400 * 0.253'
+	UPDATE events_extract SET component_formula = '($storage_in_mb/1024) * 0.253 * ceil($time_in_seconds)/2678400'
 	FROM rds_upgrades u
 	WHERE events_extract.component_formula = '($storage_in_mb/1024) * ceil($time_in_seconds/2678401) * 0.253'
 	AND   u.num > 1
