@@ -157,6 +157,13 @@ func (s *EventStore) regenerateEvents() error {
 		return err
 	}
 
+	if err := s.runSQLFilesInTransaction(
+		ctx,
+		"create_view_billable_event_components_by_day.sql",
+	); err != nil {
+		return err
+	}
+
 	return nil
 }
 
