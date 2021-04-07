@@ -5,6 +5,7 @@ go 1.16
 require (
 	code.cloudfoundry.org/lager v0.0.0-20180322215153-25ee72f227fe
 	github.com/cloudfoundry-community/go-cfclient v0.0.0-20180727221732-7900c3c65270
+	github.com/cucumber/godog v0.11.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/echo/v4 v4.1.6 // indirect

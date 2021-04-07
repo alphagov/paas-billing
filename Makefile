@@ -32,6 +32,10 @@ test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fe
 	$(eval export APP_ROOT=${APP_ROOT})
 	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skipPackage acceptance_tests
 
+# .PHONY: gherkin_test
+gherkin_test:
+	cd gherkin && godog
+
 .PHONY: smoke
 smoke:
 	## Runs the app/blackbox tests against a dev environment as a smoke test to check
