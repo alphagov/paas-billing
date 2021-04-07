@@ -1,0 +1,4 @@
+INSERT INTO vat_rates(code,valid_from,rate) VALUES ('Standard','1970-01-01 00:00:00',0.2);
+INSERT INTO vat_rates(code,valid_from,rate) VALUES ('Reduced','1970-01-01 00:00:00',0.05);
+INSERT INTO vat_rates(code,valid_from,rate) VALUES ('Zero','1970-01-01 00:00:00',0);
+
