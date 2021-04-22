@@ -106,16 +106,17 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^a clean billing database$`, aCleanBillingDatabase)
 
 	// Given
-	ctx.Step(`^a tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMMss)
-	ctx.Step(`^a tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMM)
-	ctx.Step(`^a tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMMss)
-	ctx.Step(`^a tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+)\' and \'(\d+)-(\d+)-(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddAndyyyymmdd)
+	ctx.Step(`^(?:a|the) tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMMss)
+	ctx.Step(`^(?:a|the) tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMM)
+	ctx.Step(`^(?:a|the) tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmdd)
+	ctx.Step(`^(?:a|the) tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\' and \'(\d+)-(\d+)-(\d+) (\d+):(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMM)
+	ctx.Step(`^(?:a|the) tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+)\' and \'(\d+)-(\d+)-(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddAndyyyymmdd)
 
 	// When
 	ctx.Step(`^billing is run for ([A-Za-z 0-9]+)$`, billingIsRun)
 
 	// Then
-	ctx.Step(`^the charge, including VAT, should be £(\d+)\.(\d+)$`, theChargeShouldBe)
+	ctx.Step(`^the bill, including VAT, should be £(\d+)\.(\d+)$`, theBillShouldBe)
 }
 
 // Background
@@ -123,6 +124,7 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 // Assumes tables being passed in as a comma-separated list. This is in case we want to use this function directly from Gherkin.
 func clearDatabaseTables(tables string) error {
 
+	fmt.Print("\n\n#################################################################\n")
 	fmt.Printf("\nClearing out any existing data from tables populated in the tests (%s).\n\n", tables)
 
 	tables = strings.Replace(tables, " ", "", -1)
@@ -130,7 +132,7 @@ func clearDatabaseTables(tables string) error {
 
 	for i := 0; i < len(tableList); i++ {
 		sql := fmt.Sprintf("DELETE FROM %s;", tableList[i])
-		fmt.Printf("Running '%s'\n", sql)
+		// fmt.Printf("Running '%s'\n", sql)
 		rows, err := db.Query(sql)
 		if err != nil {
 			panic(err)
@@ -208,13 +210,18 @@ func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMMss(resource, fromYear,
 	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
 }
 
+// Datetime args are in the form 'yyyy-mm-dd HH:MM' and 'yyyy-mm-dd HH:MM'
+func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMM(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay, toHour, toMinute string) error {
+	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
+}
+
 // Datetime args are in the form 'yyyy-mm-dd' and 'yyyy-mm-dd'
 func aTenantHasSomethingBetweenyyyymmddAndyyyymmdd(resource, fromYear, fromMonth, fromDay, toYear, toMonth, toDay string) error {
 	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
 }
 
 func addEntryToBillableEventComponents(resource, fromDate, toDate string) error {
-	fmt.Printf("resource = '%s', from date = '%s', to date = '%s'\n", resource, fromDate, toDate)
+	// fmt.Printf("resource = '%s', from date = '%s', to date = '%s'\n", resource, fromDate, toDate)
 	// Add an entry to the events table
 	event_guid, err := uuid.NewV4()
 	sql := fmt.Sprintf(`INSERT INTO events (event_guid,
@@ -248,7 +255,7 @@ func addEntryToBillableEventComponents(resource, fromDate, toDate string) error 
 		FROM pricing_plans p
 		WHERE p.name = '%s';`, event_guid.String(), defaultResourceGuid, defaultOrgGuid, defaultOrgName, defaultSpaceGuid, defaultSpaceName, fromDate, toDate, resource)
 
-	fmt.Printf("Adding row to events table (%s)...\n", sql[0:400])
+	// fmt.Printf("Adding row to events table (%s)...\n", sql[0:400])
 
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -305,7 +312,7 @@ func billingIsRun(monthAndYear string) error {
 // Then
 
 // The month and year must be passed in with a three-letter month. If the user is to pass in a full month name then need to write more code to convert it to three letters.
-func theChargeShouldBe(pounds, pence int) error {
+func theBillShouldBe(pounds, pence int) error {
 	fmt.Printf("Running billing consolidation for interval: '%s' to '%s'.\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
 	// We need to run the billing consolidation here.
@@ -443,7 +450,7 @@ func theChargeShouldBe(pounds, pence int) error {
 			billable_events,
 			filtered_range;`, startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
-	fmt.Printf("Running '%s'...\n", sql[0:75])
+	// fmt.Printf("Running '%s'...\n", sql[0:75])
 
 	rows, err := db.Query(sql)
 	if err != nil {
@@ -451,43 +458,55 @@ func theChargeShouldBe(pounds, pence int) error {
 	}
 	_ = rows
 
-	fmt.Printf("Examining billing charge for time interval: '%s' to '%s'...\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
+	fmt.Printf("Examining billing bill for time interval: '%s' to '%s'...\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
-	// Get the billing charge from the database
+	// Get the billing bill from the database
 	rows, err = db.Query(`SELECT price->'ex_vat' AS ex_vat, price->'inc_vat' AS inc_vat FROM consolidated_billable_events;`)
 	if err != nil {
 		panic(err)
 	}
 
 	var inc_vat_db, ex_vat_db string
+	var inc_vat, ex_vat float64
 	for rows.Next() {
 		err = rows.Scan(&ex_vat_db, &inc_vat_db)
+
+		if err != nil {
+			panic(err)
+		}
+
+		inc_vat_charge, err := strconv.ParseFloat(strings.Replace(inc_vat_db, "\"", "", -1), 64)
+		if err != nil {
+			panic(err)
+		}
+
+		ex_vat_charge, err := strconv.ParseFloat(strings.Replace(ex_vat_db, "\"", "", -1), 64)
+		if err != nil {
+			panic(err)
+		}
+
+		inc_vat += inc_vat_charge
+		ex_vat += ex_vat_charge
 	}
+
 	if err = rows.Err(); err != nil {
 		panic(err)
 	}
 
-	inc_vat, err := strconv.ParseFloat(strings.Replace(inc_vat_db, "\"", "", -1), 64)
-	if err != nil {
-		panic(err)
-	}
-
-	ex_vat, err := strconv.ParseFloat(strings.Replace(ex_vat_db, "\"", "", -1), 64)
-	if err != nil {
-		panic(err)
-	}
-
-	// Now examine the billing charge calculated by billing and check it's the same as that specified in the Gherkin test
-	fmt.Printf("Charge calculated by billing excluding vat = £%f and including vat = £%f\n", ex_vat, inc_vat)
+	// Now examine the billing bill calculated by billing and check it's the same as that specified in the Gherkin test
+	fmt.Printf("Bill calculated by billing excluding vat = £%f and including vat = £%f\n", ex_vat, inc_vat)
 
 	ex_vat = math.Round(ex_vat*100) / 100
 	inc_vat = math.Round(inc_vat*100) / 100
 
 	// TODO: Investigate rounding in golang. The number 6.44448 is rounded to 6.44 not 6.45.
 
-	expectedCharge := float64((pounds*100)+pence) / 100
-	if inc_vat != expectedCharge {
-		return fmt.Errorf("Billing calculation is not as expected. Expected charge (from Gherkin) = £%f, calculated charge = £%f\n", expectedCharge, inc_vat)
+	expectedBill := float64((pounds*100)+pence) / 100
+	if inc_vat != expectedBill {
+		return fmt.Errorf("Billing calculation is not as expected. Expected bill (from Gherkin test) = £%f, bill calculated by Paas billing = £%f\n", expectedBill, inc_vat)
+	} else {
+		// Print in green
+		fmt.Print(string("\033[32m"), "\n*** Test passed ***\n\n")
 	}
 
 	return nil
