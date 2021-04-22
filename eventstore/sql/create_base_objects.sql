@@ -200,3 +200,12 @@ CREATE TABLE pricing_plan_components (
 	CONSTRAINT formula_must_not_be_blank CHECK (length(trim(formula)) > 0)
 );
 CREATE TRIGGER tgr_ppc_validate_formula BEFORE INSERT OR UPDATE ON pricing_plan_components FOR EACH ROW EXECUTE PROCEDURE validate_formula();
+
+CREATE OR REPLACE FUNCTION uuid_or_placeholder(str text)
+RETURNS uuid AS $$
+BEGIN
+  RETURN str::uuid;
+EXCEPTION WHEN invalid_text_representation THEN
+  RETURN 'd5091c33-2f9d-4b15-82dc-4ad69717fc03'::uuid;
+END;
+$$ LANGUAGE plpgsql;
