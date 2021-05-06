@@ -1137,6 +1137,7 @@ var _ = Describe("GetUsageEvents", func() {
 			"guid":                  "51ba75ef-edc0-47ad-a633-a8f6e8770944",
 			"valid_from":            "2000-01-01T00:00:00Z",
 			"name":                  "my-org",
+			"owner":                 "Testing Body",
 			"created_at":            "2000-01-01T00:00:00Z",
 			"updated_at":            "2018-06-14T16:32:38Z",
 			"quota_definition_guid": "f9909cea-81fe-4934-ba17-2a10278d2646",
