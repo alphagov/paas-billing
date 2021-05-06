@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS resources
 	plan_name TEXT NOT NULL,
 	plan_guid UUID NOT NULL,
 	-- source VARCHAR NULL, -- This can be added later if needed. Source system from which this was last updated from, e.g. Cloudfoundry
-    cf_event_guid UUID NULL -- Cloudfoundry event_guid that was last used to update this row. May be handy for audit purposes.
+	cf_event_guid UUID NULL, -- Cloudfoundry event_guid that was last used to update this row. Not used by code that calculates tenant bills (e.g. calculate_bill())
+	last_updated TIMESTAMPTZ NOT NULL -- When this row was last updated
 );
 
 CREATE INDEX CONCURRENTLY resources_i1 ON resources (valid_from, valid_to);
