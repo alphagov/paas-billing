@@ -108,7 +108,7 @@ CREATE INDEX billable_event_components_temp_org_idx on billable_event_components
 CREATE INDEX billable_event_components_temp_space_idx on billable_event_components_temp (space_guid);
 CREATE INDEX billable_event_components_temp_duration_idx on billable_event_components_temp using gist (duration);
 
-DROP TABLE IF EXISTS billable_event_components;
+DROP TABLE IF EXISTS billable_event_components CASCADE;
 ALTER TABLE billable_event_components_temp RENAME TO billable_event_components;
 ALTER INDEX billable_event_components_temp_pkey RENAME TO billable_event_components_pkey;
 ALTER INDEX billable_event_components_temp_org_idx RENAME TO billable_event_components_org_idx;
