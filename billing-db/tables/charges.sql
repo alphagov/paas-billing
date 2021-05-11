@@ -2,8 +2,8 @@ CREATE TABLE IF NOT EXISTS charges
 (
   plan_guid UUID NOT NULL,
   plan_name TEXT NOT NULL,
-  valid_from TIMESTAMP NOT NULL, 
-  valid_to TIMESTAMP NOT NULL,
+  valid_from TIMESTAMPTZ NOT NULL, 
+  valid_to TIMESTAMPTZ NOT NULL,
   storage_in_mb NUMERIC NOT NULL,
   memory_in_mb NUMERIC NOT NULL,
   number_of_nodes INT NOT NULL,
