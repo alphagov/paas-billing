@@ -93,6 +93,7 @@ BEGIN
         plan_name,
         plan_guid,
         component_name,
+        time_in_seconds,
         storage_in_mb,
         memory_in_mb,
         number_of_nodes,
@@ -117,6 +118,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             c.component_name,
+            EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)), -- time_in_seconds
             storage_in_mb,
             memory_in_mb,
             number_of_nodes,
@@ -148,6 +150,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             c.component_name,
+            EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)), -- time_in_seconds
             storage_in_mb,
             memory_in_mb,
             number_of_nodes,
@@ -179,6 +182,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             c.component_name,
+            EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)), -- time_in_seconds
             storage_in_mb,
             memory_in_mb,
             number_of_nodes,
@@ -209,6 +213,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             c.component_name,
+            EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)), -- time_in_seconds
             storage_in_mb,
             memory_in_mb,
             number_of_nodes,
@@ -227,11 +232,6 @@ BEGIN
     -- -------------------------------------------------
     -- 2. Calculate the charge(s) for each AWS resource.
     -- -------------------------------------------------
-
-    -- Only run this query where there's a generic formula populated. Could only run it when the formula depends on time_in_seconds (though virtually all will).
-    UPDATE billable_by_component SET time_in_seconds = EXTRACT(EPOCH FROM (valid_to - valid_from))
-    WHERE  generic_formula IS NOT NULL;
-    -- AND    ((number_of_nodes != 0) OR (memory_in_mb != 0) OR (storage_in_mb != 0)); -- Very little performance gain if uncomment this line and it is risky for future formula changes.
 
     UPDATE billable_by_component
     SET charge_usd_exc_vat = (number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (0.01 / 3600)) * aws_price,
@@ -323,6 +323,7 @@ BEGIN
         plan_name,
         plan_guid,
         component_name,
+        time_in_seconds,
         storage_in_mb,
         memory_in_mb,
         number_of_nodes,
@@ -348,6 +349,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -357,7 +359,8 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
-            br.charge_usd_exc_vat * c.rate
+            -- Following line assumes the charges accrue evenly through the whole billing interval. The formulae that are used also assume this.
+            br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
     WHERE br.valid_from < c.valid_from
@@ -381,6 +384,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -390,7 +394,7 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
-            br.charge_usd_exc_vat * c.rate
+            br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
     WHERE br.valid_from >= c.valid_from
@@ -414,6 +418,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -423,7 +428,7 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
-            br.charge_usd_exc_vat * c.rate
+            br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
     WHERE br.valid_from > c.valid_from
@@ -446,6 +451,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -455,7 +461,7 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
-            br.charge_usd_exc_vat * c.rate
+            br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
     WHERE br.valid_from < c.valid_from
@@ -483,6 +489,7 @@ BEGIN
         plan_name,
         plan_guid,
         component_name,
+        time_in_seconds,
         storage_in_mb,
         memory_in_mb,
         number_of_nodes,
@@ -509,6 +516,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -519,7 +527,7 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
-            br.charge_gbp_exc_vat/(1 - v.vat_rate) -- charge_inc_vat
+            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
@@ -542,6 +550,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -552,7 +561,7 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
-            br.charge_gbp_exc_vat/(1 - v.vat_rate) -- charge_inc_vat
+            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from >= v.valid_from
@@ -575,6 +584,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -585,13 +595,13 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
-            br.charge_gbp_exc_vat/(1 - v.vat_rate) -- charge_inc_vat
+            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from > v.valid_from
     AND   br.valid_from < v.valid_to
     AND   br.valid_to > v.valid_to
-    AND   v.vat_code = 'Standard'
+    AND   v.vat_code = 'Standard' -- TODO
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                        |---------------------------------------------|
@@ -607,6 +617,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
+            br.time_in_seconds,
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -617,7 +628,7 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
-            br.charge_gbp_exc_vat/(1 - v.vat_rate) -- charge_inc_vat
+            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
