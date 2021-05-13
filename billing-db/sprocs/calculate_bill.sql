@@ -108,8 +108,8 @@ BEGIN
     -- Resource present:            |-----------------|
     SELECT  c.valid_from,
             br.valid_to,
-            resource_guid,
-            resource_type,
+            br.resource_guid,
+            br.resource_type,
             br.resource_name,
             br.org_guid,
             br.org_name,
@@ -119,13 +119,13 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)), -- time_in_seconds
-            storage_in_mb,
-            memory_in_mb,
-            number_of_nodes,
-            aws_price,
-            generic_formula,
-            vat_code,
-            currency_code,
+            c.storage_in_mb,
+            c.memory_in_mb,
+            c.number_of_nodes,
+            c.aws_price,
+            c.generic_formula,
+            c.vat_code,
+            c.currency_code,
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
@@ -140,8 +140,8 @@ BEGIN
     -- Resource present:                      |---------------------------|
     SELECT  br.valid_from,
             br.valid_to,
-            resource_guid,
-            resource_type,
+            br.resource_guid,
+            br.resource_type,
             br.resource_name,
             br.org_guid,
             br.org_name,
@@ -151,13 +151,13 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)), -- time_in_seconds
-            storage_in_mb,
-            memory_in_mb,
-            number_of_nodes,
-            aws_price,
-            generic_formula,
-            vat_code,
-            currency_code,
+            c.storage_in_mb,
+            c.memory_in_mb,
+            c.number_of_nodes,
+            c.aws_price,
+            c.generic_formula,
+            c.vat_code,
+            c.currency_code,
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
@@ -172,8 +172,8 @@ BEGIN
     -- Resource present:                                       |-----------------|
     SELECT  br.valid_from,
             c.valid_to,
-            resource_guid,
-            resource_type,
+            br.resource_guid,
+            br.resource_type,
             br.resource_name,
             br.org_guid,
             br.org_name,
@@ -183,13 +183,13 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)), -- time_in_seconds
-            storage_in_mb,
-            memory_in_mb,
-            number_of_nodes,
-            aws_price,
-            generic_formula,
-            vat_code,
-            currency_code,
+            c.storage_in_mb,
+            c.memory_in_mb,
+            c.number_of_nodes,
+            c.aws_price,
+            c.generic_formula,
+            c.vat_code,
+            c.currency_code,
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
@@ -203,8 +203,8 @@ BEGIN
     -- Resource present:            |---------------------------------------------|
     SELECT  c.valid_from,
             c.valid_to,
-            resource_guid,
-            resource_type,
+            br.resource_guid,
+            br.resource_type,
             br.resource_name,
             br.org_guid,
             br.org_name,
@@ -214,13 +214,13 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)), -- time_in_seconds
-            storage_in_mb,
-            memory_in_mb,
-            number_of_nodes,
-            aws_price,
-            generic_formula,
-            vat_code,
-            currency_code,
+            c.storage_in_mb,
+            c.memory_in_mb,
+            c.number_of_nodes,
+            c.aws_price,
+            c.generic_formula,
+            c.vat_code,
+            c.currency_code,
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
@@ -533,7 +533,7 @@ BEGIN
     WHERE br.valid_from < v.valid_from
     AND   br.valid_to > v.valid_from
     AND   br.valid_to < v.valid_to
-    AND   v.vat_code = 'Standard'
+    AND   v.vat_code = br.vat_code
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                                     |-----------------|
@@ -568,7 +568,7 @@ BEGIN
     AND   br.valid_from < v.valid_to
     AND   br.valid_to > v.valid_from
     AND   br.valid_to <= v.valid_to
-    AND   v.vat_code = 'Standard'
+    AND   v.vat_code = br.vat_code
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                                                   |-----------------|
@@ -601,7 +601,7 @@ BEGIN
     WHERE br.valid_from > v.valid_from
     AND   br.valid_from < v.valid_to
     AND   br.valid_to > v.valid_to
-    AND   v.vat_code = 'Standard' -- TODO
+    AND   v.vat_code = br.vat_code
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                        |---------------------------------------------|
@@ -633,7 +633,7 @@ BEGIN
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
     AND   br.valid_to > v.valid_to
-    AND   v.vat_code = 'Standard';
+    AND   v.vat_code = br.vat_code;
 
     RETURN QUERY
     SELECT bac.org_name,
