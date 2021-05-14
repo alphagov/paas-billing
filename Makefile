@@ -84,7 +84,7 @@ clean:
 	rm -f bin/paas-billing
 
 start_postgres_docker:
-	docker run --rm -p 5432:5432 --name postgres -e POSTGRES_PASSWORD= -d postgres:9.5
+	docker run -p 5432:5432 --name postgres -e POSTGRES_HOST_AUTH_METHOD=trust -d postgres:12.5
 
 stop_postgres_docker:
 	docker stop postgres
