@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/joho/sqltocsv"
 	_ "github.com/lib/pq"
+	"github.com/robfig/cron/v3"
 	"io/ioutil"
 	"log"
 	"os"
+	"os/signal"
 	"strings"
 )
 
@@ -16,8 +18,35 @@ func main() {
 	if !found {
 		log.Fatalln("DATABASE_URL environment variable must be set")
 	}
+
+	exportFrequency, found := os.LookupEnv("EXPORT_FREQUENCY")
+	if !found {
+		log.Fatalln("EXPORT_FREQUENCY environment variable must be set")
+	}
+
 	workingDir, _ := os.Getwd()
 
+	scheduler := cron.New(cron.WithChain(
+		cron.Recover(cron.DefaultLogger),  // or use cron.DefaultLogger
+	))
+	_, err := scheduler.AddFunc(exportFrequency, func() {
+		exportCSVToStdOut(connectionString, workingDir)
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	scheduler.Start()
+	waitForExit()
+}
+
+func waitForExit() os.Signal {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, os.Kill)
+	return <-c
+}
+
+func exportCSVToStdOut(connectionString string, workingDir string) {
 	db, err := sql.Open("postgres", connectionString)
 	if err != nil {
 		log.Fatalln(err)
@@ -35,7 +64,7 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	queryFileBytes, err := ioutil.ReadFile(workingDir+"/sql/usage-and-adoption-generate-csv.sql")
+	queryFileBytes, err := ioutil.ReadFile(workingDir + "/sql/usage-and-adoption-generate-csv.sql")
 	if err != nil {
 		log.Fatalln(err)
 	}
