@@ -241,19 +241,22 @@ func (s *Store) collectOrgs(tx *sql.Tx) error {
 				name,
 				created_at,
 				updated_at,
-				quota_definition_guid
+				quota_definition_guid,
+				owner
 			) values (
 				$1, $2,
 				$3,
 				$4,
 				$5,
-				$6
+				$6,
+				$7
 			) on conflict (guid, valid_from) do nothing`,
 			org.Guid, validFrom,
 			org.Name,
 			org.CreatedAt,
 			org.UpdatedAt,
-			org.QuotaDefinitionGuid,
+			org.Relationships.Quota.Data.Guid,
+			org.Metadata.Annotations.Owner,
 		)
 
 		if err != nil {

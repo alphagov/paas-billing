@@ -75,6 +75,7 @@ func (s *EventStore) Init() error {
 		"create_base_objects.sql",
 		"create_orgs.sql",
 		"create_spaces.sql",
+		"2021-05-06-alter_orgs.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.runSQLFile(tx, sqlFile)
