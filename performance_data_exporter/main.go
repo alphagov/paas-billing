@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"code.cloudfoundry.org/lager"
 	_ "github.com/lib/pq"
@@ -38,9 +39,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	sheetsTargetIndex, found := os.LookupEnv("GOOGLE_SHEETS_TARGET_SHEET_INDEX")
+	sheetsTargetIndexstr, found := os.LookupEnv("GOOGLE_SHEETS_TARGET_SHEET_INDEX")
 	if !found {
 		logger.Error("startup", fmt.Errorf("GOOGLE_SHEETS_TARGET_SHEET_INDEX environment variable must be set"))
+		os.Exit(1)
+	}
+	sheetsTargetIndex, err := strconv.ParseInt(sheetsTargetIndexstr, 10, 64)
+	if err != nil {
+		logger.Error("startup", fmt.Errorf("GOOGLE_SHEETS_TARGET_SHEET_INDEX environment variable must be an integer"))
 		os.Exit(1)
 	}
 
@@ -56,7 +62,7 @@ func main() {
 	))
 
 	logger.Info("add-to-schedule", lager.Data{"schedule": exportFrequency})
-	_, err := scheduler.AddFunc(exportFrequency, func() {
+	_, err = scheduler.AddFunc(exportFrequency, func() {
 		logSess := logger.Session("exporter-run")
 
 		logSess.Info("generate-csv")
