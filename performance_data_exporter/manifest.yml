@@ -1,0 +1,14 @@
+---
+applications:
+- name: paas-performance-data-exporter
+  no-route: true
+  health-check-type: process
+  buildpacks:
+    - go_buildpack
+  env:
+    EXPORT_FREQUENCY: "@every 1h"
+    GOOGLE_SHEETS_TARGET_SHEET_ID: ((sheets_target_sheet))
+    GOOGLE_API_CREDENTIALS: ((google_api_credentials))
+    GOOGLE_SHEETS_TARGET_SHEET_INDEX: ((sheets_target_index))
+  services:
+    - name: billing-db
