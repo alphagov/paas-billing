@@ -1,15 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/signal"
-	"strings"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/joho/sqltocsv"
 	_ "github.com/lib/pq"
 	"github.com/robfig/cron/v3"
 )
@@ -30,6 +26,30 @@ func main() {
 		os.Exit(1)
 	}
 
+	sheetsTargetSheet, found := os.LookupEnv("GOOGLE_SHEETS_TARGET_SHEET_ID")
+	if !found {
+		logger.Error("startup", fmt.Errorf("GOOGLE_SHEETS_TARGET_SHEET_ID environment variable must be set"))
+		os.Exit(1)
+	}
+
+	googleAPICredentials, found := os.LookupEnv("GOOGLE_API_CREDENTIALS")
+	if !found {
+		logger.Error("startup", fmt.Errorf("GOOGLE_API_CREDENTIALS environment variable must be set"))
+		os.Exit(1)
+	}
+
+	sheetsTargetIndex, found := os.LookupEnv("GOOGLE_SHEETS_TARGET_SHEET_INDEX")
+	if !found {
+		logger.Error("startup", fmt.Errorf("GOOGLE_SHEETS_TARGET_SHEET_INDEX environment variable must be set"))
+		os.Exit(1)
+	}
+
+	logger.Info("configuration", lager.Data{
+		"schedule":     exportFrequency,
+		"target_sheet": sheetsTargetSheet,
+		"target_index": sheetsTargetIndex,
+	})
+
 	workingDir, _ := os.Getwd()
 	scheduler := cron.New(cron.WithChain(
 		cron.Recover(cron.DefaultLogger), // or use cron.DefaultLogger
@@ -38,7 +58,34 @@ func main() {
 	logger.Info("add-to-schedule", lager.Data{"schedule": exportFrequency})
 	_, err := scheduler.AddFunc(exportFrequency, func() {
 		logSess := logger.Session("exporter-run")
-		exportCSVToStdOut(connectionString, workingDir, logSess)
+
+		logSess.Info("generate-csv")
+		csv, err := generateCSV(connectionString, workingDir, logSess)
+		if err != nil {
+			logSess.Error("generate-csv", err)
+			return
+		}
+
+		logSess.Info("create-sheets-client")
+		sheets, err := newSheetsService(googleAPICredentials, logSess)
+		if err != nil {
+			logSess.Error("create-sheets-client", err)
+			return
+		}
+
+		logSess.Info("clear-sheet", lager.Data{"sheet_id": sheetsTargetSheet})
+		err = clearSheet(sheets, sheetsTargetSheet, sheetsTargetIndex)
+		if err != nil {
+			logSess.Error("clear-sheet", err)
+			return
+		}
+
+		logSess.Info("write-csv-to-sheet", lager.Data{"sheet_id": sheetsTargetSheet})
+		err = writeCSVToSheet(sheets, sheetsTargetSheet, sheetsTargetIndex, csv)
+		if err != nil {
+			logSess.Error("write-csv-to-sheet", err)
+			return
+		}
 	})
 	if err != nil {
 		logger.Error("add-to-schedule", err)
@@ -54,74 +101,4 @@ func waitForExit() os.Signal {
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt, os.Kill)
 	return <-c
-}
-
-func exportCSVToStdOut(connectionString string, workingDir string, logger lager.Logger) {
-	logger.Info("connect-to-db")
-	db, err := sql.Open("postgres", connectionString)
-	if err != nil {
-		logger.Error("connect-to-db", err)
-		return
-	}
-	defer (func(){
-		logger.Info("close-db")
-		err := db.Close()
-		if err != nil {
-			logger.Error("close-db", err)
-		}
-	})()
-	defer cleanup(db, workingDir, logger)
-
-	recreateFileBytes, err := ioutil.ReadFile(workingDir + "/sql/usage-and-adoption-recreate.sql")
-	if err != nil {
-		logger.Error("read-table-create-file", err)
-		return
-	}
-
-	logger.Info("create-database-tables")
-	recreateString := string(recreateFileBytes)
-	_, err = db.Exec(recreateString)
-	if err != nil {
-		logger.Error("create-database-tables", err)
-		return
-	}
-
-	queryFileBytes, err := ioutil.ReadFile(workingDir + "/sql/usage-and-adoption-generate-csv.sql")
-	if err != nil {
-		logger.Error("read-query-file", err)
-		return
-	}
-
-	logger.Error("run-query", err)
-	queryString := string(queryFileBytes)
-	rows, err := db.Query(queryString)
-	if err != nil {
-		logger.Error("run-query", err)
-		return
-	}
-
-	logger.Info("write-to-stdout")
-	writer := strings.Builder{}
-	err = sqltocsv.Write(&writer, rows)
-	if err != nil {
-		logger.Error("write-to-stdout", err)
-		return
-	}
-	fmt.Printf("%v", writer.String())
-}
-
-func cleanup(db *sql.DB, workingDir string, logger lager.Logger) {
-	cleanupFileBytes, err := ioutil.ReadFile(workingDir + "/sql/usage-and-adoption-recreate.sql")
-	if err != nil {
-		logger.Error("read-cleanup-file", err)
-		return
-	}
-	cleanupString := string(cleanupFileBytes)
-
-	logger.Info("perform-database-cleanup")
-	_, err = db.Exec(cleanupString)
-	if err != nil {
-		logger.Error("perform-database-cleanup", err)
-		return
-	}
 }
