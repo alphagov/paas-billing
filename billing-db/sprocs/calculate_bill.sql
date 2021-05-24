@@ -22,8 +22,8 @@ CREATE TEMPORARY TABLE billable_by_component
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
-    -- valid_from_month TODO - useful if we're calculating bills for more than one month
-    -- valid_to_month TODO - useful if we're calculating bills for more than one month
+    -- valid_from_month - useful if we're calculating bills for more than one month
+    -- valid_to_month - useful if we're calculating bills for more than one month
     resource_guid UUID NULL,
     resource_type TEXT NULL,
     resource_name TEXT NULL,
@@ -74,10 +74,32 @@ DECLARE _unprocessed_formula VARCHAR DEFAULT NULL;
 BEGIN
     TRUNCATE TABLE billable_by_component;
     DROP TABLE IF EXISTS billable_by_component_fx;
+    DROP TABLE IF EXISTS charges_formulae;
 
     -- ----------------------------------------------------------------------------------------------------------------------------------------------------------
     -- 1. Get records for each AWS resource, taking account of any changes in charge amounts/formulae during the interval for which the bill is being calculated.
     -- ----------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    -- Get a unique copy of some of the charges table before running the UNION ALL query below.
+    CREATE TEMPORARY TABLE charges_formulae
+    AS
+    SELECT DISTINCT c.plan_guid,
+        c.plan_name,
+        c.valid_from,
+        c.valid_to,
+        c.storage_in_mb,
+        c.memory_in_mb,
+        c.number_of_nodes,
+        c.aws_price,
+        c.component_name,
+        f.generic_formula,
+        c.vat_code,
+        c.currency_code
+    FROM charges c
+    LEFT OUTER JOIN billing_formulae f
+    ON c.formula_name = f.formula_name;
+
+    CREATE INDEX charges_formulae_i1 ON charges_formulae (plan_guid, valid_from, valid_to);
 
     INSERT INTO billable_by_component
     (
@@ -129,7 +151,7 @@ BEGIN
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
-         charges c
+         charges_formulae c
     WHERE br.plan_guid = c.plan_guid
     AND br.valid_from < c.valid_from
     AND br.valid_to > c.valid_from
@@ -161,7 +183,7 @@ BEGIN
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
-         charges c
+         charges_formulae c
     WHERE br.plan_guid = c.plan_guid
     AND   br.valid_from >= c.valid_from
     AND   br.valid_from < c.valid_to
@@ -193,7 +215,7 @@ BEGIN
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
-         charges c
+         charges_formulae c
     WHERE br.plan_guid = c.plan_guid
     AND br.valid_from > c.valid_from
     AND br.valid_from < c.valid_to
@@ -224,7 +246,7 @@ BEGIN
             0,
             CASE WHEN generic_formula IS NOT NULL AND generic_formula LIKE '%*%' THEN FALSE ELSE NULL END
     FROM billable_resources br,
-         charges c
+         charges_formulae c
     WHERE br.plan_guid = c.plan_guid
     AND br.valid_from < c.valid_from
     AND br.valid_to > c.valid_to;
@@ -264,28 +286,15 @@ BEGIN
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = ceil(time_in_seconds::DECIMAL/3600) * aws_price,
-        is_processed = TRUE
-    WHERE generic_formula = 'ceil(time_in_seconds/3600) * aws_price '
-    AND billable_by_component.charge_usd_exc_vat = 0;
-
-    UPDATE billable_by_component
     SET charge_usd_exc_vat = number_of_nodes * ceil(time_in_seconds::DECIMAL / 3600) * (memory_in_mb/1024.0) * 0.01,
         is_processed = TRUE
     WHERE generic_formula = 'number_of_nodes * ceil(time_in_seconds / 3600) * (memory_in_mb/1024.0) * 0.01'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
-    -- TODO: Replace 0.253 with aws_hourly_charge or aws_price in the following. Will need to do this for stuff in paas-cf - create a new field. Could do this in a later iteration.
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = (storage_in_mb/1024) * ceil(time_in_seconds::DECIMAL/2678401) * 0.253,
+    SET charge_usd_exc_vat = (storage_in_mb/1024) * ceil(time_in_seconds::DECIMAL/2678401) * aws_price,
         is_processed = TRUE
-    WHERE generic_formula = '(storage_in_mb/1024) * ceil(time_in_seconds/2678401) * 0.253'
-    AND billable_by_component.charge_usd_exc_vat = 0;
-
-    UPDATE billable_by_component
-    SET charge_usd_exc_vat = (storage_in_mb/1024) * ceil(time_in_seconds::DECIMAL/2678401) * 0.127,
-        is_processed = TRUE
-    WHERE generic_formula = '(storage_in_mb/1024) * ceil(time_in_seconds/2678401) * 0.127'
+    WHERE generic_formula = '(storage_in_mb/1024) * ceil(time_in_seconds/2678401) * aws_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     -- Check that all formulae have been processed by the above updates.
@@ -360,6 +369,7 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             -- Following line assumes the charges accrue evenly through the whole billing interval. The formulae that are used also assume this.
+            -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
@@ -394,6 +404,7 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
+            -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
@@ -428,6 +439,7 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
+            -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
@@ -461,6 +473,7 @@ BEGIN
             br.vat_code,
             br.currency_code,
             br.charge_usd_exc_vat,
+            -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
@@ -527,7 +540,10 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
+            -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
+            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
@@ -561,7 +577,10 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
+            -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
+            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from >= v.valid_from
@@ -595,7 +614,10 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
+            -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
+            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from > v.valid_from
@@ -628,7 +650,10 @@ BEGIN
             br.currency_code,
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
+            -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
+            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
@@ -650,7 +675,5 @@ BEGIN
              bac.plan_name,
              bac.space_name,
              bac.resource_name;
-
-    DROP TABLE billable_by_component_fx;
 END
 $$;
