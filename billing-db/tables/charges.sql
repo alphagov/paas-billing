@@ -9,10 +9,9 @@ CREATE TABLE IF NOT EXISTS charges
   number_of_nodes INT NOT NULL,
   aws_price NUMERIC NULL, -- e.g. price per hour obtained from prices section of AWS website
   component_name TEXT NOT NULL,
-  generic_formula TEXT NOT NULL,
+  formula_name VARCHAR NULL, -- Joins to billing_formulae.formula_name
   vat_code VARCHAR NULL,
-  currency_code CHAR(3) NULL, -- ISO currency code
-  formula_source TEXT NULL -- Web page in AWS and/or other information showing where this formula came from
+  currency_code CHAR(3) NULL -- ISO currency code
 
   -- PRIMARY KEY (plan_guid, valid_to) TODO: Uncomment once have added data to charges table. This line is commented because may want to amend the valid_to date after initial population of the charges table, in which case this constraint will fail.
 );
