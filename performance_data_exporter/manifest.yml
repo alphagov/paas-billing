@@ -10,5 +10,6 @@ applications:
     GOOGLE_SHEETS_TARGET_SHEET_ID: ((sheets_target_sheet))
     GOOGLE_API_CREDENTIALS: ((google_api_credentials))
     GOOGLE_SHEETS_TARGET_SHEET_INDEX: ((sheets_target_index))
+    OUTPUT_TARGET: ((output_target))
   services:
     - name: billing-db

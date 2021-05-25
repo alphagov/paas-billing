@@ -13,6 +13,49 @@ type credentials struct {
 	ClientEmail string `json:"client_email"`
 }
 
+type GoogleSheetsOutputter struct {
+	GoogleAPICredentials string
+	TargetSheet string
+	TargetSheetIndex int64
+	Logger lager.Logger
+}
+
+func NewGoogleSheetsOutputter(googleSheetsCredentials string, targetSheet string, targetSheetIndex int64, logger lager.Logger) CSVOutputter {
+	return &GoogleSheetsOutputter{
+		GoogleAPICredentials: googleSheetsCredentials,
+		TargetSheet:          targetSheet,
+		TargetSheetIndex:     targetSheetIndex,
+		Logger:               logger.Session("google-sheets-outputter"),
+	}
+}
+
+func (g GoogleSheetsOutputter) WriteCSV(csv string) error {
+	logSess := g.Logger.Session("write-csv", lager.Data{"sheet_id": g.TargetSheet, "sheet_index": g.TargetSheetIndex})
+
+	logSess.Info("create-sheets-client")
+	sheetsService, err := newSheetsService(g.GoogleAPICredentials, logSess)
+	if err != nil {
+		logSess.Error("create-sheets-client", err)
+		return err
+	}
+
+	logSess.Info("clear-sheet")
+	err = clearSheet(sheetsService, g.TargetSheet, g.TargetSheetIndex)
+	if err != nil {
+		logSess.Error("clear-sheet", err)
+		return err
+	}
+
+	logSess.Info("write-csv-to-sheet")
+	err = writeCSVToSheet(sheetsService, g.TargetSheet, g.TargetSheetIndex, csv)
+	if err != nil {
+		logSess.Error("write-csv-to-sheet", err)
+		return err
+	}
+
+	return nil
+}
+
 func newSheetsService(googleAPICredentials string, logger lager.Logger) (*sheets.Service, error) {
 	credentialBytes := []byte(googleAPICredentials)
 	creds := credentials{}

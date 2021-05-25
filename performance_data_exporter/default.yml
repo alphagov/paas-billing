@@ -2,3 +2,4 @@
 # sheets_target_sheet left empty so we don't run in dev
 sheets_target_sheet: ""
 sheets_target_index: 0
+output_target: STDOUT
