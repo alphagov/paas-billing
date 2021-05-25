@@ -2,9 +2,6 @@ CREATE TABLE IF NOT EXISTS resources
 (
     valid_from TIMESTAMPTZ NOT NULL,
     valid_to TIMESTAMPTZ NOT NULL,
-    -- Next two columns are purely for optimisation. Contain entries such as "Jan 2020".
-    valid_from_month VARCHAR NOT NULL, -- e.g. TO_CHAR(valid_from, 'Month') || ' ' || DATE_PART('year', valid_from)
-    valid_to_month VARCHAR NOT NULL, -- e.g. TO_CHAR(valid_to, 'Month') || ' ' || DATE_PART('year', valid_to)
 	resource_guid UUID NOT NULL,
 	resource_name TEXT NOT NULL,
 	resource_type TEXT NOT NULL,
