@@ -10,6 +10,9 @@ SELECT  DISTINCT LOWER(duration) AS "valid_from",
         space_name,
         plan_name,
         plan_guid,
+        number_of_nodes,
+        memory_in_mb,
+        storage_in_mb,
         event_guid AS "cf_event_guid",
         NOW()
 FROM billable_event_components;
