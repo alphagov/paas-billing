@@ -365,8 +365,8 @@ BEGIN
         event_guid AS "cf_event_guid", -- Is this the event that gave rise to the last change in the resources row? Need to check this. If so, may be useful to keep this, otherwise remove this field
         NOW()
 	FROM events_temp
-	WHERE LOWER(duration) <= _from_date
-	AND   UPPER(duration) >= _from_date;
+	WHERE LOWER(duration) >= _from_date
+	AND   UPPER(duration) <= _run_date;
 
     -- Delete any records in resources with a valid_from after from_date.
 	DELETE FROM resources
