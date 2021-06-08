@@ -348,22 +348,28 @@ BEGIN
 		space_name,
 		plan_name,
 		plan_guid,
+		number_of_nodes,
+		memory_in_mb,
+		storage_in_mb,
 		cf_event_guid,
 		last_updated
 	)
 	SELECT DISTINCT LOWER(duration) AS "valid_from",
-        UPPER(duration) AS "valid_to", 
-        resource_guid, 
-        resource_type, 
-        resource_name, 
-        org_guid, 
-        org_name, 
-        space_guid, 
-        space_name, 
-        plan_name, 
-        plan_guid,
-        event_guid AS "cf_event_guid", -- Is this the event that gave rise to the last change in the resources row? Need to check this. If so, may be useful to keep this, otherwise remove this field
-        NOW()
+		UPPER(duration) AS "valid_to",
+		resource_guid,
+		resource_type,
+		resource_name,
+		org_guid,
+		org_name,
+		space_guid,
+		space_name,
+		plan_name,
+		plan_guid,
+		number_of_nodes,
+		memory_in_mb,
+		storage_in_mb,
+		event_guid AS "cf_event_guid", -- Is this the event that gave rise to the last change in the resources row? Need to check this. If so, may be useful to keep this, otherwise remove this field
+		NOW()
 	FROM events_temp
 	WHERE LOWER(duration) >= _from_date
 	AND   UPPER(duration) <= _run_date;
@@ -400,6 +406,9 @@ BEGIN
 			space_name,
 			plan_name,
 			plan_guid,
+			number_of_nodes,
+			memory_in_mb,
+			storage_in_mb,
 			cf_event_guid,
 			last_updated
 		)
@@ -414,6 +423,9 @@ BEGIN
 				space_name,
 				plan_name,
 				plan_guid,
+				number_of_nodes,
+				memory_in_mb,
+				storage_in_mb,
 				cf_event_guid,
 				_run_date
 		FROM   resources_new
