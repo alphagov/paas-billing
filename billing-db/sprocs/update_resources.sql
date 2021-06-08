@@ -65,7 +65,7 @@ BEGIN
 				app_usage_events
 			where
 				(raw_message->>'state' = 'STARTED' or raw_message->>'state' = 'STOPPED')
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
 		) union all (
 			select
 				id as event_sequence,
@@ -93,7 +93,7 @@ BEGIN
 				service_usage_events
 			where
 				raw_message->>'service_instance_type' = 'managed_service_instance'
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
 		) union all (
 			select
 				id as event_sequence,
@@ -120,7 +120,7 @@ BEGIN
 				app_usage_events
 			where
 				(raw_message->>'state' = 'TASK_STARTED' or raw_message->>'state' = 'TASK_STOPPED')
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
 		) union all (
 			select
 				id as event_sequence,
@@ -147,7 +147,7 @@ BEGIN
 				app_usage_events
 			where
 				(raw_message->>'state' = 'STAGING_STARTED' or raw_message->>'state' = 'STAGING_STOPPED')
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
 		) union all (
 			select
 				s.id as event_sequence,
@@ -183,7 +183,7 @@ BEGIN
 					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
 				) AND s.raw_message->>'state' = 'CREATED'
 			where
-				s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
 		)
 	),
 	raw_events_with_injected_values as (
