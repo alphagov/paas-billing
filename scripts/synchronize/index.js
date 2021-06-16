@@ -21,7 +21,7 @@ async function run() {
 		const owner = org.metadata.annotations['owner'];
 
 		return knex('orgs').where({ guid }).update({ name, owner });
-	}).join('\n');
+	}).join(';\n');
 }
 
 /**
