@@ -1,0 +1,11 @@
+{
+  "name": "synchronize",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^0.21.1",
+    "knex": "^0.95.6",
+    "pg": "^8.6.0"
+  }
+}
