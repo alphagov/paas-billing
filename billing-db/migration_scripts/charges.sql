@@ -109,12 +109,12 @@ SELECT DISTINCT p.plan_guid,
 FROM pricing_plans p
 INNER JOIN pricing_plan_components c
 ON p.plan_guid = c.plan_guid
+AND p.valid_from = c.valid_from
 LEFT OUTER JOIN billing_formulae_conversion t
 ON t.original_formula = c.formula
 INNER JOIN billing_formulae f
 ON t.generic_formula = f.generic_formula
 ORDER BY p.name;
--- 1806 rows
 
 SELECT DISTINCT plan_guid,
   plan_name, 
@@ -128,7 +128,6 @@ SELECT DISTINCT plan_guid,
   vat_code,
   currency_code
 FROM charges;
--- 572 - matches same query run against charges
 
 -- Update the valid_to date to be correct
 do $$
