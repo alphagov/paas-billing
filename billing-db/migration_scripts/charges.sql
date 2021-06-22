@@ -8,7 +8,8 @@ SELECT DISTINCT (TRIM(c.formula))::TEXT as generic_formula,
   NULL::NUMERIC as aws_price,
   CASE WHEN p.name ILIKE '%postgres%' THEN 'https://aws.amazon.com/rds/postgresql/pricing/' ELSE NULL::VARCHAR END as formula_source
 FROM pricing_plans p, pricing_plan_components c
-WHERE p.plan_guid = c.plan_guid;
+WHERE p.plan_guid = c.plan_guid
+AND p.valid_from = c.valid_from;
 
 UPDATE billing_formulae_conversion SET generic_formula = '0', aws_price = NULL WHERE generic_formula = '0';
 UPDATE billing_formulae_conversion SET generic_formula = '((1936.57/(48*1024))/30/24) * memory_in_mb * ceil(time_in_seconds / 3600)', aws_price = NULL WHERE generic_formula = '((1936.57/(48*1024))/30/24) * $memory_in_mb * ceil($time_in_seconds / 3600)';
