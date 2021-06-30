@@ -543,9 +543,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
@@ -580,9 +579,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from >= v.valid_from
@@ -617,9 +615,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from > v.valid_from
@@ -653,9 +650,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
