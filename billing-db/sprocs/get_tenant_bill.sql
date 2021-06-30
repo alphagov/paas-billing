@@ -65,9 +65,12 @@ RETURNS TABLE
 (
     org_name TEXT,
     org_guid UUID,
+    plan_guid UUID,
     plan_name TEXT,
     space_name TEXT,
+    resource_type TEXT,
     resource_name TEXT,
+    component_name TEXT,
     charge_usd_exc_vat DECIMAL,
     charge_gbp_exc_vat DECIMAL,
     charge_gbp_inc_vat DECIMAL

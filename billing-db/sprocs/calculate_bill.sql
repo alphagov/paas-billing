@@ -64,9 +64,12 @@ RETURNS TABLE
 (
     org_name TEXT,
     org_guid UUID,
+    plan_guid UUID,
     plan_name TEXT,
     space_name TEXT,
+    resource_type TEXT,
     resource_name TEXT,
+    component_name TEXT,
     charge_usd_exc_vat DECIMAL,
     charge_gbp_exc_vat DECIMAL,
     charge_gbp_inc_vat DECIMAL
@@ -661,17 +664,23 @@ BEGIN
     RETURN QUERY
     SELECT bac.org_name,
            bac.org_guid,
+           bac.plan_guid,
            bac.plan_name,
            bac.space_name,
+           bac.resource_type,
            bac.resource_name,
+           bac.component_name,
            SUM(bac.charge_usd_exc_vat) AS charge_usd_exc_vat,
            SUM(bac.charge_gbp_exc_vat) AS charge_gbp_exc_vat,
            SUM(bac.charge_gbp_inc_vat) AS charge_gbp_inc_vat
     FROM billable_by_component bac
     GROUP BY bac.org_name, 
              bac.org_guid, 
+             bac.plan_guid,
              bac.plan_name,
              bac.space_name,
-             bac.resource_name;
+             bac.resource_type,
+             bac.resource_name,
+             bac.component_name;
 END
 $$;
