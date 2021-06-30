@@ -13,7 +13,10 @@ CREATE TEMPORARY TABLE billable_resources
     space_guid UUID NULL,
     space_name TEXT NULL,
     plan_name TEXT NULL,
-    plan_guid UUID NULL -- Later on this field may not be needed
+    plan_guid UUID NULL,
+    storage_in_mb NUMERIC NULL,
+    memory_in_mb NUMERIC NULL,
+    number_of_nodes INT NULL
 );
 
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
@@ -21,8 +24,8 @@ CREATE TEMPORARY TABLE billable_by_component
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
-    -- valid_from_month TODO Add - useful if we're calculating bills for more than one month
-    -- valid_to_month TODO Add - useful if we're calculating bills for more than one month
+    -- valid_from_month - useful if we're calculating bills for more than one month
+    -- valid_to_month - useful if we're calculating bills for more than one month
     resource_guid UUID NULL,
     resource_type TEXT NULL,
     resource_name TEXT NULL,
@@ -31,8 +34,8 @@ CREATE TEMPORARY TABLE billable_by_component
     space_guid UUID NULL,
     space_name TEXT NULL,
     plan_name TEXT NULL,
-    plan_guid UUID NULL, -- Later on this field may not be needed
-    component_name TEXT NOT NULL,
+    plan_guid UUID NULL,
+    component_name TEXT NULL,
 
     storage_in_mb NUMERIC NULL,
     memory_in_mb NUMERIC NULL,
@@ -85,7 +88,10 @@ BEGIN
         space_guid,
         space_name,
         plan_name,
-        plan_guid
+        plan_guid,
+        storage_in_mb,
+        memory_in_mb,
+        number_of_nodes
     )
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:            |-----------------|
@@ -99,7 +105,10 @@ BEGIN
             r.space_guid,
             r.space_name,
             r.plan_name,
-            r.plan_guid
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
     FROM  resources r
     WHERE r.org_name = _org_name
     AND   r.valid_from < _from_date
@@ -119,7 +128,10 @@ BEGIN
             r.space_guid,
             r.space_name,
             r.plan_name,
-            r.plan_guid
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
     FROM  resources r
     WHERE r.org_name = _org_name
     AND   r.valid_from >= _from_date
@@ -139,7 +151,10 @@ BEGIN
             r.space_guid,
             r.space_name,
             r.plan_name,
-            r.plan_guid
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
     FROM  resources r
     WHERE r.org_name = _org_name
     AND   r.valid_from > _from_date
@@ -158,7 +173,10 @@ BEGIN
             r.space_guid,
             r.space_name,
             r.plan_name,
-            r.plan_guid
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
     FROM  resources r
     WHERE r.org_name = _org_name
     AND   r.valid_from < _from_date

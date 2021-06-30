@@ -5,7 +5,6 @@ CREATE TEMPORARY TABLE billable_resources
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
-    time_in_seconds INT NULL,
     resource_guid UUID NULL,
     resource_type TEXT NULL,
     resource_name TEXT NULL,
@@ -14,7 +13,10 @@ CREATE TEMPORARY TABLE billable_resources
     space_guid UUID NULL,
     space_name TEXT NULL,
     plan_name TEXT NULL,
-    plan_guid UUID NULL -- Later on this field may not be needed
+    plan_guid UUID NULL,
+    storage_in_mb NUMERIC NULL,
+    memory_in_mb NUMERIC NULL,
+    number_of_nodes INT NULL
 );
 
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
@@ -32,7 +34,7 @@ CREATE TEMPORARY TABLE billable_by_component
     space_guid UUID NULL,
     space_name TEXT NULL,
     plan_name TEXT NULL,
-    plan_guid UUID NULL, -- Later on this field may not be needed
+    plan_guid UUID NULL,
     component_name TEXT NULL,
 
     storage_in_mb NUMERIC NULL,
@@ -141,9 +143,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -173,9 +175,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -205,9 +207,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -236,9 +238,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
