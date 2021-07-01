@@ -5,7 +5,6 @@ CREATE TEMPORARY TABLE billable_resources
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
-    time_in_seconds INT NULL,
     resource_guid UUID NULL,
     resource_type TEXT NULL,
     resource_name TEXT NULL,
@@ -14,7 +13,10 @@ CREATE TEMPORARY TABLE billable_resources
     space_guid UUID NULL,
     space_name TEXT NULL,
     plan_name TEXT NULL,
-    plan_guid UUID NULL -- Later on this field may not be needed
+    plan_guid UUID NULL,
+    storage_in_mb NUMERIC NULL,
+    memory_in_mb NUMERIC NULL,
+    number_of_nodes INT NULL
 );
 
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
@@ -32,7 +34,7 @@ CREATE TEMPORARY TABLE billable_by_component
     space_guid UUID NULL,
     space_name TEXT NULL,
     plan_name TEXT NULL,
-    plan_guid UUID NULL, -- Later on this field may not be needed
+    plan_guid UUID NULL,
     component_name TEXT NULL,
 
     storage_in_mb NUMERIC NULL,
@@ -62,9 +64,12 @@ RETURNS TABLE
 (
     org_name TEXT,
     org_guid UUID,
+    plan_guid UUID,
     plan_name TEXT,
     space_name TEXT,
+    resource_type TEXT,
     resource_name TEXT,
+    component_name TEXT,
     charge_usd_exc_vat DECIMAL,
     charge_gbp_exc_vat DECIMAL,
     charge_gbp_inc_vat DECIMAL
@@ -141,9 +146,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -173,9 +178,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -205,9 +210,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -236,9 +241,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)), -- time_in_seconds
-            c.storage_in_mb,
-            c.memory_in_mb,
-            c.number_of_nodes,
+            br.storage_in_mb,
+            br.memory_in_mb,
+            br.number_of_nodes,
             c.aws_price,
             c.generic_formula,
             c.vat_code,
@@ -541,9 +546,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
@@ -578,9 +582,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from >= v.valid_from
@@ -615,9 +618,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from > v.valid_from
@@ -651,9 +653,8 @@ BEGIN
             br.charge_usd_exc_vat,
             br.charge_gbp_exc_vat,
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
-            (br.charge_gbp_exc_vat/(1 - v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
-            -- charge_gbp_exc_vat is the charge excluding VAT. The charge including VAT is: charge excluding VAT/(1 - VAT rate), because 
-            --     charge inc. VAT - (charge inc. VAT * VAT rate) = charge exc. VAT
+            (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
+            -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
@@ -663,17 +664,23 @@ BEGIN
     RETURN QUERY
     SELECT bac.org_name,
            bac.org_guid,
+           bac.plan_guid,
            bac.plan_name,
            bac.space_name,
+           bac.resource_type,
            bac.resource_name,
+           bac.component_name,
            SUM(bac.charge_usd_exc_vat) AS charge_usd_exc_vat,
            SUM(bac.charge_gbp_exc_vat) AS charge_gbp_exc_vat,
            SUM(bac.charge_gbp_inc_vat) AS charge_gbp_inc_vat
     FROM billable_by_component bac
     GROUP BY bac.org_name, 
              bac.org_guid, 
+             bac.plan_guid,
              bac.plan_name,
              bac.space_name,
-             bac.resource_name;
+             bac.resource_type,
+             bac.resource_name,
+             bac.component_name;
 END
 $$;

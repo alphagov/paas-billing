@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS resources
 	space_name TEXT NOT NULL,
 	plan_name TEXT NOT NULL,
 	plan_guid UUID NOT NULL,
+	storage_in_mb NUMERIC NULL,
+	memory_in_mb NUMERIC NULL,
+	number_of_nodes INT NULL,
 	-- source VARCHAR NULL, -- This can be added later if needed. Source system from which this was last updated from, e.g. Cloudfoundry
 	cf_event_guid UUID NULL, -- Cloudfoundry event_guid that was last used to update this row. Not used by code that calculates tenant bills (e.g. calculate_bill())
 	last_updated TIMESTAMPTZ NOT NULL -- When this row was last updated

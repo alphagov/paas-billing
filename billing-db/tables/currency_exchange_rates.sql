@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS currency_exchange_rates
     rate NUMERIC NOT NULL,
 
     PRIMARY KEY (from_ccy, to_ccy, valid_to),
-    CONSTRAINT rate_must_be_greater_than_zero CHECK (rate > 0)
+    CONSTRAINT rate_must_be_greater_than_zero CHECK (rate > 0),
+    CONSTRAINT rate_one_when_same_currency CHECK ((from_ccy != to_ccy) OR (from_ccy = to_ccy AND rate = 1))
 );
