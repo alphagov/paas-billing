@@ -8,6 +8,23 @@ github.com/Masterminds/semver
 github.com/cloudfoundry-community/go-cfclient
 # github.com/cloudfoundry/gofileutils v0.0.0-20170111115228-4d0c80011a0f
 github.com/cloudfoundry/gofileutils/fileutils
+# github.com/cucumber/gherkin-go/v11 v11.0.0
+github.com/cucumber/gherkin-go/v11
+# github.com/cucumber/godog v0.11.0
+## explicit
+github.com/cucumber/godog
+github.com/cucumber/godog/colors
+github.com/cucumber/godog/formatters
+github.com/cucumber/godog/internal/builder
+github.com/cucumber/godog/internal/flags
+github.com/cucumber/godog/internal/formatters
+github.com/cucumber/godog/internal/models
+github.com/cucumber/godog/internal/parser
+github.com/cucumber/godog/internal/storage
+github.com/cucumber/godog/internal/tags
+github.com/cucumber/godog/internal/utils
+# github.com/cucumber/messages-go/v10 v10.0.3
+github.com/cucumber/messages-go/v10
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 ## explicit
 github.com/dgrijalva/jwt-go
