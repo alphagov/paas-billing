@@ -28,6 +28,8 @@ or [github_merge_sign](https://rubygems.org/gems/github_merge_sign)
 
 A Golang application that provides an API endpoint for querying a Cloudfoundry organisation's resource usage/costs over a given time period.
 
+*Note that changes are currently being made to the way in which Paas billing works. The changes are underway and will be migrated over the next few weeks.*
+
 Events are collected from multiple sources and stored in a postgres instance, normalized, combined with pricing configuration and then exposed for querying via an HTTP API.
 
 ![architecture.png](architecture.png)
