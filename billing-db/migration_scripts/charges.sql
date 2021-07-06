@@ -11,6 +11,7 @@ FROM pricing_plans p, pricing_plan_components c
 WHERE p.plan_guid = c.plan_guid
 AND p.valid_from = c.valid_from;
 
+-- This code is only for eu-west-1
 UPDATE billing_formulae_conversion SET generic_formula = '0', aws_price = NULL WHERE generic_formula = '0';
 UPDATE billing_formulae_conversion SET generic_formula = '((1936.57/(48*1024))/30/24) * memory_in_mb * ceil(time_in_seconds / 3600)', aws_price = NULL WHERE generic_formula = '((1936.57/(48*1024))/30/24) * $memory_in_mb * ceil($time_in_seconds / 3600)';
 UPDATE billing_formulae_conversion SET generic_formula = 'ceil(time_in_seconds/3600) * aws_price', aws_price = 0.00685 WHERE original_formula = 'ceil($time_in_seconds/3600) * 0.00685';
