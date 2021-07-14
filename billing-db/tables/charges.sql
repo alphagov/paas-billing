@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS charges
   storage_in_mb NUMERIC NOT NULL,
   memory_in_mb NUMERIC NOT NULL,
   number_of_nodes INT NOT NULL,
-  aws_price NUMERIC NULL, -- e.g. price per hour obtained from prices section of AWS website
+  external_price NUMERIC NULL, -- e.g. price per hour obtained from prices section of AWS or Aiven website
   component_name TEXT NOT NULL,
   formula_name VARCHAR NULL, -- Joins to billing_formulae.formula_name
   vat_code VARCHAR NULL,
