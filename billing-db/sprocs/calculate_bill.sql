@@ -40,7 +40,7 @@ CREATE TEMPORARY TABLE billable_by_component
     storage_in_mb NUMERIC NULL,
     memory_in_mb NUMERIC NULL,
     number_of_nodes INT NULL,
-    aws_price DECIMAL NULL,
+    external_price DECIMAL NULL,
     generic_formula TEXT NULL,
     vat_code VARCHAR NULL,
     currency_code CHAR(3) NULL, -- ISO currency code. Original currency code
@@ -51,7 +51,7 @@ CREATE TEMPORARY TABLE billable_by_component
     is_processed BOOLEAN NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, aws_price);
+CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
 CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
 
 -- For the billing calculator, we can easily create the billable_by_component table and populate it with what the user wants to get the prices for, then call the calculate_bill
@@ -95,7 +95,7 @@ BEGIN
         c.storage_in_mb,
         c.memory_in_mb,
         c.number_of_nodes,
-        c.aws_price,
+        c.external_price,
         c.component_name,
         f.generic_formula,
         c.vat_code,
@@ -124,7 +124,7 @@ BEGIN
         storage_in_mb,
         memory_in_mb,
         number_of_nodes,
-        aws_price,
+        external_price,
         generic_formula,
         vat_code,
         currency_code,
@@ -149,7 +149,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            c.aws_price,
+            c.external_price,
             c.generic_formula,
             c.vat_code,
             c.currency_code,
@@ -181,7 +181,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            c.aws_price,
+            c.external_price,
             c.generic_formula,
             c.vat_code,
             c.currency_code,
@@ -213,7 +213,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            c.aws_price,
+            c.external_price,
             c.generic_formula,
             c.vat_code,
             c.currency_code,
@@ -244,7 +244,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            c.aws_price,
+            c.external_price,
             c.generic_formula,
             c.vat_code,
             c.currency_code,
@@ -261,27 +261,27 @@ BEGIN
     -- -------------------------------------------------
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = (number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (0.01 / 3600)) * aws_price,
+    SET charge_usd_exc_vat = (number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (0.01 / 3600)) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = '(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * aws_price'
+    WHERE generic_formula = '(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = ceil(time_in_seconds::DECIMAL/3600) * aws_price,
+    SET charge_usd_exc_vat = ceil(time_in_seconds::DECIMAL/3600) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = 'ceil(time_in_seconds/3600) * aws_price'
+    WHERE generic_formula = 'ceil(time_in_seconds/3600) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = number_of_nodes * ceil(time_in_seconds::DECIMAL/3600) * aws_price,
+    SET charge_usd_exc_vat = number_of_nodes * ceil(time_in_seconds::DECIMAL/3600) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = 'number_of_nodes * ceil(time_in_seconds/3600) * aws_price'
+    WHERE generic_formula = 'number_of_nodes * ceil(time_in_seconds/3600) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = (number_of_nodes * ceil(time_in_seconds::DECIMAL / 3600) * (memory_in_mb/1024.0) * 0.01) * aws_price,
+    SET charge_usd_exc_vat = (number_of_nodes * ceil(time_in_seconds::DECIMAL / 3600) * (memory_in_mb/1024.0) * 0.01) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = '(number_of_nodes * ceil(time_in_seconds / 3600) * (memory_in_mb/1024.0) * 0.01) * aws_price'
+    WHERE generic_formula = '(number_of_nodes * ceil(time_in_seconds / 3600) * (memory_in_mb/1024.0) * 0.01) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
@@ -297,9 +297,9 @@ BEGIN
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = (storage_in_mb/1024) * ceil(time_in_seconds::DECIMAL/2678401) * aws_price,
+    SET charge_usd_exc_vat = (storage_in_mb/1024) * ceil(time_in_seconds::DECIMAL/2678401) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = '(storage_in_mb/1024) * ceil(time_in_seconds/2678401) * aws_price'
+    WHERE generic_formula = '(storage_in_mb/1024) * ceil(time_in_seconds/2678401) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     -- Check that all formulae have been processed by the above updates.
@@ -341,7 +341,7 @@ BEGIN
         storage_in_mb,
         memory_in_mb,
         number_of_nodes,
-        aws_price,
+        external_price,
         generic_formula,
         is_processed,
         vat_code,
@@ -367,7 +367,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -403,7 +403,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -438,7 +438,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -472,7 +472,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -511,7 +511,7 @@ BEGIN
         storage_in_mb,
         memory_in_mb,
         number_of_nodes,
-        aws_price,
+        external_price,
         generic_formula,
         is_processed,
         vat_code,
@@ -538,7 +538,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -574,7 +574,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -610,7 +610,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
@@ -645,7 +645,7 @@ BEGIN
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
-            br.aws_price,
+            br.external_price,
             br.generic_formula,
             br.is_processed,
             br.vat_code,
