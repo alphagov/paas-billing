@@ -19,5 +19,5 @@ CREATE TABLE IF NOT EXISTS resources
 	last_updated TIMESTAMPTZ NOT NULL -- When this row was last updated
 );
 
-CREATE INDEX CONCURRENTLY resources_i1 ON resources (valid_from, valid_to);
-CREATE INDEX CONCURRENTLY resources_i2 ON resources (org_name, valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS resources_i1 ON resources (valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS resources_i2 ON resources (org_name, valid_from, valid_to);
