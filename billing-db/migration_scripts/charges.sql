@@ -130,11 +130,13 @@ INSERT INTO billing_formulae
   generic_formula,
   formula_source
 )
-SELECT DISTINCT generic_formula || CASE WHEN component_name IS NOT NULL THEN ' (' || component_name || ') ' ELSE '' END || CASE WHEN formula_source IS NOT NULL THEN ' from ' || formula_source ELSE '' END, -- formula_name
+SELECT DISTINCT generic_formula, -- formula_name
   generic_formula,
   formula_source
 FROM billing_formulae_conversion
 ORDER BY generic_formula;
+
+ALTER TABLE charges DROP CONSTRAINT charges_pkey;
 
 INSERT INTO charges
 (
@@ -169,6 +171,7 @@ ON p.plan_guid = c.plan_guid
 AND p.valid_from = c.valid_from
 LEFT OUTER JOIN billing_formulae_conversion t
 ON t.original_formula = c.formula
+AND t.component_name = c.name
 INNER JOIN billing_formulae f
 ON t.generic_formula = f.generic_formula
 ORDER BY p.name;
@@ -217,5 +220,7 @@ BEGIN
       _counter := _counter + 1;
    END LOOP;
 END$$;
+
+ALTER TABLE charges ADD CONSTRAINT charges_pkey PRIMARY KEY (plan_guid, component_name, valid_to);
 
 ANALYZE charges;
