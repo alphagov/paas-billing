@@ -1,3 +1,5 @@
+DROP TABLE IF EXISTS events_temp;
+
 CREATE TABLE events_temp (
 	event_guid uuid PRIMARY KEY NOT NULL,
 	resource_guid uuid NOT NULL,
