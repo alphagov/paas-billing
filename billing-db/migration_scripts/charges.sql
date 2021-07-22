@@ -5,8 +5,7 @@ AS
 SELECT DISTINCT (TRIM(c.formula))::TEXT as generic_formula,
   (TRIM(c.formula))::TEXT as original_formula,
   c.name AS component_name,
-  NULL::NUMERIC as external_price,
-  CASE WHEN p.name ILIKE '%postgres%' THEN 'https://aws.amazon.com/rds/postgresql/pricing/' ELSE NULL::VARCHAR END as formula_source
+  NULL::NUMERIC as external_price
 FROM pricing_plans p, pricing_plan_components c
 WHERE p.plan_guid = c.plan_guid
 AND p.valid_from = c.valid_from;
@@ -132,7 +131,7 @@ INSERT INTO billing_formulae
 )
 SELECT DISTINCT generic_formula, -- formula_name
   generic_formula,
-  formula_source
+  NULL -- We should not tie the formula necessarily to what it is being used to calculate the bill for (the resource). We may justifiably use the same formula for different AWS resources if the way in which AWS calculates the bills is the same. Should AWS later change the way a bill is calculated it is easy enough to change this in the paas-cf config by creating a new formula
 FROM billing_formulae_conversion
 ORDER BY generic_formula;
 
