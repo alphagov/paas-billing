@@ -94,6 +94,9 @@ func (s *EventStore) Init() error {
 	if err := s.initCurrencyRates(tx); err != nil {
 		return fmt.Errorf("failed to init currency rates: %s", err)
 	}
+	if err := s.initCurrencyExchangeRates(tx); err != nil {
+		return fmt.Errorf("failed to init currency rates new: %s", err)
+	}
 	if err := s.initPlans(tx); err != nil {
 		return fmt.Errorf("failed to init plans: %s", err)
 	}
@@ -196,15 +199,15 @@ func (s *EventStore) initVATRates(tx *sql.Tx) error {
 
 func (s *EventStore) initVATRatesNew(tx *sql.Tx) error {
 	for _, vr := range s.cfg.VATRates {
-		s.logger.Info("configuring-vat-ratei-new", lager.Data{
-			"code":       vr.Code,
+		s.logger.Info("configuring-vat-rate-new", lager.Data{
+			"vat_code":   vr.Code,
 			"valid_from": vr.ValidFrom,
-			"valid_to": vr.ValidTo,
-			"rate":       vr.Rate,
+			"valid_to":   vr.ValidTo,
+			"vat_rate":   vr.Rate,
 		})
 		_, err := tx.Exec(`
 			insert into vat_rates_new (
-				code, valid_from, valid_to, rate
+				vat_code, valid_from, valid_to, vat_rate
 			) values (
 				$1, $2, $3, $4
 			)
@@ -230,6 +233,29 @@ func (s *EventStore) initCurrencyRates(tx *sql.Tx) error {
 				$1, $2, $3
 			)
 		`, cr.Code, cr.ValidFrom, cr.Rate)
+		if err != nil {
+			return wrapPqError(err, "invalid currency rate")
+		}
+	}
+	return nil
+}
+
+func (s *EventStore) initCurrencyExchangeRates(tx *sql.Tx) error {
+	for _, cr := range s.cfg.CurrencyRates {
+		s.logger.Info("configuring-currency-rate", lager.Data{
+			"from_ccy":       cr.Code,
+      "to_ccy": "GBP",
+			"valid_from": cr.ValidFrom,
+			"valid_to": cr.ValidTo,
+			"rate":       cr.Rate,
+		})
+		_, err := tx.Exec(`
+			insert into currency_exchange_rates (
+				from_ccy, to_ccy, valid_from, valid_to, rate
+			) values (
+				$1, $2, $3, $4, $5
+			)
+		`, cr.Code, "GBP", cr.ValidFrom, cr.ValidTo, cr.Rate)
 		if err != nil {
 			return wrapPqError(err, "invalid currency rate")
 		}
