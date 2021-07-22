@@ -88,6 +88,9 @@ func (s *EventStore) Init() error {
 	if err := s.initVATRates(tx); err != nil {
 		return fmt.Errorf("failed to init VAT rates: %s", err)
 	}
+	if err := s.initVATRatesNew(tx); err != nil {
+		return fmt.Errorf("failed to init VAT rates new: %s", err)
+	}
 	if err := s.initCurrencyRates(tx); err != nil {
 		return fmt.Errorf("failed to init currency rates: %s", err)
 	}
@@ -184,6 +187,28 @@ func (s *EventStore) initVATRates(tx *sql.Tx) error {
 				$1, $2, $3
 			)
 		`, vr.Code, vr.ValidFrom, vr.Rate)
+		if err != nil {
+			return wrapPqError(err, "invalid vat rate")
+		}
+	}
+	return nil
+}
+
+func (s *EventStore) initVATRatesNew(tx *sql.Tx) error {
+	for _, vr := range s.cfg.VATRates {
+		s.logger.Info("configuring-vat-ratei-new", lager.Data{
+			"code":       vr.Code,
+			"valid_from": vr.ValidFrom,
+			"valid_to": vr.ValidTo,
+			"rate":       vr.Rate,
+		})
+		_, err := tx.Exec(`
+			insert into vat_rates_new (
+				code, valid_from, valid_to, rate
+			) values (
+				$1, $2, $3, $4
+			)
+		`, vr.Code, vr.ValidFrom, vr.ValidTo, vr.Rate)
 		if err != nil {
 			return wrapPqError(err, "invalid vat rate")
 		}
