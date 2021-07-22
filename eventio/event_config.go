@@ -27,5 +27,6 @@ type VATRate struct {
 type CurrencyRate struct {
 	Code      string  `json:"code"`
 	ValidFrom string  `json:"valid_from"`
+	ValidTo   string  `json:"valid_to"`
 	Rate      float64 `json:"rate"`
 }
