@@ -11,9 +11,9 @@ CREATE TABLE IF NOT EXISTS charges
   component_name TEXT NOT NULL,
   formula_name VARCHAR NULL, -- Joins to billing_formulae.formula_name
   vat_code VARCHAR NULL,
-  currency_code CHAR(3) NULL -- ISO currency code
+  currency_code CHAR(3) NULL, -- ISO currency code
 
-  -- PRIMARY KEY (plan_guid, valid_to) TODO: Uncomment once have added data to charges table. This line is commented because may want to amend the valid_to date after initial population of the charges table, in which case this constraint will fail.
+  PRIMARY KEY (plan_guid, component_name, valid_to)
 );
 CREATE INDEX CONCURRENTLY charges_i1 ON charges (plan_guid, valid_from, valid_to);
 CREATE INDEX CONCURRENTLY charges_i2 ON charges (valid_from, valid_to);
