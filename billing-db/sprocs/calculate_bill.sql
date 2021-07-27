@@ -670,9 +670,9 @@ BEGIN
            bac.resource_type,
            bac.resource_name,
            bac.component_name,
-           SUM(bac.charge_usd_exc_vat) AS charge_usd_exc_vat,
-           SUM(bac.charge_gbp_exc_vat) AS charge_gbp_exc_vat,
-           SUM(bac.charge_gbp_inc_vat) AS charge_gbp_inc_vat
+           ROUND(SUM(bac.charge_usd_exc_vat), 3) AS charge_usd_exc_vat,
+           ROUND(SUM(bac.charge_gbp_exc_vat), 3) AS charge_gbp_exc_vat,
+           ROUND(SUM(bac.charge_gbp_inc_vat), 3) AS charge_gbp_inc_vat
     FROM billable_by_component bac
     GROUP BY bac.org_name, 
              bac.org_guid, 
