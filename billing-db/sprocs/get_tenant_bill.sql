@@ -79,6 +79,10 @@ LANGUAGE plpgsql AS $$
 BEGIN
     TRUNCATE TABLE billable_resources;
 
+    IF _from_date >= _to_date THEN
+        RAISE EXCEPTION 'The from_date ("%") passed into get_tenant_bill needs to be before the to_date ("%").', _from_date, _to_date;
+    END IF;
+
     INSERT INTO billable_resources
     (
         valid_from,
@@ -183,6 +187,7 @@ BEGIN
     FROM  resources r
     WHERE r.org_name = _org_name
     AND   r.valid_from < _from_date
+    AND   r.valid_to > _from_date
     AND   r.valid_to > _to_date;
 
     RETURN QUERY
