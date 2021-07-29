@@ -4,6 +4,7 @@ type PricingPlan struct {
 	Name          string                 `json:"name"`
 	PlanGUID      string                 `json:"plan_guid"`
 	ValidFrom     string                 `json:"valid_from"`
+	ValidTo       string                 `json:"valid_to"`
 	Components    []PricingPlanComponent `json:"components"`
 	MemoryInMB    uint                   `json:"memory_in_mb"`
 	StorageInMB   uint                   `json:"storage_in_mb"`
@@ -11,10 +12,11 @@ type PricingPlan struct {
 }
 
 type PricingPlanComponent struct {
-	Name         string `json:"name"`
-	Formula      string `json:"formula"`
-	VATCode      string `json:"vat_code"`
-	CurrencyCode string `json:"currency_code"`
+	Name          string `json:"name"`
+	Formula       string `json:"formula"`
+  ExternalPrice string `json:"external_price"`
+	VATCode       string `json:"vat_code"`
+	CurrencyCode  string `json:"currency_code"`
 }
 
 type VATRate struct {

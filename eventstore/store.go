@@ -100,6 +100,9 @@ func (s *EventStore) Init() error {
 	if err := s.initPlans(tx); err != nil {
 		return fmt.Errorf("failed to init plans: %s", err)
 	}
+	if err := s.initCharges(tx); err != nil {
+		return fmt.Errorf("failed to init charges: %s", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -301,6 +304,67 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 			)`, pp.PlanGUID, pp.ValidFrom, ppc.Name, ppc.Formula, ppc.CurrencyCode, ppc.VATCode)
 			if err != nil {
 				return wrapPqError(err, "invalid pricing plan component")
+			}
+		}
+	}
+
+	if err := checkPricingComponents(tx); err != nil {
+		return err
+	}
+
+	if err := checkVATRates(tx); err != nil {
+		return err
+	}
+
+	if err := checkCurrencyRates(tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *EventStore) initCharges(tx *sql.Tx) (err error) {
+	for _, pp := range s.cfg.PricingPlans {
+		s.logger.Info("configuring-charges", lager.Data{
+			"plan_guid":  pp.PlanGUID,
+			"name":       pp.Name,
+			"valid_from": pp.ValidFrom,
+		})
+		for _, ppc := range pp.Components {
+			s.logger.Info("configuring-pricing-plan-component", lager.Data{
+				"plan_guid":  pp.PlanGUID,
+				"name":       ppc.Name,
+				"valid_from": pp.ValidFrom,
+			})
+			_, err := tx.Exec(`insert into charges (
+				plan_guid, plan_name,
+        valid_from, valid_to,
+        memory_in_mb, storage_in_mb, number_of_nodes,
+        external_price, component_name, formula_name,
+				currency_code, vat_code
+			) values (
+				$1, $2,
+        $3, $5,
+				$5, $6, $7,
+        $8, $9, $10,
+        $11, $12
+			)`, pp.PlanGUID, pp.Name,
+        pp.ValidFrom, pp.ValidTo,
+        pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
+        ppc.ExternalPrice, ppc.Name, pp.Name+ppc.Name,
+        ppc.CurrencyCode, ppc.VATCode,
+      )
+			if err != nil {
+				return wrapPqError(err, "invalid pricing plan component")
+			}
+      _, err = tx.Exec(`insert into billing_formulae (
+        formula_name, generic_formula, formula_source
+      ) values (
+        $1, $2, NULL
+      )`, pp.Name+ppc.Name, ppc.Formula,
+      )
+			if err != nil {
+				return wrapPqError(err, "invalid pricing plan component formula")
 			}
 		}
 	}
