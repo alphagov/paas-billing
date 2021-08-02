@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS charges
 
   -- PRIMARY KEY (plan_guid, valid_to) TODO: Uncomment once have added data to charges table. This line is commented because may want to amend the valid_to date after initial population of the charges table, in which case this constraint will fail.
 );
-CREATE INDEX CONCURRENTLY charges_i1 ON charges (plan_guid, valid_from, valid_to);
-CREATE INDEX CONCURRENTLY charges_i2 ON charges (valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS charges_i1 ON charges (plan_guid, valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS charges_i2 ON charges (valid_from, valid_to);
