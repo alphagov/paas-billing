@@ -1,4 +1,5 @@
-CREATE TABLE IF NOT EXISTS billing_formulae
+DROP TABLE IF EXISTS billing_formulae;
+CREATE TABLE billing_formulae
 (
   formula_name TEXT NOT NULL,
   generic_formula TEXT NOT NULL,
