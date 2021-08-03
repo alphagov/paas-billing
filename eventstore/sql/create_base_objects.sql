@@ -160,8 +160,8 @@ DO $$
 BEGIN
   BEGIN
     ALTER TABLE currency_rates ADD CONSTRAINT valid_from_start_of_day CHECK (
-      (extract (hour from valid_from)) = 0 AND
-      (extract (minute from valid_from)) = 0 AND
+      ((extract (hour from valid_from)) - (extract (timezone_hour from valid_from))) = 0 AND
+      ((extract (minute from valid_from)) - (extract (timezone_minute from valid_from))) = 0 AND
       (extract (second from valid_from)) = 0
     );
   EXCEPTION
@@ -180,8 +180,8 @@ CREATE TABLE IF NOT EXISTS vat_rates (
 	CONSTRAINT rate_must_be_greater_than_zero CHECK (rate >= 0),
 	CONSTRAINT valid_from_start_of_month CHECK (
 	  (extract (day from valid_from)) = 1 AND
-	  (extract (hour from valid_from)) = 0 AND
-	  (extract (minute from valid_from)) = 0 AND
+	  ((extract (hour from valid_from)) - (extract (timezone_hour from valid_from))) = 0 AND
+	  ((extract (minute from valid_from)) - (extract (timezone_minute from valid_from))) = 0 AND
 	  (extract (second from valid_from)) = 0
 	)
 );
