@@ -1,7 +1,7 @@
 -- These temporary tables need to be created when creating the database connection.
 
 -- What needs to be billed. This can be used for any resources, past or future, so can be used by the billing calculator.
-CREATE TEMPORARY TABLE billable_resources
+CREATE TEMPORARY TABLE IF NOT EXISTS billable_resources
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
@@ -20,7 +20,7 @@ CREATE TEMPORARY TABLE billable_resources
 );
 
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
-CREATE TEMPORARY TABLE billable_by_component
+CREATE TEMPORARY TABLE IF NOT EXISTS billable_by_component
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
@@ -51,8 +51,8 @@ CREATE TEMPORARY TABLE billable_by_component
     is_processed BOOLEAN NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
+CREATE INDEX IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
+CREATE INDEX IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
 
 -- For the billing calculator, we can easily create the billable_by_component table and populate it with what the user wants to get the prices for, then call the calculate_bill
 -- stored function to calculate the actual bill. This means that the calculation of prospective bills and real bills uses exactly the same code and formulae.

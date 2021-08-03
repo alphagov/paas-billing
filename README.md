@@ -94,7 +94,7 @@ Here is an example plan configuration file including VAT rates and currency rate
       "code": "Standard",
       "valid_from": "epoch",
       "rate": 0.2
-    },
+    }
   ],
   "pricing_plans": [
     {
@@ -128,7 +128,7 @@ Here is an example plan configuration file including VAT rates and currency rate
           "vat_code": "Standard"
         }
       ]
-    },
+    }
   ]
 }
 ```

@@ -1,6 +1,6 @@
 DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
 TEST_DATABASE_URL ?= postgres://postgres:@localhost:5432/?sslmode=disable
-CF_API_ADDRESS ?= $(shell cf target | awk '/api endpoint/ {print $$3}')
+CF_API_ADDRESS ?= $(shell cf target | awk '/API endpoint/ {print $$3}')
 APP_ROOT ?= $(PWD)
 
 bin/paas-billing: clean
@@ -19,7 +19,7 @@ run-dev-exports:
 	## Runs the application with local credentials
 	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
 	$(eval export CF_CLIENT_ID=paas-billing)
-	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
+#	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }')) # TODO: this can't work anymore since 4f513c2c121a4b29daf1b64d67e12512ec55b7b8 in paas-cf
 	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export DATABASE_URL=${DATABASE_URL})
@@ -59,7 +59,7 @@ smoke:
 	## Runs the app/blackbox tests against a dev environment as a smoke test to check
 	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
 	$(eval export CF_CLIENT_ID=paas-billing)
-	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }'))
+#	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }')) # TODO: this can't work anymore since 4f513c2c121a4b29daf1b64d67e12512ec55b7b8 in paas-cf
 	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
 	$(eval export CF_SKIP_SSL_VALIDATION=true)
 	$(eval export APP_ROOT=${APP_ROOT})

@@ -77,6 +77,13 @@ func (s *EventStore) Init() error {
 		"create_spaces.sql",
 		"2021-05-06-alter_orgs.sql",
     "../../billing-db/tables/resources.sql",
+    "../../billing-db/tables/vat_rates_new.sql",
+    "../../billing-db/tables/currency_exchange_rates.sql",
+    "../../billing-db/tables/charges.sql",
+    "../../billing-db/tables/billing_formulae.sql",
+    "../../billing-db/sprocs/calculate_bill.sql",
+    "../../billing-db/sprocs/get_tenant_bill.sql",
+    "../../billing-db/sprocs/update_resources.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.runSQLFile(tx, sqlFile)
