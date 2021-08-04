@@ -118,5 +118,95 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"charge_usd_exc_vat": 7.439997222222222,
 			},
 		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-08-01T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 5.1821560224,
+				"charge_gbp_inc_vat": 6.21858722688,
+				"charge_usd_exc_vat": 7.2,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 5.35489455648,
+				"charge_gbp_inc_vat": 6.425873467776,
+				"charge_usd_exc_vat": 7.44,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-01T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 5.35489455648,
+				"charge_gbp_inc_vat": 6.425873467776,
+				"charge_usd_exc_vat": 7.44,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-15T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 5.35489455648,
+				"charge_gbp_inc_vat": 6.425873467776,
+				"charge_usd_exc_vat": 7.44,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-15T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 5.35489455648,
+				"charge_gbp_inc_vat": 6.425873467776,
+				"charge_usd_exc_vat": 7.44,
+			},
+		}))
 	})
 })
