@@ -96,6 +96,7 @@ BEGIN
         memory_in_mb,
         number_of_nodes
     )
+    -- Case 0:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:            |-----------------|
     SELECT  GREATEST(_from_date, r.valid_from),
@@ -118,6 +119,7 @@ BEGIN
     AND   r.valid_to > _from_date
     AND   r.valid_to <= _to_date
     UNION ALL
+    -- Case 1:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:                         |-----------------|
     -- Resource present:                      |---------------------------|
@@ -142,6 +144,7 @@ BEGIN
     AND   r.valid_to > _from_date
     AND   r.valid_to <= _to_date
     UNION ALL
+    -- Case 2:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:                                       |-----------------|
     SELECT  GREATEST(_from_date, r.valid_from),
@@ -164,6 +167,7 @@ BEGIN
     AND   r.valid_from < _to_date
     AND   r.valid_to > _to_date
     UNION ALL
+    -- Case 3:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:            |---------------------------------------------|
     SELECT  _from_date,
