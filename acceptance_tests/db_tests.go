@@ -41,6 +41,15 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"rate":       1.3893831,
    			})).To(Succeed())
 
+		Expect(db.Insert("currency_exchange_rates",
+			testenv.Row{
+				"from_ccy":   "USD",
+				"to_ccy":     "GBP",
+				"valid_from": "2021-07-01T00:00:00Z",
+				"valid_to":   "9999-12-31T23:59:59Z",
+				"rate":       0.719743892,
+   			})).To(Succeed())
+
 		Expect(db.Insert("vat_rates_new",
 			testenv.Row{
 				"vat_code":   "Standard",
@@ -63,13 +72,13 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"valid_from":         "2000-01-01T00:00Z",
 				"valid_to":           "9999-12-31T23:59:59Z",
 				"storage_in_mb":      1,
-				"memory_in_mb":       1,
-				"number_of_nodes":    1,
-				"external_price":     0.01,
+				"memory_in_mb":       1024,
+				"number_of_nodes":    10,
+				"external_price":     0.1,
 				"component_name":     "test",
 				"formula_name":       "test", // should match formula name above
 				"vat_code":           "Standard",
-				"currency_code":      "GBP",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
 			})).To(Succeed())
 
 		Expect(db.Insert("resources",
@@ -86,8 +95,8 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"plan_name":       "Cheap",
 				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 				"storage_in_mb":   1,
-				"memory_in_mb":    1,
-				"number_of_nodes": 1,
+				"memory_in_mb":    1024,
+				"number_of_nodes": 10,
 				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
 				"last_updated":    "2021-08-03T13:04:00Z",
 			})).To(Succeed())
@@ -103,9 +112,9 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_usd_exc_vat": 0.0, // TODO
-				"charge_gbp_exc_vat": 0.0, // TODO
-				"charge_gbp_inc_vat": 0.0, // TODO
+				"charge_gbp_inc_vat": 6.417234141925693, // correct based on below
+				"charge_gbp_exc_vat": 5.347695118271411, // correct based on below
+				"charge_usd_exc_vat": 7.429997222222222, // TODO: close but not quite right?
 			},
 		}))
 	})
