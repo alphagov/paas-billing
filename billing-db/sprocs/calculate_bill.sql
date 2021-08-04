@@ -86,7 +86,8 @@ BEGIN
     -- ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
     -- Get a unique copy of some of the charges table before running the UNION ALL query below.
-    CREATE TEMPORARY TABLE charges_formulae
+    DROP TABLE IF EXISTS charges_formulae;
+    CREATE TABLE charges_formulae
     AS
     SELECT DISTINCT c.plan_guid,
         c.plan_name,
@@ -318,7 +319,8 @@ BEGIN
 
     -- If the following queries are a brake on performance then they can be wrapped inside IF statements. There are other possible optimisations too.
 
-    CREATE TEMPORARY TABLE billable_by_component_fx AS 
+    DROP TABLE IF EXISTS billable_by_component_fx;
+    CREATE TABLE billable_by_component_fx AS 
     SELECT *
     FROM billable_by_component
     WHERE 1=2;
@@ -534,7 +536,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -543,8 +545,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
@@ -570,7 +572,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -579,8 +581,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
@@ -606,7 +608,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -615,8 +617,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
@@ -641,7 +643,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -650,8 +652,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
