@@ -160,7 +160,7 @@ BEGIN
     WHERE br.plan_guid = c.plan_guid
     AND br.valid_from < c.valid_from
     AND br.valid_to > c.valid_from
-    AND br.valid_to < c.valid_to
+    AND br.valid_to <= c.valid_to
     UNION ALL
     -- charges.valid_from, charges.valid_to:  |---------------------------|
     -- Resource present:                         |-----------------|
@@ -222,7 +222,7 @@ BEGIN
     FROM billable_resources br,
          charges_formulae c
     WHERE br.plan_guid = c.plan_guid
-    AND br.valid_from > c.valid_from
+    AND br.valid_from >= c.valid_from
     AND br.valid_from < c.valid_to
     AND br.valid_to > c.valid_to
     UNION ALL
