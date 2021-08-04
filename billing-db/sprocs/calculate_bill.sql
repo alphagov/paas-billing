@@ -380,7 +380,7 @@ BEGIN
          currency_exchange_rates c
     WHERE br.valid_from < c.valid_from
     AND   br.valid_to > c.valid_from
-    AND   br.valid_to < c.valid_to
+    AND   br.valid_to <= c.valid_to
     AND   br.currency_code = c.from_ccy
     AND   c.to_ccy = 'GBP'
     UNION ALL
@@ -448,7 +448,7 @@ BEGIN
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
-    WHERE br.valid_from > c.valid_from
+    WHERE br.valid_from >= c.valid_from
     AND   br.valid_from < c.valid_to
     AND   br.valid_to > c.valid_to
     AND   br.currency_code = c.from_ccy
