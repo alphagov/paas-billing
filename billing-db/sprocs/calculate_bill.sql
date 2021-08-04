@@ -365,7 +365,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -374,7 +374,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)))::NUMERIC/time_in_seconds),
             -- Following line assumes the charges accrue evenly through the whole billing interval. The formulae that are used also assume this.
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
@@ -401,7 +401,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -410,7 +410,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
@@ -436,7 +436,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -445,7 +445,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
@@ -470,7 +470,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -479,7 +479,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
