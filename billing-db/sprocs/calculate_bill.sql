@@ -1,7 +1,7 @@
 -- These temporary tables need to be created when creating the database connection.
 
 -- What needs to be billed. This can be used for any resources, past or future, so can be used by the billing calculator.
-CREATE TEMPORARY TABLE IF NOT EXISTS billable_resources
+CREATE TABLE IF NOT EXISTS billable_resources
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
@@ -20,7 +20,7 @@ CREATE TEMPORARY TABLE IF NOT EXISTS billable_resources
 );
 
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
-CREATE TEMPORARY TABLE IF NOT EXISTS billable_by_component
+CREATE TABLE IF NOT EXISTS billable_by_component
 (
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
