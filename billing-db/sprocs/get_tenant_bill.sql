@@ -116,7 +116,7 @@ BEGIN
     WHERE r.org_name = _org_name
     AND   r.valid_from < _from_date
     AND   r.valid_to > _from_date
-    AND   r.valid_to < _to_date
+    AND   r.valid_to <= _to_date
     UNION ALL
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:                         |-----------------|
