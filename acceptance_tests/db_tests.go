@@ -113,9 +113,9 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_inc_vat": 6.417234141925693, // correct based on below
-				"charge_gbp_exc_vat": 5.347695118271411, // correct based on below
-				"charge_usd_exc_vat": 7.429997222222222, // TODO: close but not quite right?
+				"charge_gbp_exc_vat": 5.354892557191411,
+				"charge_gbp_inc_vat": 6.425871068629693,
+				"charge_usd_exc_vat": 7.439997222222222,
 			},
 		}))
 	})
