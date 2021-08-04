@@ -17,12 +17,11 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Schema.Init()).To(Succeed())
 	})
 
-	It("should basically work TODO", func() {
+	It("should basically work", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
-		// TODO: truncate existing tables first?
 		Expect(db.Insert("currency_exchange_rates",
 			testenv.Row{
 				"from_ccy":   "GBP",
@@ -206,6 +205,60 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"charge_gbp_exc_vat": 5.35489455648,
 				"charge_gbp_inc_vat": 6.425873467776,
 				"charge_usd_exc_vat": 7.44,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-07-15T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 2.41833947712,
+				"charge_gbp_inc_vat": 2.902007372544,
+				"charge_usd_exc_vat": 3.36,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-08-15T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 2.93655507936,
+				"charge_gbp_inc_vat": 3.523866095232,
+				"charge_usd_exc_vat": 4.08,
+			},
+		}))
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-11T00:00:00Z', '2021-07-28T00:00:00Z')`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":         "test-space",
+				"resource_type":      "service",
+				"resource_name":      "alex-test-1",
+				"component_name":     "test",
+				"charge_gbp_exc_vat": 2.93655507936,
+				"charge_gbp_inc_vat": 3.523866095232,
+				"charge_usd_exc_vat": 4.08,
 			},
 		}))
 	})
