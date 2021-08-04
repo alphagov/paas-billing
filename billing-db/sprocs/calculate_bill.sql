@@ -552,7 +552,7 @@ BEGIN
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
     AND   br.valid_to > v.valid_from
-    AND   br.valid_to < v.valid_to
+    AND   br.valid_to <= v.valid_to
     AND   v.vat_code = br.vat_code
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
@@ -622,7 +622,7 @@ BEGIN
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
-    WHERE br.valid_from > v.valid_from
+    WHERE br.valid_from >= v.valid_from
     AND   br.valid_from < v.valid_to
     AND   br.valid_to > v.valid_to
     AND   v.vat_code = br.vat_code
