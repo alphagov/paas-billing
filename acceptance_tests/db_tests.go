@@ -108,6 +108,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"org_name":           "test-org",
 				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
 				"plan_name":          "Cheap",
+				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 				"space_name":         "test-space",
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
