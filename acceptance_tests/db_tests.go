@@ -92,7 +92,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 			})).To(Succeed())
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-31T23:59:59Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-31T23:59:59Z')`), // 31 days minus 1 second duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -103,14 +103,16 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.354892557191411,
-				"charge_gbp_inc_vat": 6.425871068629693,
-				"charge_usd_exc_vat": 7.439997222222222,
+				// Formula from above for this plan: number_of_nodes * time_in_seconds * memory_in_mb / 1024 * 0.01 / 3600 * external_price
+				"charge_gbp_exc_vat": 5.354892557191411, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.1*0.719743892 = 5.354892557
+				"charge_gbp_inc_vat": 6.425871068629693, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.1*0.719743892*1.2 = 6.425871069
+				"charge_usd_exc_vat": 7.439997222222222, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.1 = 7.439997222
+				// Calculation comments below this point exclude 10*1024/1024*0.1 terms that cancel.
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-08-01T00:00:00Z')`), // 30 days duration with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -121,14 +123,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.1821560224,
-				"charge_gbp_inc_vat": 6.21858722688,
-				"charge_usd_exc_vat": 7.2,
+				"charge_gbp_exc_vat": 5.1821560224, // 30*24*60*60*0.01/3600*0.719743892 = 5.182156022
+				"charge_gbp_inc_vat": 6.21858722688, // 30*24*60*60*0.01/3600*0.719743892*1.2 = 6.218587227
+				"charge_usd_exc_vat": 7.2, // 30*24*60*60*0.01/3600 = 7.2
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 31 days duration with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -139,14 +141,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,
-				"charge_gbp_inc_vat": 6.425873467776,
-				"charge_usd_exc_vat": 7.44,
+				"charge_gbp_exc_vat": 5.35489455648, // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat": 7.44, // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-01T00:00:00Z')`), // 31 days duration with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -157,14 +159,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,
-				"charge_gbp_inc_vat": 6.425873467776,
-				"charge_usd_exc_vat": 7.44,
+				"charge_gbp_exc_vat": 5.35489455648, // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat": 7.44, // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-15T00:00:00Z')`), // 31 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -175,14 +177,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,
-				"charge_gbp_inc_vat": 6.425873467776,
-				"charge_usd_exc_vat": 7.44,
+				"charge_gbp_exc_vat": 5.35489455648, // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat": 7.44, // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-15T00:00:00Z')`), // 31 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -193,14 +195,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,
-				"charge_gbp_inc_vat": 6.425873467776,
-				"charge_usd_exc_vat": 7.44,
+				"charge_gbp_exc_vat": 5.35489455648, // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat": 7.44, // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-07-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-07-15T00:00:00Z')`), // 14 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -211,14 +213,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.41833947712,
-				"charge_gbp_inc_vat": 2.902007372544,
-				"charge_usd_exc_vat": 3.36,
+				"charge_gbp_exc_vat": 2.41833947712, // 14*24*60*60*0.01/3600*0.719743892 = 2.418339477
+				"charge_gbp_inc_vat": 2.902007372544, // 14*24*60*60*0.01/3600*0.719743892*1.2 = 2.902007373
+				"charge_usd_exc_vat": 3.36, // 14*24*60*60*0.01/3600 = 3.36
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-08-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-08-15T00:00:00Z')`), // 17 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -229,14 +231,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.93655507936,
-				"charge_gbp_inc_vat": 3.523866095232,
-				"charge_usd_exc_vat": 4.08,
+				"charge_gbp_exc_vat": 2.93655507936, // 17*24*60*60*0.01/3600*0.719743892 = 2.936555079
+				"charge_gbp_inc_vat": 3.523866095232, // 17*24*60*60*0.01/3600*0.719743892*1.2 = 3.523866095
+				"charge_usd_exc_vat": 4.08, // 17*24*60*60*0.01/3600 = 4.08
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-11T00:00:00Z', '2021-07-28T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-11T00:00:00Z', '2021-07-28T00:00:00Z')`), // 17 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -247,9 +249,9 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.93655507936,
-				"charge_gbp_inc_vat": 3.523866095232,
-				"charge_usd_exc_vat": 4.08,
+				"charge_gbp_exc_vat": 2.93655507936, // 17*24*60*60*0.01/3600*0.719743892 = 2.936555079
+				"charge_gbp_inc_vat": 3.523866095232, // 17*24*60*60*0.01/3600*0.719743892*1.2 = 3.523866095
+				"charge_usd_exc_vat": 4.08, // 17*24*60*60*0.01/3600 = 4.08
 			},
 		}))
 	})
@@ -344,7 +346,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 			})).To(Succeed())
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 14 days duration overlap with first plan, 17 days overlap with second plan
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -355,14 +357,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.648550064416,
-				"charge_gbp_inc_vat": 6.7782600772992,
-				"charge_usd_exc_vat": 7.848, // 14×0.1×24×60×60÷36000 + 17×0.11×24×60×60÷36000 = 7.848
+				"charge_gbp_exc_vat": 5.648550064416, // (14×0.1 + 17×0.11)×24×60×60÷36000*0.719743892 = 5.648550064
+				"charge_gbp_inc_vat": 6.7782600772992, // (14×0.1 + 17×0.11)×24×60×60÷36000*0.719743892*1.2 = 6.778260077
+				"charge_usd_exc_vat": 7.848, // (14×0.1 + 17×0.11)×24×60×60÷36000 = 7.848
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`), // 13 days duration overlap with first plan
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -373,14 +375,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,
-				"charge_gbp_inc_vat": 2.694721131648,
+				"charge_gbp_exc_vat": 2.24560094304, // 13×0.1×24×60×60÷36000*0.719743892 = 2.245600943
+				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000*0.719743892*1.2 = 2.694721132
 				"charge_usd_exc_vat": 3.12, // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`), // 16 days duration overlap with second plan
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -391,14 +393,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 3.040198199808,
-				"charge_gbp_inc_vat": 3.6482378397696,
+				"charge_gbp_exc_vat": 3.040198199808, // 16×0.11×24×60×60÷36000*0.719743892 = 3.0401982
+				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.11×24×60×60÷36000*0.719743892*1.2 = 3.64823784
 				"charge_usd_exc_vat": 4.224, // 16×0.11×24×60×60÷36000 = 4.224
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`), // 13 days duration overlap with first plan
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -409,14 +411,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,
-				"charge_gbp_inc_vat": 2.694721131648,
+				"charge_gbp_exc_vat": 2.24560094304, // 13×0.1×24×60×60÷36000*0.719743892 = 2.245600943
+				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000*0.719743892*1.2 = 2.694721132
 				"charge_usd_exc_vat": 3.12, // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`), // 16 days duration overlap with second plan
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -427,8 +429,8 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 3.040198199808,
-				"charge_gbp_inc_vat": 3.6482378397696,
+				"charge_gbp_exc_vat": 3.040198199808, // 16×0.11×24×60×60÷36000*0.719743892 = 3.0401982
+				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.11×24×60×60÷36000*0.719743892*1.2 = 3.64823784
 				"charge_usd_exc_vat": 4.224, // 16×0.11×24×60×60÷36000 = 4.224
 			},
 		}))
@@ -516,7 +518,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 			})).To(Succeed())
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 14 days duration overlap with first VAT rate, 17 days overlap with second VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -534,7 +536,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`), // 13 days duration overlap with first VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -545,14 +547,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,
-				"charge_gbp_inc_vat": 2.694721131648,
+				"charge_gbp_exc_vat": 2.24560094304, // 13×0.1×24×60×60÷36000×0.719743892 = 2.245600943
+				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000×0.719743892×1.2 = 2.694721132
 				"charge_usd_exc_vat": 3.12, // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`), // 16 days duration overlap with second VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -563,14 +565,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.76381654528,
-				"charge_gbp_inc_vat": 3.6482378397696,
+				"charge_gbp_exc_vat": 2.76381654528, // 16×0.1×24×60×60÷36000×0.719743892 = 2.763816545
+				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.1×24×60×60÷36000×0.719743892×1.32 = 3.64823784
 				"charge_usd_exc_vat": 3.84, // 16×0.1×24×60×60÷36000 = 3.84
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`), // 13 days duration overlap with first VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -581,14 +583,14 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,
-				"charge_gbp_inc_vat": 2.694721131648,
+				"charge_gbp_exc_vat": 2.24560094304, // 13×0.1×24×60×60÷36000×0.719743892 = 2.245600943
+				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000×0.719743892×1.2 = 2.694721132
 				"charge_usd_exc_vat": 3.12, // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`), // 16 days duration overlap with second VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -599,8 +601,8 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_type":      "service",
 				"resource_name":      "alex-test-1",
 				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.76381654528, // 16×0.1×24×60×60×0.719743892÷36000 = 2.76381654528
-				"charge_gbp_inc_vat": 3.6482378397696,
+				"charge_gbp_exc_vat": 2.76381654528, // 16×0.1×24×60×60×0.719743892÷36000 = 2.763816545
+				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.1×24×60×60÷36000×0.719743892×1.32 = 3.64823784
 				"charge_usd_exc_vat": 3.84, // 16×0.1×24×60×60÷36000 = 3.84
 			},
 		}))
@@ -689,7 +691,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 			})).To(Succeed())
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 14 days overlap with first currency exchange rate, 17 days overlap with second currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -707,7 +709,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`), // 13 days overlap with first currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -725,7 +727,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`), // 16 days overlap with second currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -743,7 +745,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`), // 13 days overlap with first currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
@@ -761,7 +763,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 
 		Expect(
-			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`),
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`), // 16 days overlap with second currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
 				"org_name":           "test-org",
