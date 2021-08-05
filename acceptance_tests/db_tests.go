@@ -778,4 +778,78 @@ var _ = Describe("BillingSQLFunctions", func() {
 			},
 		}))
 	})
+	It("Correctly updates resources based on app usage events", func() {
+		db, err := testenv.Open(eventstore.Config{})
+		Expect(err).ToNot(HaveOccurred())
+    // TODO: uncomment the below
+    //defer db.Close()
+
+    Expect(db.Insert("app_usage_events",
+			testenv.Row{
+        "id":                "1",
+        "guid":              "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+				"created_at":        "2021-07-01T00:00:00Z",
+				"raw_message":       "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 1, \"previous_state\": \"STOPPED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+			})).To(Succeed())
+
+    Expect(db.Insert("app_usage_events",
+			testenv.Row{
+        "id":                "2",
+        "guid":              "b84b96e3-ea99-46d0-9520-76c2f40efff7",
+				"created_at":        "2021-07-15T00:00:00Z",
+				"raw_message":       "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 2, \"previous_state\": \"STARTED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+			})).To(Succeed())
+
+    Expect(db.Insert("app_usage_events",
+			testenv.Row{
+        "id":                "3",
+        "guid":              "14066ea1-38af-4d0e-af70-ba6cb6b44866",
+				"created_at":        "2021-08-01T00:00:00Z",
+				"raw_message":       "{\"state\": \"STOPPED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"PENDING\", \"buildpack_guid\": null, \"buildpack_name\": null, \"instance_count\": 2, \"previous_state\": \"STARTED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 2, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+			})).To(Succeed())
+
+    Expect(db.Query(`select * from update_resources('1970-01-01T00:00:00Z')`)).To(MatchJSON(testenv.Rows{
+        {
+        "num_rows_added": 2,
+        },
+      }))
+		Expect(
+			db.Query(`select valid_from,valid_to,resource_guid,resource_name,resource_type,org_guid,org_name,space_guid,space_name,plan_name,plan_guid,storage_in_mb,memory_in_mb,number_of_nodes,cf_event_guid from resources`),
+		).To(MatchJSON(testenv.Rows{
+			{
+        "valid_from":      "2021-07-01T00:00:00+00:00",
+        "valid_to":        "2021-07-15T00:00:00+00:00",
+        "resource_guid":   "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+        "resource_name":   "unit-test-APP-c83c773e9daf5af3",
+        "resource_type":   "app",
+        "org_guid":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+        "org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+        "space_guid":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+        "space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+        "plan_name":       "app",
+        "plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+        "storage_in_mb":   0,
+        "memory_in_mb":    30,
+        "number_of_nodes": 1,
+        "cf_event_guid":   "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+			},
+      {
+        "valid_from":      "2021-07-15T00:00:00+00:00",
+        "valid_to":        "2021-08-01T00:00:00+00:00",
+        "resource_guid":   "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+        "resource_name":   "unit-test-APP-c83c773e9daf5af3",
+        "resource_type":   "app",
+        "org_guid":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+        "org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+        "space_guid":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+        "space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+        "plan_name":       "app",
+        "plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+        "storage_in_mb":   0,
+        "memory_in_mb":    30,
+        "number_of_nodes": 2,
+        "cf_event_guid":   "b84b96e3-ea99-46d0-9520-76c2f40efff7",
+      },
+		}))
+	})
 })
