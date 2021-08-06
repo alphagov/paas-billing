@@ -4,6 +4,8 @@ import (
 	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/alphagov/paas-billing/testenv"
 
+	"encoding/json"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -902,7 +904,6 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 	})
 
-	// TODO need to include TASKS, etc here?
 	It("Correctly updates resources based on app usage events", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
@@ -938,7 +939,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 			},
 		}))
 		Expect(
-			db.Query(`select valid_from,valid_to,resource_guid,resource_name,resource_type,org_guid,org_name,space_guid,space_name,plan_name,plan_guid,storage_in_mb,memory_in_mb,number_of_nodes,cf_event_guid from resources`),
+			db.Query(`select valid_from,valid_to,resource_guid,resource_name,resource_type,org_guid,org_name,space_guid,space_name,plan_name,plan_guid,storage_in_mb,memory_in_mb,number_of_nodes,cf_event_guid from resources order by valid_from, valid_to`),
 		).To(MatchJSON(testenv.Rows{
 			{
 				"valid_from":      "2021-07-01T00:00:00+00:00",
@@ -1044,6 +1045,196 @@ var _ = Describe("BillingSQLFunctions", func() {
 			},
 		}))
 	})
+
+	It("Correctly handles tasks", func() {
+		db, err := testenv.Open(eventstore.Config{})
+		Expect(err).ToNot(HaveOccurred())
+		// TODO
+		//defer db.Close()
+
+		Expect(db.Insert("billing_formulae",
+			testenv.Row{
+				"formula_name":    "app",
+				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (external_price / 3600))",
+				"formula_source":  "based on paas-cf/config/billing/config-parts/platform_pricing_plans.json.erb",
+			})).To(Succeed())
+
+		Expect(db.Insert("charges",
+			testenv.Row{
+				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"plan_name":          "app",
+				"valid_from":         "2019-03-01T00:00Z",
+				"valid_to":           "9999-12-31T23:59:59Z",
+				"storage_in_mb":      0,
+				"memory_in_mb":       0,
+				"number_of_nodes":    0,
+				"external_price":     0.01,
+				"component_name":     "instance",
+				"formula_name":       "app", // should match formula name above
+				"vat_code":           "Standard",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
+			})).To(Succeed())
+		Expect(db.Insert("charges",
+			testenv.Row{
+				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"plan_name":          "app",
+				"valid_from":         "2019-03-01T00:00Z",
+				"valid_to":           "9999-12-31T23:59:59Z",
+				"storage_in_mb":      0,
+				"memory_in_mb":       0,
+				"number_of_nodes":    0,
+				"external_price":     0.01*0.4,
+				"component_name":     "platform",
+				"formula_name":       "app", // should match formula name above
+				"vat_code":           "Standard",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
+			})).To(Succeed())
+		Expect(db.Insert("charges",
+			testenv.Row{
+				"plan_guid":          "ebfa9453-ef66-450c-8c37-d53dfd931038",
+				"plan_name":          "task",
+				"valid_from":         "2019-03-01T00:00Z",
+				"valid_to":           "9999-12-31T23:59:59Z",
+				"storage_in_mb":      0,
+				"memory_in_mb":       0,
+				"number_of_nodes":    0,
+				"external_price":     0.01,
+				"component_name":     "instance",
+				"formula_name":       "app", // should match formula name above
+				"vat_code":           "Standard",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
+			})).To(Succeed())
+		Expect(db.Insert("charges",
+			testenv.Row{
+				"plan_guid":          "ebfa9453-ef66-450c-8c37-d53dfd931038",
+				"plan_name":          "task",
+				"valid_from":         "2019-03-01T00:00Z",
+				"valid_to":           "9999-12-31T23:59:59Z",
+				"storage_in_mb":      0,
+				"memory_in_mb":       0,
+				"number_of_nodes":    0,
+				"external_price":     0.01*0.4,
+				"component_name":     "platform",
+				"formula_name":       "app", // should match formula name above
+				"vat_code":           "Standard",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
+			})).To(Succeed())
+
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "1",
+				"guid":        "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+				"created_at":  "2021-07-01T00:00:00Z",
+				"raw_message": "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 1, \"previous_state\": \"STOPPED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+			})).To(Succeed())
+
+		eventRawMessage, err := json.Marshal(map[string]interface{}{
+			"state":                              "TASK_STARTED",
+			"app_guid":                           "",
+			"app_name":                           "",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          "4c35683b-7033-4d0b-b852-785f12cf6073",
+			"task_name":                          "mreow",
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       nil,
+			"package_state":                      "STAGED",
+			"buildpack_guid":                     nil,
+			"buildpack_name":                     nil,
+			"instance_count":                     1,
+			"previous_state":                     "PENDING",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "STAGED",
+			"previous_instance_count":            1,
+			"memory_in_mb_per_instance":          1024,
+			"previous_memory_in_mb_per_instance": 1024,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "2",
+				"guid":        "14066ea1-38af-4d0e-af70-ba6cb6b44866",
+				"created_at":  "2021-08-01T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+
+		eventRawMessage, err = json.Marshal(map[string]interface{}{
+			"state":                              "TASK_STOPPED",
+			"app_guid":                           "",
+			"app_name":                           "",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          "4c35683b-7033-4d0b-b852-785f12cf6073",
+			"task_name":                          "mreow",
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       nil,
+			"package_state":                      "STAGED",
+			"buildpack_guid":                     nil,
+			"buildpack_name":                     nil,
+			"instance_count":                     1,
+			"previous_state":                     "CANCELING",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "STAGED",
+			"previous_instance_count":            1,
+			"memory_in_mb_per_instance":          1024,
+			"previous_memory_in_mb_per_instance": 1024,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "3",
+				"guid":        "d9284faf-61d0-4eb1-b400-6fb3305fb237",
+				"created_at":  "2021-08-01T01:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+
+		Expect(db.Query(`select * from update_resources('1970-01-01T00:00:00Z')`)).To(MatchJSON(testenv.Rows{
+			{
+				"num_rows_added": 2,
+			},
+		}))
+		Expect(
+			db.Query(`select valid_from,valid_to,resource_guid,resource_name,resource_type,org_guid,org_name,space_guid,space_name,plan_name,plan_guid,storage_in_mb,memory_in_mb,number_of_nodes,cf_event_guid from resources order by valid_from, valid_to`),
+		).To(MatchJSON(testenv.Rows{
+			{
+				"valid_from":      "2021-07-01T00:00:00+00:00",
+				"valid_to":        "9999-12-31T23:59:59+00:00",
+				"resource_guid":   "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+				"resource_name":   "unit-test-APP-c83c773e9daf5af3",
+				"resource_type":   "app",
+				"org_guid":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+				"org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+				"space_guid":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+				"space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+				"plan_name":       "app",
+				"plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"storage_in_mb":   0,
+				"memory_in_mb":    30,
+				"number_of_nodes": 1,
+				"cf_event_guid":   "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+			},
+			{
+				"valid_from":      "2021-08-01T00:00:00+00:00",
+				"valid_to":        "2021-08-01T01:00:00+00:00",
+				"resource_guid":   "4c35683b-7033-4d0b-b852-785f12cf6073",
+				"resource_name":   "mreow",
+				"resource_type":   "task",
+				"org_guid":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+				"org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+				"space_guid":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+				"space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2", // TODO: unit-test-SPACE-1c5968cee02f3899?
+				"plan_name":       "task",
+				"plan_guid":       "ebfa9453-ef66-450c-8c37-d53dfd931038",
+				"storage_in_mb":   0,
+				"memory_in_mb":    1024,
+				"number_of_nodes": 1,
+				"cf_event_guid":   "14066ea1-38af-4d0e-af70-ba6cb6b44866",
+			},
+		}))
+	})
+
 	It("Correctly updates resources based on service usage events", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
