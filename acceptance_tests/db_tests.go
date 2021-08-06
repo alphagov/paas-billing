@@ -914,6 +914,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"id":          "1",
 				"guid":        "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
 				"created_at":  "2021-07-01T00:00:00Z",
+				// TODO: replace these with json.Marshal as we did later
 				"raw_message": "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 1, \"previous_state\": \"STOPPED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
 			})).To(Succeed())
 
@@ -1049,8 +1050,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 	It("Correctly handles tasks", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
-		// TODO
-		//defer db.Close()
+		defer db.Close()
 
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
@@ -1205,9 +1205,9 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_name":   "unit-test-APP-c83c773e9daf5af3",
 				"resource_type":   "app",
 				"org_guid":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
-				"org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+				"org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5", // we didn't populate the orgs table so this falls back to GUID
 				"space_guid":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
-				"space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+				"space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2", // we didn't populate the spaces table so this falls back to GUID
 				"plan_name":       "app",
 				"plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
 				"storage_in_mb":   0,
@@ -1222,9 +1222,9 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"resource_name":   "mreow",
 				"resource_type":   "task",
 				"org_guid":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
-				"org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+				"org_name":        "428d5022-3ea5-46e9-8220-fc1e80b58de5", // we didn't populate the orgs table so this falls back to GUID
 				"space_guid":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
-				"space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2", // TODO: unit-test-SPACE-1c5968cee02f3899?
+				"space_name":      "c9bbfb98-9429-4c58-a57f-4304ef7f30a2", // we didn't populate the spaces table so this falls back to GUID
 				"plan_name":       "task",
 				"plan_guid":       "ebfa9453-ef66-450c-8c37-d53dfd931038",
 				"storage_in_mb":   0,
