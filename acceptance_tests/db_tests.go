@@ -906,8 +906,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 	It("Correctly updates resources based on app usage events", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
-		// TODO: uncomment the below
-		//defer db.Close()
+		defer db.Close()
 
 		Expect(db.Insert("app_usage_events",
 			testenv.Row{
@@ -981,8 +980,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 	It("Ignores app usage events triggered by tests", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
-		// TODO: uncomment the below
-		//defer db.Close()
+		defer db.Close()
 
 		Expect(db.Insert("app_usage_events",
 			testenv.Row{
@@ -1049,8 +1047,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 	It("Correctly updates resources based on service usage events", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
-		// TODO: uncomment the below
-		//defer db.Close()
+		defer db.Close()
 
 		Expect(db.Insert("service_usage_events",
 			testenv.Row{
