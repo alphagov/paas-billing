@@ -17,7 +17,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Schema.Init()).To(Succeed())
 	})
 
-	It("should basically work", func() {
+	It("basic service", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
@@ -656,18 +656,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("charges",
 			testenv.Row{
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"plan_name":          "Cheap",
-				"valid_from":         "2000-01-01T00:00Z",
-				"valid_to":           "9999-12-31T23:59:59Z",
-				"storage_in_mb":      1,
-				"memory_in_mb":       1024,
-				"number_of_nodes":    10,
-				"external_price":     0.1,
-				"component_name":     "test",
-				"formula_name":       "test", // should match formula name above
-				"vat_code":           "Standard",
-				"currency_code":      "USD", // Has to be USD or we break the USD result field
+				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"plan_name":       "Cheap",
+				"valid_from":      "2000-01-01T00:00Z",
+				"valid_to":        "9999-12-31T23:59:59Z",
+				"storage_in_mb":   1,
+				"memory_in_mb":    1024,
+				"number_of_nodes": 10,
+				"external_price":  0.1,
+				"component_name":  "test",
+				"formula_name":    "test", // should match formula name above
+				"vat_code":        "Standard",
+				"currency_code":   "USD", // Has to be USD or we break the USD result field
 			})).To(Succeed())
 
 		Expect(db.Insert("resources",
@@ -781,6 +781,127 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 	})
 
+	It("basic app", func() {
+		db, err := testenv.Open(eventstore.Config{})
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+
+		Expect(db.Insert("currency_exchange_rates",
+			testenv.Row{
+				"from_ccy":   "GBP",
+				"to_ccy":     "GBP",
+				"valid_from": "0800-01-01T00:00:00Z",
+				"valid_to":   "9999-12-31T23:59:59Z",
+				"rate":       1,
+			})).To(Succeed())
+
+		Expect(db.Insert("currency_exchange_rates",
+			testenv.Row{
+				"from_ccy":   "USD",
+				"to_ccy":     "GBP",
+				"valid_from": "2021-07-01T00:00:00Z",
+				"valid_to":   "9999-12-31T23:59:59Z",
+				"rate":       0.719743892,
+			})).To(Succeed())
+
+		Expect(db.Insert("vat_rates_new",
+			testenv.Row{
+				"vat_code":   "Standard",
+				"valid_from": "2011-01-04T00:00:00Z",
+				"valid_to":   "9999-12-31T23:59:59Z",
+				"vat_rate":   0.2,
+			})).To(Succeed())
+
+		Expect(db.Insert("billing_formulae",
+			testenv.Row{
+				"formula_name":    "app",
+				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (external_price / 3600))",
+				"formula_source":  "based on paas-cf/config/billing/config-parts/platform_pricing_plans.json.erb",
+			})).To(Succeed())
+
+		Expect(db.Insert("charges",
+			testenv.Row{
+				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"plan_name":          "app",
+				"valid_from":         "2019-03-01T00:00Z",
+				"valid_to":           "9999-12-31T23:59:59Z",
+				"storage_in_mb":      0,
+				"memory_in_mb":       0,
+				"number_of_nodes":    0,
+				"external_price":     0.01,
+				"component_name":     "instance",
+				"formula_name":       "app", // should match formula name above
+				"vat_code":           "Standard",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
+			})).To(Succeed())
+		Expect(db.Insert("charges",
+			testenv.Row{
+				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"plan_name":          "app",
+				"valid_from":         "2019-03-01T00:00Z",
+				"valid_to":           "9999-12-31T23:59:59Z",
+				"storage_in_mb":      0,
+				"memory_in_mb":       0,
+				"number_of_nodes":    0,
+				"external_price":     0.01*0.4,
+				"component_name":     "platform",
+				"formula_name":       "app", // should match formula name above
+				"vat_code":           "Standard",
+				"currency_code":      "USD", // Has to be USD or we break the USD result field
+			})).To(Succeed())
+
+		Expect(db.Insert("resources",
+			testenv.Row{
+				"valid_from":      "2021-07-01T00:00:00Z",
+				"valid_to":        "2021-08-01T00:00:00Z",
+				"resource_guid":   "09582243-ee5a-4d0d-840b-5fde3dd453a8",
+				"resource_name":   "alex-test-1",
+				"resource_type":   "app",
+				"org_guid":        "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_name":        "test-org",
+				"space_guid":      "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
+				"space_name":      "test-space",
+				"plan_name":       "app",
+				"plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"storage_in_mb":   1,
+				"memory_in_mb":    1024,
+				"number_of_nodes": 10,
+				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
+				"last_updated":    "2021-08-03T13:04:00Z",
+			})).To(Succeed())
+
+		Expect(
+			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-31T23:59:59Z')`), // 31 days minus 1 second duration overlap with resource
+		).To(MatchJSON(testenv.Rows{
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "app",
+				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"space_name":         "test-space",
+				"resource_type":      "app",
+				"resource_name":      "alex-test-1",
+				"component_name":     "platform",
+				"charge_gbp_exc_vat": 21.419570228765643, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600*0.719743892 = 21.419570229
+				"charge_gbp_inc_vat": 25.70348427451877, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600*0.719743892*1.2 = 25.703484275
+				"charge_usd_exc_vat": 29.759988888888888, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600 = 29.759988889
+			},
+			{
+				"org_name":           "test-org",
+				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"plan_name":          "app",
+				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"space_name":         "test-space",
+				"resource_type":      "app",
+				"resource_name":      "alex-test-1",
+				"component_name":     "instance",
+				"charge_gbp_exc_vat": 53.54892557191411, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.719743892 = 53.548925572
+				"charge_gbp_inc_vat": 64.25871068629693, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.719743892*1.2 = 64.258710686
+				"charge_usd_exc_vat": 74.39997222222222, // (31*24*60*60−1)*10*1024/1024*0.01/3600 = 74.399972222
+			},
+		}))
+	})
+
 	// TODO need to include TASKS, etc here?
 	It("Correctly updates resources based on app usage events", func() {
 		db, err := testenv.Open(eventstore.Config{})
@@ -790,26 +911,26 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("app_usage_events",
 			testenv.Row{
-				"id":                "1",
-				"guid":              "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
-				"created_at":        "2021-07-01T00:00:00Z",
-				"raw_message":       "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 1, \"previous_state\": \"STOPPED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+				"id":          "1",
+				"guid":        "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+				"created_at":  "2021-07-01T00:00:00Z",
+				"raw_message": "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 1, \"previous_state\": \"STOPPED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
 			})).To(Succeed())
 
 		Expect(db.Insert("app_usage_events",
 			testenv.Row{
-				"id":                "2",
-				"guid":              "b84b96e3-ea99-46d0-9520-76c2f40efff7",
-				"created_at":        "2021-07-15T00:00:00Z",
-				"raw_message":       "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 2, \"previous_state\": \"STARTED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+				"id":          "2",
+				"guid":        "b84b96e3-ea99-46d0-9520-76c2f40efff7",
+				"created_at":  "2021-07-15T00:00:00Z",
+				"raw_message": "{\"state\": \"STARTED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"STAGED\", \"buildpack_guid\": \"60b5ec15-3db4-4554-8cb0-4be2bcb64526\", \"buildpack_name\": \"binary_buildpack\", \"instance_count\": 2, \"previous_state\": \"STARTED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 1, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
 			})).To(Succeed())
 
 		Expect(db.Insert("app_usage_events",
 			testenv.Row{
-				"id":                "3",
-				"guid":              "14066ea1-38af-4d0e-af70-ba6cb6b44866",
-				"created_at":        "2021-08-01T00:00:00Z",
-				"raw_message":       "{\"state\": \"STOPPED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"PENDING\", \"buildpack_guid\": null, \"buildpack_name\": null, \"instance_count\": 2, \"previous_state\": \"STARTED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 2, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
+				"id":          "3",
+				"guid":        "14066ea1-38af-4d0e-af70-ba6cb6b44866",
+				"created_at":  "2021-08-01T00:00:00Z",
+				"raw_message": "{\"state\": \"STOPPED\", \"app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"org_guid\": \"428d5022-3ea5-46e9-8220-fc1e80b58de5\", \"task_guid\": null, \"task_name\": null, \"space_guid\": \"c9bbfb98-9429-4c58-a57f-4304ef7f30a2\", \"space_name\": \"unit-test-SPACE-1c5968cee02f3899\", \"process_type\": \"web\", \"package_state\": \"PENDING\", \"buildpack_guid\": null, \"buildpack_name\": null, \"instance_count\": 2, \"previous_state\": \"STARTED\", \"parent_app_guid\": \"12a71e81-8cbf-4d46-bfa5-a5d446735f73\", \"parent_app_name\": \"unit-test-APP-c83c773e9daf5af3\", \"previous_package_state\": \"UNKNOWN\", \"previous_instance_count\": 2, \"memory_in_mb_per_instance\": 30, \"previous_memory_in_mb_per_instance\": 30}",
 			})).To(Succeed())
 
 		Expect(db.Query(`select * from update_resources('1970-01-01T00:00:00Z')`)).To(MatchJSON(testenv.Rows{
