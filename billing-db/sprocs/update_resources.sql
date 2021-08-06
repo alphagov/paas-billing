@@ -237,7 +237,7 @@ BEGIN
 			tstzrange(created_at,
 				lead(created_at, 1,
 					case when event_type = 'staging' then created_at
-					else now() end
+					else '9999-12-31T23:59:59+00:00' end
 				) over resource_states
 			) as duration
 		from
@@ -371,8 +371,7 @@ BEGIN
 		event_guid AS "cf_event_guid", -- Is this the event that gave rise to the last change in the resources row? Need to check this. If so, may be useful to keep this, otherwise remove this field
 		NOW()
 	FROM events_temp
-	WHERE LOWER(duration) >= _from_date
-	AND   UPPER(duration) <= _run_date;
+	WHERE LOWER(duration) >= _from_date;
 
     -- Delete any records in resources with a valid_from after from_date.
 	DELETE FROM resources
