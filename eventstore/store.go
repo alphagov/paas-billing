@@ -905,17 +905,18 @@ func (s* EventStore) UpdateResources(ctx context.Context, date time.Time) (int, 
 	}
 
 	defer rows.Close()
+	var num_updated int
+	if rows.Next() {
+		if err := rows.Scan(&num_updated); err != nil {
+			tx.Rollback();
+			return -1, err
+		}
+	} else {
+		tx.Rollback();
+		return -1, errors.New("No number returned from update resources, has the function changed?")
+	}
 	if err := tx.Commit(); err != nil {
 		return -1, err
 	}
-	if rows.Next() {
-		var num_updated int
-		if err := rows.Scan(&num_updated); err != nil {
-			return -1, err
-		}
-		return num_updated, nil
-	} else {
-		return -1, errors.New("No number returned from update resources, has the function changed?")
-	}
-
+	return num_updated, nil
 }
