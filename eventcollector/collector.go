@@ -56,11 +56,22 @@ func (c *EventCollector) Run(ctx context.Context) error {
 		select {
 		case <-time.After(c.waitDuration()):
 			startTime := time.Now()
-			collectedEvents, err := c.collect(ctx)
 			if err != nil {
 				c.state = Scheduled
 				c.logger.Error("collect-error", err)
 				continue
+			}
+			collectedEvents, err := c.collect(ctx)
+			parsed_time,err := time.Parse(time.RFC3339,
+					        "2016-1-01T00:00:00+00:00")
+			if err != nil {
+				c.state = Scheduled
+				c.logger.Error("Time parsing error", err)
+			}
+			_, err := c.store.UpdateResources(ctx, parsed_time)
+			if err != nil {
+				c.state = Schedule
+				c.logger.Error("Failed to update resources", err)
 			}
 			c.eventsCollected += len(collectedEvents)
 			elapsed := time.Since(startTime)

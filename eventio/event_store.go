@@ -1,5 +1,10 @@
 package eventio
 
+import (
+	"time"
+	"context"
+)
+
 type RawEventWriter interface {
 	StoreEvents(events []RawEvent) error
 }
@@ -34,4 +39,5 @@ type EventStore interface {
 	BillableEventForecaster
 	ConsolidatedBillableEventReader
 	BillableEventConsolidator
+	UpdateResources(context.Context,time.Time) (int,error)
 }

@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	"errors"
 	"code.cloudfoundry.org/lager"
 
 	"github.com/alphagov/paas-billing/eventio"
@@ -886,4 +886,31 @@ func LoadConfig(filename string) (Config, error) {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+func (s* EventStore) UpdateResources(ctx context.Context, date time.Time) (int, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+
+	rows, err := tx.Query(`
+		SELECT update_resources ($1);
+		`, date)
+
+	if err != nil {
+		return -1, wrapPqError(err, "Failed to call update_resources db function")
+	}
+
+	defer rows.Close()
+	if err := tx.Commit(); err != nil {
+		return -1, err
+	}
+	if rows.Next() {
+		var num_updated int
+		if err := rows.Scan(&num_updated); err != nil {
+			return  -1, err
+		}
+		return num_updated, nil
+	} else {
+		return -1, errors.New("No number returned from update resources, has the function changed?")
+	}
+
 }
