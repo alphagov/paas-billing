@@ -12,11 +12,11 @@ type PricingPlan struct {
 }
 
 type PricingPlanComponent struct {
-	Name          string `json:"name"`
-	Formula       string `json:"formula"`
-  ExternalPrice string `json:"external_price"`
-	VATCode       string `json:"vat_code"`
-	CurrencyCode  string `json:"currency_code"`
+	Name          string  `json:"name"`
+	Formula       string  `json:"formula"`
+	ExternalPrice float64 `json:"external_price"`
+	VATCode       string  `json:"vat_code"`
+	CurrencyCode  string  `json:"currency_code"`
 }
 
 type VATRate struct {

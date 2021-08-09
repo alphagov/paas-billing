@@ -343,24 +343,26 @@ func (s *EventStore) initCharges(tx *sql.Tx) (err error) {
 				"name":       ppc.Name,
 				"valid_from": pp.ValidFrom,
 			})
-			_, err := tx.Exec(`insert into charges (
-				plan_guid, plan_name,
-        valid_from, valid_to,
-        memory_in_mb, storage_in_mb, number_of_nodes,
-        external_price, component_name, formula_name,
-				currency_code, vat_code
-			) values (
-				$1, $2,
-        $3, $5,
-				$5, $6, $7,
-        $8, $9, $10,
-        $11, $12
-			)`, pp.PlanGUID, pp.Name,
-        pp.ValidFrom, pp.ValidTo,
-        pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
-        ppc.ExternalPrice, ppc.Name, pp.Name+ppc.Name,
-        ppc.CurrencyCode, ppc.VATCode,
-      )
+			_, err := tx.Exec(
+				`insert into charges (
+					plan_guid, plan_name,
+					valid_from, valid_to,
+					memory_in_mb, storage_in_mb, number_of_nodes,
+					external_price, component_name, formula_name,
+					currency_code, vat_code
+					) values (
+					$1, $2,
+					$3, $4,
+					$5, $6, $7,
+					$8, $9, $10,
+					$11, $12
+				)`,
+				pp.PlanGUID, pp.Name,
+				pp.ValidFrom, pp.ValidTo,
+				pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
+				ppc.ExternalPrice, ppc.Name, pp.Name+ppc.Name,
+				ppc.CurrencyCode, ppc.VATCode,
+			)
 			if err != nil {
 				return wrapPqError(err, "invalid pricing plan component")
 			}
