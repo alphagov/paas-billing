@@ -39,5 +39,5 @@ type EventStore interface {
 	BillableEventForecaster
 	ConsolidatedBillableEventReader
 	BillableEventConsolidator
-	UpdateResources(context.Context,time.Time) (int,error)
+	UpdateResources(context.Context, time.Time) (int, error)
 }

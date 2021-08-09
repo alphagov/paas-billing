@@ -890,6 +890,9 @@ func LoadConfig(filename string) (Config, error) {
 
 func (s* EventStore) UpdateResources(ctx context.Context, date time.Time) (int, error) {
 	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return -1, err
+	}
 
 	rows, err := tx.Query(`
 		SELECT update_resources ($1);
@@ -906,7 +909,7 @@ func (s* EventStore) UpdateResources(ctx context.Context, date time.Time) (int, 
 	if rows.Next() {
 		var num_updated int
 		if err := rows.Scan(&num_updated); err != nil {
-			return  -1, err
+			return -1, err
 		}
 		return num_updated, nil
 	} else {
