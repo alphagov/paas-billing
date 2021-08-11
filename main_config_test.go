@@ -48,7 +48,7 @@ var _ = Describe("Config", func() {
 		func(variableName string) {
 			os.Setenv(variableName, "bad-duration")
 			_, err := NewConfigFromEnv()
-			Expect(err).To(MatchError("time: invalid duration bad-duration"))
+			Expect(err).To(MatchError("time: invalid duration \"bad-duration\""))
 		},
 		Entry("bad schedule", "COLLECTOR_SCHEDULE"),
 		Entry("bad min wait time", "COLLECTOR_MIN_WAIT_TIME"),
