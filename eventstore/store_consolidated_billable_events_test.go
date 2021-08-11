@@ -29,16 +29,19 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 			Code:      "Standard",
 			Rate:      0,
 			ValidFrom: "2017-03-01",
+			ValidTo:   "9999-12-31",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
+			ValidTo: "2017-04-01",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      4,
 			ValidFrom: "2017-04-01",
+			ValidTo:   "9999-12-31",
 		})
 
 		scenario.AppLifeCycle("org1", "space1", "app1",

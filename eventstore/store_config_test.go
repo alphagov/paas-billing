@@ -22,6 +22,7 @@ var _ = Describe("GetPricingPlans", func() {
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "epoch",
+					ValidTo:   "9999-12-31:00:00",
 				},
 			},
 			CurrencyRates: []eventio.CurrencyRate{
@@ -29,6 +30,7 @@ var _ = Describe("GetPricingPlans", func() {
 					Code:      "GBP",
 					Rate:      1,
 					ValidFrom: "epoch",
+					ValidTo:   "9999-12-31:00:00",
 				},
 			},
 			PricingPlans: []eventio.PricingPlan{
@@ -48,6 +50,7 @@ var _ = Describe("GetPricingPlans", func() {
 				{
 					PlanGUID:      eventstore.ComputePlanGUID,
 					ValidFrom:     "2002-02-01T00:00:00+00:00",
+					ValidTo:       "9999-12-31:00:00:00+00:00",
 					Name:          "PLAN2",
 					NumberOfNodes: 2,
 					MemoryInMB:    64,
