@@ -35,7 +35,7 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
-			ValidTo: "2017-04-01",
+			ValidTo:   "2017-04-01",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",

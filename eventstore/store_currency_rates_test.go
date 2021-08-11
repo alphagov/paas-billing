@@ -21,7 +21,7 @@ var _ = Describe("GetCurrencyRates", func() {
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "1970-01-01T00:00:00+00:00",
-
+					ValidTo:   "9999-12-31T23:59:59+00:00",
 				},
 			},
 			CurrencyRates: []eventio.CurrencyRate{
@@ -29,16 +29,19 @@ var _ = Describe("GetCurrencyRates", func() {
 					Code:      "GBP",
 					Rate:      1,
 					ValidFrom: "1970-01-01T00:00:00+00:00",
+					ValidTo:   "9999-12-31T23:59:59+00:00",
 				},
 				{
 					Code:      "USD",
 					Rate:      0.8,
 					ValidFrom: "1970-01-01T00:00:00+00:00",
+					ValidTo:   "2003-01-14T00:00:00+00:00",
 				},
 				{
 					Code:      "USD",
 					Rate:      0.74,
 					ValidFrom: "2003-01-14T00:00:00+00:00",
+					ValidTo:   "9999-12-31T23:59:59+00:00",
 				},
 			},
 			PricingPlans: []eventio.PricingPlan{
