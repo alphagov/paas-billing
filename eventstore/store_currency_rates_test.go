@@ -21,6 +21,7 @@ var _ = Describe("GetCurrencyRates", func() {
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "1970-01-01T00:00:00+00:00",
+
 				},
 			},
 			CurrencyRates: []eventio.CurrencyRate{
@@ -44,6 +45,7 @@ var _ = Describe("GetCurrencyRates", func() {
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "2001-01-01T00:00:00+00:00",
+					ValidTo:   "2002-02-01T00:00:00+00:00",
 					Name:      "PLAN1",
 					Components: []eventio.PricingPlanComponent{
 						{
@@ -57,6 +59,7 @@ var _ = Describe("GetCurrencyRates", func() {
 				{
 					PlanGUID:      eventstore.ComputePlanGUID,
 					ValidFrom:     "2002-02-01T00:00:00+00:00",
+					ValidTo:       "9999-12-31:00:00:00+00:00",
 					Name:          "PLAN2",
 					NumberOfNodes: 2,
 					MemoryInMB:    64,
