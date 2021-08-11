@@ -37,6 +37,7 @@ var _ = Describe("GetPricingPlans", func() {
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "2001-01-01T00:00:00+00:00",
+					ValidTo:   "2002-02-01T00:00:00+00:00",
 					Name:      "PLAN1",
 					Components: []eventio.PricingPlanComponent{
 						{
