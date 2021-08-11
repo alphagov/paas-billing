@@ -39,6 +39,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.StagingPlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "STAGING_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -132,6 +133,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -225,6 +227,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.TaskPlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -317,6 +320,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -448,6 +452,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -509,6 +514,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -566,6 +572,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
+			ValidTo:   "2017-02-01",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -579,6 +586,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-02-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN2",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -671,6 +679,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
+			ValidTo:   "2017-02-01",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -685,6 +694,7 @@ var _ = Describe("GetBillableEvents", func() {
 			Code:      "Standard",
 			Rate:      0,
 			ValidFrom: "2017-02-01",
+			ValidTo:   "9999-12-31",
 		})
 
 		db, err := testenv.Open(cfg)
@@ -768,6 +778,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
+			ValidTo:   "2017-02-01",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -782,6 +793,7 @@ var _ = Describe("GetBillableEvents", func() {
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
+			ValidTo:   "9999-12-31",
 		})
 
 		db, err := testenv.Open(cfg)
@@ -865,6 +877,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
+			ValidTo:   "2017-01-15",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -879,6 +892,7 @@ var _ = Describe("GetBillableEvents", func() {
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-01-15",
+			ValidTo:   "9999-12-31",
 		})
 
 		db, err := testenv.Open(cfg)
@@ -967,6 +981,7 @@ var _ = Describe("GetBillableEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -981,16 +996,19 @@ var _ = Describe("GetBillableEvents", func() {
 			Code:      "Standard",
 			Rate:      0,
 			ValidFrom: "2017-03-01",
+			ValidTo:   "9999-12-31",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
+			ValidTo:   "2017-04-01",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
 			Code:      "GBP",
 			Rate:      4,
 			ValidFrom: "2017-04-01",
+			ValidTo:   "9999-12-31",
 		})
 
 		db, err := testenv.Open(cfg)
@@ -1097,10 +1115,12 @@ var _ = Describe("GetBillableEvents", func() {
 			Code:      "Zero",
 			Rate:      0,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31",
 		})
 		plan := eventio.PricingPlan{
 			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
+			ValidTo:       "9999-12-31",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,

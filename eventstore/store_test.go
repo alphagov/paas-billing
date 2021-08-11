@@ -36,6 +36,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -49,6 +50,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -165,6 +167,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -280,6 +283,7 @@ var _ = Describe("Store", func() {
 		existingPlan := eventio.PricingPlan{
 			PlanGUID:  "c6221308-b7bb-46d2-9d79-a357f5a3837b",
 			ValidFrom: "1970-01-01T00:00:00+00:00",
+			ValidTo:   "9999-12-31T23:59:59+00:00",
 			Name:      "AWESOME_SERVICE_PLAN_NAME",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -436,6 +440,7 @@ var _ = Describe("Store", func() {
 			eventio.PricingPlan{
 				PlanGUID:      "cccccccc-cccc-cccc-cccc-cccccccccccc",
 				ValidFrom:     "1970-01-01T00:00:00+00:00",
+				ValidTo:       "9999-12-31T23:59:59+00:00",
 				Name:          "service AWESOME_MISSING_SERVICE_PLAN_NAME",
 				NumberOfNodes: 0,
 				MemoryInMB:    0,
@@ -456,6 +461,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -469,6 +475,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -493,6 +500,7 @@ var _ = Describe("Store", func() {
 					{
 						PlanGUID:  uuid.NewV4().String(),
 						ValidFrom: timestamp,
+						ValidTo:   "9999-12-31",
 						Name:      "bad-plan",
 						Components: []eventio.PricingPlanComponent{
 							{
@@ -523,6 +531,7 @@ var _ = Describe("Store", func() {
 				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: timestamp,
+						ValidTo:   "9999-12-31",
 						Code:      "Standard",
 						Rate:      0,
 					},
@@ -546,6 +555,7 @@ var _ = Describe("Store", func() {
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: timestamp,
+						ValidTo:   "9999-12-31",
 						Code:      "USD",
 						Rate:      0.8,
 					},
@@ -566,6 +576,7 @@ var _ = Describe("Store", func() {
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: timestamp,
+						ValidTo:   "9999-12-31",
 						Code:      "USD",
 						Rate:      0.8,
 					},
@@ -588,6 +599,7 @@ var _ = Describe("Store", func() {
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: "2001-01-01",
+						ValidTo:   "9999-12-31",
 						Code:      code,
 						Rate:      0.8,
 					},
@@ -609,6 +621,7 @@ var _ = Describe("Store", func() {
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: "2001-01-01",
+						ValidTo:   "9999-12-31",
 						Code:      code,
 						Rate:      0.8,
 					},
@@ -631,6 +644,7 @@ var _ = Describe("Store", func() {
 				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: "2001-01-01",
+						ValidTo:   "9999-12-31",
 						Code:      code,
 						Rate:      0.1,
 					},
@@ -652,6 +666,7 @@ var _ = Describe("Store", func() {
 				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: "2001-01-01",
+						ValidTo:   "9999-12-31",
 						Code:      code,
 						Rate:      0.8,
 					},
