@@ -784,13 +784,19 @@ var _ = Describe("GetBillableEvents", func() {
 				{
 					Name:         "compute",
 					Formula:      "1",
-					CurrencyCode: "GBP",
+					CurrencyCode: "USD",
 					VATCode:      "Standard",
 				},
 			},
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
-			Code:      "GBP",
+			Code:      "USD",
+			Rate:      1,
+			ValidFrom: "1970-01-01",
+			ValidTo:   "2017-02-01",
+		})
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
+			Code:      "USD",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
 			ValidTo:   "9999-12-31",
@@ -883,13 +889,19 @@ var _ = Describe("GetBillableEvents", func() {
 				{
 					Name:         "compute",
 					Formula:      "1",
-					CurrencyCode: "GBP",
+					CurrencyCode: "USD",
 					VATCode:      "Standard",
 				},
 			},
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
-			Code:      "GBP",
+			Code:      "USD",
+			Rate:      1,
+			ValidFrom: "1970-01-01",
+			ValidTo:   "2017-01-15",
+		})
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
+			Code:      "USD",
 			Rate:      2,
 			ValidFrom: "2017-01-15",
 			ValidTo:   "9999-12-31",
@@ -978,6 +990,26 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   |   .  component1.  . | component2 |  component3  |    component4    .  |   .   .
 	----------------------------------------------------------------------------------------*/
 	It("should return a single BillingEvent with four pricing components when the events intersects currency and VAT rate changes", func() {
+		cfg = eventstore.Config{ // redefine config in order to change VATRates[0].ValidTo to be compatible with the new VAT rate we want to add below
+			VATRates: []eventio.VATRate{
+				{
+					Code:      "Standard",
+					Rate:      0.2,
+					ValidFrom: "epoch",
+					ValidTo:   "2017-03-01",
+				},
+			},
+			CurrencyRates: []eventio.CurrencyRate{
+				{
+					Code:      "GBP",
+					Rate:      1,
+					ValidFrom: "epoch",
+					ValidTo:   "9999-12-31T23:59:59Z",
+				},
+			},
+			PricingPlans: []eventio.PricingPlan{},
+		}
+
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
@@ -987,7 +1019,7 @@ var _ = Describe("GetBillableEvents", func() {
 				{
 					Name:         "compute",
 					Formula:      "1",
-					CurrencyCode: "GBP",
+					CurrencyCode: "USD",
 					VATCode:      "Standard",
 				},
 			},
@@ -999,13 +1031,19 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidTo:   "9999-12-31",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
-			Code:      "GBP",
+			Code:      "USD",
+			Rate:      1,
+			ValidFrom: "1970-01-01",
+			ValidTo:   "2017-02-01",
+		})
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
+			Code:      "USD",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
 			ValidTo:   "2017-04-01",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
-			Code:      "GBP",
+			Code:      "USD",
 			Rate:      4,
 			ValidFrom: "2017-04-01",
 			ValidTo:   "9999-12-31",

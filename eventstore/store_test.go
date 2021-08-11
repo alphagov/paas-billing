@@ -601,7 +601,7 @@ var _ = Describe("Store", func() {
 						ValidFrom: "2001-01-01",
 						ValidTo:   "9999-12-31",
 						Code:      code,
-						Rate:      0.8,
+						Rate:      1,
 					},
 				},
 			})
