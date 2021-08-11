@@ -196,7 +196,7 @@ var _ = Describe("Currency Conversion", func() {
 					Code:      "USD",
 					Rate:      2,
 					ValidFrom: "epoch",
-					ValidTo:   "9999-12-31",
+					ValidTo:   "2001-02-01",
 				},
 				{
 					Code:      "USD",
@@ -209,6 +209,7 @@ var _ = Describe("Currency Conversion", func() {
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "epoch",
+					ValidTo:   "9999-12-31",
 					Name:      "PLAN1",
 					Components: []eventio.PricingPlanComponent{
 						{
@@ -270,6 +271,7 @@ var _ = Describe("Currency Conversion", func() {
 					Code:      "Standard",
 					Rate:      0.2,
 					ValidFrom: "epoch",
+					ValidTo:   "9999-12-31",
 				},
 			},
 			CurrencyRates: []eventio.CurrencyRate{
@@ -277,17 +279,20 @@ var _ = Describe("Currency Conversion", func() {
 					Code:      "GBP",
 					Rate:      1,
 					ValidFrom: "2001-01-01",
+					ValidTo:   "9999-12-31",
 				},
 				{
 					Code:      "USD",
 					Rate:      2,
 					ValidFrom: "2001-01-01",
+					ValidTo:   "9999-12-31",
 				},
 			},
 			PricingPlans: []eventio.PricingPlan{
 				{
 					PlanGUID:  eventstore.ComputePlanGUID,
 					ValidFrom: "2001-01-01",
+					ValidTo:   "9999-12-31",
 					Name:      "PLAN1",
 					Components: []eventio.PricingPlanComponent{
 						{
