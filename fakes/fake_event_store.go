@@ -4,6 +4,7 @@ package fakes
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/alphagov/paas-billing/eventio"
 )
@@ -258,6 +259,20 @@ type FakeEventStore struct {
 	}
 	storeEventsReturnsOnCall map[int]struct {
 		result1 error
+	}
+	UpdateResourcesStub        func(context.Context, time.Time) (int, error)
+	updateResourcesMutex       sync.RWMutex
+	updateResourcesArgsForCall []struct {
+		arg1 context.Context
+		arg2 time.Time
+	}
+	updateResourcesReturns struct {
+		result1 int
+		result2 error
+	}
+	updateResourcesReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -1494,6 +1509,70 @@ func (fake *FakeEventStore) StoreEventsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeEventStore) UpdateResources(arg1 context.Context, arg2 time.Time) (int, error) {
+	fake.updateResourcesMutex.Lock()
+	ret, specificReturn := fake.updateResourcesReturnsOnCall[len(fake.updateResourcesArgsForCall)]
+	fake.updateResourcesArgsForCall = append(fake.updateResourcesArgsForCall, struct {
+		arg1 context.Context
+		arg2 time.Time
+	}{arg1, arg2})
+	fake.recordInvocation("UpdateResources", []interface{}{arg1, arg2})
+	fake.updateResourcesMutex.Unlock()
+	if fake.UpdateResourcesStub != nil {
+		return fake.UpdateResourcesStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.updateResourcesReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeEventStore) UpdateResourcesCallCount() int {
+	fake.updateResourcesMutex.RLock()
+	defer fake.updateResourcesMutex.RUnlock()
+	return len(fake.updateResourcesArgsForCall)
+}
+
+func (fake *FakeEventStore) UpdateResourcesCalls(stub func(context.Context, time.Time) (int, error)) {
+	fake.updateResourcesMutex.Lock()
+	defer fake.updateResourcesMutex.Unlock()
+	fake.UpdateResourcesStub = stub
+}
+
+func (fake *FakeEventStore) UpdateResourcesArgsForCall(i int) (context.Context, time.Time) {
+	fake.updateResourcesMutex.RLock()
+	defer fake.updateResourcesMutex.RUnlock()
+	argsForCall := fake.updateResourcesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeEventStore) UpdateResourcesReturns(result1 int, result2 error) {
+	fake.updateResourcesMutex.Lock()
+	defer fake.updateResourcesMutex.Unlock()
+	fake.UpdateResourcesStub = nil
+	fake.updateResourcesReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) UpdateResourcesReturnsOnCall(i int, result1 int, result2 error) {
+	fake.updateResourcesMutex.Lock()
+	defer fake.updateResourcesMutex.Unlock()
+	fake.UpdateResourcesStub = nil
+	if fake.updateResourcesReturnsOnCall == nil {
+		fake.updateResourcesReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.updateResourcesReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -1537,6 +1616,8 @@ func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	defer fake.refreshMutex.RUnlock()
 	fake.storeEventsMutex.RLock()
 	defer fake.storeEventsMutex.RUnlock()
+	fake.updateResourcesMutex.RLock()
+	defer fake.updateResourcesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
