@@ -25,6 +25,25 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 	It("should match the output of GetBillableEvents for a complex scenario across multiple months", func() {
 		scenario.AddComputePlan()
 
+		cfg = eventstore.Config{ // redefine cfg to override VATRates[0].ValidTo in order to be compatible with insert below
+			VATRates: []eventio.VATRate{
+				{
+					Code:      "Standard",
+					Rate:      0.2,
+					ValidFrom: "epoch",
+					ValidTo:   "2017-03-01",
+				},
+			},
+			CurrencyRates: []eventio.CurrencyRate{
+				{
+					Code:      "GBP",
+					Rate:      1,
+					ValidFrom: "epoch",
+					ValidTo:   "9999-12-31T23:59:59Z",
+				},
+			},
+			PricingPlans: []eventio.PricingPlan{},
+		}
 		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Standard",
 			Rate:      0,
@@ -32,13 +51,19 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 			ValidTo:   "9999-12-31",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
-			Code:      "GBP",
+			Code:      "USD",
+			Rate:      1,
+			ValidFrom: "1970-01-01",
+			ValidTo:   "2017-02-01",
+		})
+		cfg.AddCurrencyRate(eventio.CurrencyRate{
+			Code:      "USD",
 			Rate:      2,
 			ValidFrom: "2017-02-01",
 			ValidTo:   "2017-04-01",
 		})
 		cfg.AddCurrencyRate(eventio.CurrencyRate{
-			Code:      "GBP",
+			Code:      "USD",
 			Rate:      4,
 			ValidFrom: "2017-04-01",
 			ValidTo:   "9999-12-31",
