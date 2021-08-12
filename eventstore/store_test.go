@@ -36,7 +36,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
-			ValidTo:   "9999-12-31",
+			ValidTo: "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -50,7 +50,7 @@ var _ = Describe("Store", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
-			ValidTo:   "9999-12-31",
+			ValidTo: "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -316,6 +316,7 @@ var _ = Describe("Store", func() {
 		Expect(db.Insert("service_plans", testenv.Row{
 			"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
 			"valid_from":         "2000-01-01T00:00:00Z",
+			"valid_to":           "9999-12-31T00:00:00Z",
 			"created_at":         "2000-01-01T00:00:00Z",
 			"updated_at":         "2018-06-14T16:32:38Z",
 			"name":               "AWESOME_SERVICE_PLAN_NAME",
@@ -332,6 +333,7 @@ var _ = Describe("Store", func() {
 		Expect(db.Insert("service_plans", testenv.Row{
 			"guid":               "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe6",
 			"valid_from":         "2000-01-01T00:00:00Z",
+			"valid_to":           "9999-12-31T00:00:00Z",
 			"created_at":         "2000-01-01T00:00:00Z",
 			"updated_at":         "2018-06-14T16:32:38Z",
 			"name":               "AWESOME_MISSING_SERVICE_PLAN_NAME",

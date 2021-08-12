@@ -41,15 +41,14 @@ func (s *EventStore) GetPricingPlans(filter eventio.TimeRangeFilter) ([]eventio.
 		valid_pricing_plans as (
 			select
 				*,
-				tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-					partition by plan_guid order by valid_from rows between current row and 1 following
-				)) as valid_for
+				tstzrange(valid_from, valid_to) as valid_for
 			from
 				pricing_plans
 		)
 		select
 			vpp.plan_guid,
 			vpp.valid_from,
+			vpp.valid_to,
 			vpp.name,
 			vpp.memory_in_mb,
 			vpp.number_of_nodes,
@@ -71,6 +70,7 @@ func (s *EventStore) GetPricingPlans(filter eventio.TimeRangeFilter) ([]eventio.
 		group by
 			vpp.plan_guid,
 			vpp.valid_from,
+			vpp.valid_to,
 			vpp.name,
 			vpp.memory_in_mb,
 			vpp.number_of_nodes,

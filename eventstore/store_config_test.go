@@ -51,7 +51,7 @@ var _ = Describe("GetPricingPlans", func() {
 				{
 					PlanGUID:      eventstore.ComputePlanGUID,
 					ValidFrom:     "2002-02-01T00:00:00+00:00",
-					ValidTo:       "9999-12-31:00:00:00+00:00",
+					ValidTo:       "9999-12-31T23:59:59+00:00",
 					Name:          "PLAN2",
 					NumberOfNodes: 2,
 					MemoryInMB:    64,

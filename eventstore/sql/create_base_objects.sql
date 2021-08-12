@@ -131,6 +131,7 @@ END; $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE TABLE pricing_plans (
 	plan_guid uuid NOT NULL,
 	valid_from timestamptz NOT NULL,
+	valid_to timestamptz NOT NULL,
 	name text NOT NULL,
 	memory_in_mb integer NOT NULL DEFAULT 0,
 	number_of_nodes integer NOT NULL DEFAULT 0,
