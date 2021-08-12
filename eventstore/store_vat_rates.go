@@ -26,24 +26,24 @@ func (s *EventStore) GetVATRates(filter eventio.TimeRangeFilter) ([]eventio.VATR
         valid_vat_rates as (
             select
                 *,
-                tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-                    partition by code order by valid_from rows between current row and 1 following
-                )) as valid_for
+                tstzrange(valid_from, valid_to) as valid_for
             from
-                vat_rates
+                vat_rates_new
         )
         select
-            vvr.code,
+            vvr.vat_code as code,
             vvr.valid_from,
-            vvr.rate
+	    vvr.valid_to,
+            vvr.vat_rate as rate
         from
             valid_vat_rates vvr
         where
             vvr.valid_for && tstzrange($1, $2)
         group by
-            vvr.code,
+            vvr.vat_code,
             vvr.valid_from,
-            vvr.rate
+	    vvr.valid_to,
+            vvr.vat_rate
         order by
             valid_from
     `, filter.RangeStart, filter.RangeStop)
