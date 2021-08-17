@@ -19,20 +19,20 @@ var _ = Describe("GetVATRates", func() {
 			VATRates: []eventio.VATRate{
 				{
 					Code:      "Zero",
-					ValidFrom: "1970-01-01T00:00:00+00:00",
-					ValidTo:   "9999-12-31T23:59:59+00:00",
+					ValidFrom: "1970-01-01T00:00:00",
+					ValidTo:   "9999-12-31T23:59:59",
 					Rate:      0.0,
 				},
 				{
 					Code:      "Reduced",
-					ValidFrom: "1970-01-01T00:00:00+00:00",
-					ValidTo:   "9999-12-31T23:59:59+00:00",
+					ValidFrom: "1970-01-01T00:00:00",
+					ValidTo:   "9999-12-31T23:59:59",
 					Rate:      0.05,
 				},
 				{
 					Code:      "Standard",
-					ValidFrom: "1970-01-01T00:00:00+00:00",
-					ValidTo:   "9999-12-31T23:59:59+00:00",
+					ValidFrom: "1970-01-01T00:00:00",
+					ValidTo:   "9999-12-31T23:59:59",
 					Rate:      0.2,
 				},
 			},
