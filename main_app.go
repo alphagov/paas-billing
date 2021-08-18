@@ -76,7 +76,7 @@ func (app *App) startUsageEventCollector(kind cffetcher.Kind) error {
 	})
 }
 
-func (app *App) StartAPIServer() error {
+func (app *App) StartAPIServer(version int) error {
 	name := "api"
 	logger := app.logger.Session(name)
 	uaaConfig, err := auth.CreateConfigFromEnv()
@@ -90,6 +90,7 @@ func (app *App) StartAPIServer() error {
 		Store:         app.store,
 		Authenticator: apiAuthenticator,
 		Logger:        logger,
+		Version:       version,
 	})
 	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
