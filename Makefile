@@ -7,13 +7,13 @@ bin/paas-billing: clean
 	go build -o $@ .
 
 run-dev: bin/paas-billing run-dev-exports
-	{ ./bin/paas-billing collector & ./bin/paas-billing api ; } | ./scripts/colorize
+	{ ./bin/paas-billing collector & ./bin/paas-billing api2 ; } | ./scripts/colorize
 
 run-dev-collector: bin/paas-billing run-dev-exports
 	./bin/paas-billing collector | ./scripts/colorize
 
 run-dev-api: bin/paas-billing run-dev-exports
-	./bin/paas-billing api | ./scripts/colorize
+	./bin/paas-billing api2 | ./scripts/colorize
 
 run-dev-exports:
 	## Runs the application with local credentials
