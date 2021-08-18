@@ -649,11 +649,12 @@ func checkCurrencyRates(tx *sql.Tx) error {
 func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		insert into pricing_plans (
-			plan_guid, valid_from, name
+			plan_guid, valid_from, valid_to, name
 		) (
 			select
 				distinct plan_guid,
 				'epoch'::timestamptz,
+				'9999-12-31T23:59:59Z'::timestamptz,
 				first_value(resource_type || ' ' || plan_name)
 				over (
 					partition by plan_guid
@@ -665,6 +666,7 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 				from pricing_plans pp
 				where pp.plan_guid = events.plan_guid
 				and valid_from = 'epoch'::timestamptz
+				and valid_to = '9999-12-31T23:59:59Z'::timestamptz
 			)
 		)
 		returning plan_guid, name
