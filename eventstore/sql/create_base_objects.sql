@@ -128,10 +128,9 @@ END; $$ LANGUAGE plpgsql IMMUTABLE;
 
 -------------------------------------- SCHEMA
 
-CREATE TABLE pricing_plans (
+CREATE TABLE IF NOT EXISTS pricing_plans (
 	plan_guid uuid NOT NULL,
 	valid_from timestamptz NOT NULL,
-	valid_to timestamptz NOT NULL,
 	name text NOT NULL,
 	memory_in_mb integer NOT NULL DEFAULT 0,
 	number_of_nodes integer NOT NULL DEFAULT 0,
@@ -146,6 +145,16 @@ CREATE TABLE pricing_plans (
 	  (extract (second from valid_from)) = 0
 	)
 );
+
+DO $$
+  BEGIN
+    BEGIN
+      ALTER TABLE pricing_plans ADD COLUMN valid_to timestamptz NOT NULL;
+    EXCEPTION
+      WHEN duplicate_column THEN RAISE NOTICE 'column valid_to already exists in pricing_plans.';
+    END;
+  END;
+$$;
 
 
 CREATE TABLE IF NOT EXISTS currency_rates(
