@@ -48,7 +48,7 @@ func New(cfg Config) *echo.Echo {
 	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
 	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store)) // TODO: can we handle this in new billing?
 	e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
-	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator)) // TODO - version difference
+	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator, cfg.Version))
 	e.GET("/totals", TotalCostHandler(cfg.Store)) // TODO - version difference
 
 	e.GET("/", status)
