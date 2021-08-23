@@ -360,7 +360,7 @@ func (s *EventStore) initCharges(tx *sql.Tx) (err error) {
 				pp.PlanGUID, pp.Name,
 				pp.ValidFrom, pp.ValidTo,
 				pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
-				ppc.ExternalPrice, ppc.Name, pp.Name+ppc.Name,
+				ppc.ExternalPrice, ppc.Name, pp.Name + "-" + ppc.Name + "-" + pp.PlanGUID + "-" + pp.ValidFrom,
 				ppc.CurrencyCode, ppc.VATCode,
 			)
 			if err != nil {
@@ -370,7 +370,7 @@ func (s *EventStore) initCharges(tx *sql.Tx) (err error) {
         formula_name, generic_formula, formula_source
       ) values (
         $1, $2, NULL
-      )`, pp.Name+ppc.Name, ppc.Formula,
+      )`, pp.Name + "-" + ppc.Name + "-" + pp.PlanGUID + "-" + pp.ValidFrom, ppc.FormulaNew,
       )
 			if err != nil {
 				return wrapPqError(err, "invalid pricing plan component formula")

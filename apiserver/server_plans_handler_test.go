@@ -61,6 +61,7 @@ var _ = Describe("PricingPlansHandler", func() {
 					{
 						Name:          "PLAN1COMPONENT1",
 						Formula:       "1111 * 1",
+						FormulaNew:    "1111 * 1",
 						CurrencyCode:  "GBP",
 						VATCode:       "Standard",
 						ExternalPrice: 1111,
@@ -79,6 +80,7 @@ var _ = Describe("PricingPlansHandler", func() {
 					{
 						Name:         "PLAN2COMPONENT1",
 						Formula:      "2222 * 1",
+						FormulaNew:   "2222 * 1",
 						CurrencyCode: "GBP",
 						VATCode:      "Standard",
 						ExternalPrice: 2222,
@@ -86,6 +88,7 @@ var _ = Describe("PricingPlansHandler", func() {
 					{
 						Name:         "PLAN2COMPONENT2",
 						Formula:      "2222 * 2",
+						FormulaNew:   "2222 * 2",
 						CurrencyCode: "GBP",
 						VATCode:      "Standard",
 						ExternalPrice: 4444,
@@ -126,6 +129,7 @@ var _ = Describe("PricingPlansHandler", func() {
 					{
 						"name": "PLAN1COMPONENT1",
 						"formula": "1111 * 1",
+						"formula_new": "1111 * 1",
 						"vat_code": "Standard",
 						"currency_code": "GBP",
 						"external_price": 1111
@@ -144,6 +148,7 @@ var _ = Describe("PricingPlansHandler", func() {
 					{
 						"name": "PLAN2COMPONENT1",
 						"formula": "2222 * 1",
+						"formula_new": "2222 * 1",
 						"vat_code": "Standard",
 						"currency_code": "GBP",
 						"external_price": 2222
@@ -151,6 +156,7 @@ var _ = Describe("PricingPlansHandler", func() {
 					{
 						"name": "PLAN2COMPONENT2",
 						"formula": "2222 * 2",
+						"formula_new": "2222 * 2",
 						"vat_code": "Standard",
 						"currency_code": "GBP",
 						"external_price": 4444

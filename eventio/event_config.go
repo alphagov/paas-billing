@@ -14,6 +14,7 @@ type PricingPlan struct {
 type PricingPlanComponent struct {
 	Name          string  `json:"name"`
 	Formula       string  `json:"formula"`
+	FormulaNew    string  `json:"formula_new"`
 	ExternalPrice float64 `json:"external_price"`
 	VATCode       string  `json:"vat_code"`
 	CurrencyCode  string  `json:"currency_code"`
