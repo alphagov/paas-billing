@@ -53,7 +53,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
 				"formula_name":    "test",
-				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
+				"generic_formula": "($number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
 				"formula_source":  "imagination",
 			})).To(Succeed())
 
@@ -292,7 +292,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
 				"formula_name":    "test",
-				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
+				"generic_formula": "($number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
 				"formula_source":  "imagination",
 			})).To(Succeed())
 
@@ -479,7 +479,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
 				"formula_name":    "test",
-				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
+				"generic_formula": "($number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
 				"formula_source":  "imagination",
 			})).To(Succeed())
 
@@ -652,7 +652,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
 				"formula_name":    "test",
-				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
+				"generic_formula": "($number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (0.01 / 3600)) * external_price",
 				"formula_source":  "imagination",
 			})).To(Succeed())
 
@@ -817,7 +817,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
 				"formula_name":    "app",
-				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (external_price / 3600))",
+				"generic_formula": "$number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (external_price / 3600)",
 				"formula_source":  "based on paas-cf/config/billing/config-parts/platform_pricing_plans.json.erb",
 			})).To(Succeed())
 
@@ -1285,7 +1285,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 		Expect(db.Insert("billing_formulae",
 			testenv.Row{
 				"formula_name":    "app",
-				"generic_formula": "(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (external_price / 3600))",
+				"generic_formula": "$number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (external_price / 3600)",
 				"formula_source":  "based on paas-cf/config/billing/config-parts/platform_pricing_plans.json.erb",
 			})).To(Succeed())
 
