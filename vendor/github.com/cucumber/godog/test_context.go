@@ -1,22 +1,26 @@
 package godog
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"regexp"
 
-	"github.com/cucumber/messages-go/v10"
+	"github.com/cucumber/messages-go/v16"
 
 	"github.com/cucumber/godog/formatters"
 	"github.com/cucumber/godog/internal/builder"
 	"github.com/cucumber/godog/internal/models"
 )
 
+// GherkinDocument represents gherkin document.
+type GherkinDocument = messages.GherkinDocument
+
 // Scenario represents the executed scenario
 type Scenario = messages.Pickle
 
 // Step represents the executed step
-type Step = messages.Pickle_PickleStep
+type Step = messages.PickleStep
 
 // Steps allows to nest steps
 // instead of returning an error in step func
@@ -45,10 +49,10 @@ type Steps []string
 type StepDefinition = formatters.StepDefinition
 
 // DocString represents the DocString argument made to a step definition
-type DocString = messages.PickleStepArgument_PickleDocString
+type DocString = messages.PickleDocString
 
 // Table represents the Table argument made to a step definition
-type Table = messages.PickleStepArgument_PickleTable
+type Table = messages.PickleTable
 
 // TestSuiteContext allows various contexts
 // to register event handlers.
@@ -94,26 +98,101 @@ type ScenarioContext struct {
 	suite *suite
 }
 
+// StepContext allows registering step hooks.
+type StepContext struct {
+	suite *suite
+}
+
+// Before registers a a function or method
+// to be run before every scenario.
+//
+// It is a good practice to restore the default state
+// before every scenario so it would be isolated from
+// any kind of state.
+func (ctx ScenarioContext) Before(h BeforeScenarioHook) {
+	ctx.suite.beforeScenarioHandlers = append(ctx.suite.beforeScenarioHandlers, h)
+}
+
+// BeforeScenarioHook defines a hook before scenario.
+type BeforeScenarioHook func(ctx context.Context, sc *Scenario) (context.Context, error)
+
+// After registers an function or method
+// to be run after every scenario.
+func (ctx ScenarioContext) After(h AfterScenarioHook) {
+	ctx.suite.afterScenarioHandlers = append(ctx.suite.afterScenarioHandlers, h)
+}
+
+// AfterScenarioHook defines a hook after scenario.
+type AfterScenarioHook func(ctx context.Context, sc *Scenario, err error) (context.Context, error)
+
+// StepContext exposes StepContext of a scenario.
+func (ctx *ScenarioContext) StepContext() StepContext {
+	return StepContext{suite: ctx.suite}
+}
+
+// Before registers a function or method
+// to be run before every step.
+func (ctx StepContext) Before(h BeforeStepHook) {
+	ctx.suite.beforeStepHandlers = append(ctx.suite.beforeStepHandlers, h)
+}
+
+// BeforeStepHook defines a hook before step.
+type BeforeStepHook func(ctx context.Context, st *Step) (context.Context, error)
+
+// After registers an function or method
+// to be run after every step.
+//
+// It may be convenient to return a different kind of error
+// in order to print more state details which may help
+// in case of step failure
+//
+// In some cases, for example when running a headless
+// browser, to take a screenshot after failure.
+func (ctx StepContext) After(h AfterStepHook) {
+	ctx.suite.afterStepHandlers = append(ctx.suite.afterStepHandlers, h)
+}
+
+// AfterStepHook defines a hook after step.
+type AfterStepHook func(ctx context.Context, st *Step, status StepResultStatus, err error) (context.Context, error)
+
 // BeforeScenario registers a function or method
 // to be run before every scenario.
 //
 // It is a good practice to restore the default state
 // before every scenario so it would be isolated from
 // any kind of state.
+//
+// Deprecated: use Before.
 func (ctx *ScenarioContext) BeforeScenario(fn func(sc *Scenario)) {
-	ctx.suite.beforeScenarioHandlers = append(ctx.suite.beforeScenarioHandlers, fn)
+	ctx.Before(func(ctx context.Context, sc *Scenario) (context.Context, error) {
+		fn(sc)
+
+		return ctx, nil
+	})
 }
 
 // AfterScenario registers an function or method
 // to be run after every scenario.
+//
+// Deprecated: use After.
 func (ctx *ScenarioContext) AfterScenario(fn func(sc *Scenario, err error)) {
-	ctx.suite.afterScenarioHandlers = append(ctx.suite.afterScenarioHandlers, fn)
+	ctx.After(func(ctx context.Context, sc *Scenario, err error) (context.Context, error) {
+		fn(sc, err)
+
+		return ctx, nil
+	})
 }
 
 // BeforeStep registers a function or method
 // to be run before every step.
+//
+// Deprecated: use ScenarioContext.StepContext() and StepContext.Before.
 func (ctx *ScenarioContext) BeforeStep(fn func(st *Step)) {
-	ctx.suite.beforeStepHandlers = append(ctx.suite.beforeStepHandlers, fn)
+	ctx.StepContext().Before(func(ctx context.Context, st *Step) (context.Context, error) {
+		fn(st)
+
+		return ctx, nil
+	})
 }
 
 // AfterStep registers an function or method
@@ -125,8 +204,14 @@ func (ctx *ScenarioContext) BeforeStep(fn func(st *Step)) {
 //
 // In some cases, for example when running a headless
 // browser, to take a screenshot after failure.
+//
+// Deprecated: use ScenarioContext.StepContext() and StepContext.After.
 func (ctx *ScenarioContext) AfterStep(fn func(st *Step, err error)) {
-	ctx.suite.afterStepHandlers = append(ctx.suite.afterStepHandlers, fn)
+	ctx.StepContext().After(func(ctx context.Context, st *Step, status StepResultStatus, err error) (context.Context, error) {
+		fn(st, err)
+
+		return ctx, nil
+	})
 }
 
 // Step allows to register a *StepDefinition in the
@@ -176,8 +261,8 @@ func (ctx *ScenarioContext) Step(expr, stepFunc interface{}) {
 		panic(fmt.Sprintf("expected handler to be func, but got: %T", stepFunc))
 	}
 
-	if typ.NumOut() != 1 {
-		panic(fmt.Sprintf("expected handler to return only one value, but it has: %d", typ.NumOut()))
+	if typ.NumOut() > 2 {
+		panic(fmt.Sprintf("expected handler to return either zero, one or two values, but it has: %d", typ.NumOut()))
 	}
 
 	def := &models.StepDefinition{
@@ -188,19 +273,21 @@ func (ctx *ScenarioContext) Step(expr, stepFunc interface{}) {
 		HandlerValue: v,
 	}
 
-	typ = typ.Out(0)
-	switch typ.Kind() {
-	case reflect.Interface:
-		if !typ.Implements(errorInterface) {
-			panic(fmt.Sprintf("expected handler to return an error, but got: %s", typ.Kind()))
+	if typ.NumOut() == 1 {
+		typ = typ.Out(0)
+		switch typ.Kind() {
+		case reflect.Interface:
+			if !typ.Implements(errorInterface) && !typ.Implements(contextInterface) {
+				panic(fmt.Sprintf("expected handler to return an error or context.Context, but got: %s", typ.Kind()))
+			}
+		case reflect.Slice:
+			if typ.Elem().Kind() != reflect.String {
+				panic(fmt.Sprintf("expected handler to return []string for multistep, but got: []%s", typ.Elem().Kind()))
+			}
+			def.Nested = true
+		default:
+			panic(fmt.Sprintf("expected handler to return an error or []string, but got: %s", typ.Kind()))
 		}
-	case reflect.Slice:
-		if typ.Elem().Kind() != reflect.String {
-			panic(fmt.Sprintf("expected handler to return []string for multistep, but got: []%s", typ.Kind()))
-		}
-		def.Nested = true
-	default:
-		panic(fmt.Sprintf("expected handler to return an error or []string, but got: %s", typ.Kind()))
 	}
 
 	ctx.suite.steps = append(ctx.suite.steps, def)

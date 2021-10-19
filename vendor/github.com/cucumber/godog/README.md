@@ -1,6 +1,8 @@
 [![CircleCI](https://circleci.com/gh/cucumber/godog/tree/master.svg?style=svg)](https://circleci.com/gh/cucumber/godog/tree/master)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/cucumber/godog)](https://pkg.go.dev/github.com/cucumber/godog)
 [![codecov](https://codecov.io/gh/cucumber/godog/branch/master/graph/badge.svg)](https://codecov.io/gh/cucumber/godog)
+[![pull requests](https://oselvar.com/api/badge?label=pull%20requests&csvUrl=https%3A%2F%2Fraw.githubusercontent.com%2Fcucumber%2Foselvar-github-metrics%2Fmain%2Fdata%2Fcucumber%2Fgodog%2FpullRequests.csv)](https://oselvar.com/github/cucumber/oselvar-github-metrics/main/cucumber/godog)
+[![issues](https://oselvar.com/api/badge?label=issues&csvUrl=https%3A%2F%2Fraw.githubusercontent.com%2Fcucumber%2Foselvar-github-metrics%2Fmain%2Fdata%2Fcucumber%2Fgodog%2Fissues.csv)](https://oselvar.com/github/cucumber/oselvar-github-metrics/main/cucumber/godog)
 
 # Godog
 
@@ -43,13 +45,13 @@ When automated testing is this much fun, teams can easily protect themselves fro
 
 ## Install
 ```
-go get github.com/cucumber/godog/cmd/godog@v0.11.0
+go get github.com/cucumber/godog/cmd/godog@v0.12.0
 ```
-Adding `@v0.11.0` will install v0.11.0 specifically instead of master.
+Adding `@v0.12.0` will install v0.12.0 specifically instead of master.
 
 Running `within the $GOPATH`, you would also need to set `GO111MODULE=on`, like this:
 ```
-GO111MODULE=on go get github.com/cucumber/godog/cmd/godog@v0.11.0
+GO111MODULE=on go get github.com/cucumber/godog/cmd/godog@v0.12.0
 ```
 
 ## Contributions
@@ -208,12 +210,20 @@ Feature: eat godogs
 
 You may change **return godog.ErrPending** to **return nil** in the three step definitions and the scenario will pass successfully.
 
+Also, you may omit error return if your step does not fail.
+
+```go
+func iEat(arg1 int) {
+	// Eat arg1.
+}
+```
+
 #### Step 5 - Create the main program to test
 
 We only need a number of **godogs** for now. Lets keep it simple.
 
 Create and copy the code into a new file - `vim godogs.go`
-``` go
+```go
 package main
 
 // Godogs available to eat
@@ -238,10 +248,12 @@ godogs
 Now lets implement our step definitions to test our feature requirements:
 
 Replace the contents of `godogs_test.go` with the code below - `vim godogs_test.go`
-``` go
+
+```go
 package main
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/cucumber/godog"
@@ -267,25 +279,51 @@ func thereShouldBeRemaining(remaining int) error {
 	return nil
 }
 
-func InitializeTestSuite(ctx *godog.TestSuiteContext) {
-	ctx.BeforeSuite(func() { Godogs = 0 })
+func InitializeTestSuite(sc *godog.TestSuiteContext) {
+	sc.BeforeSuite(func() { Godogs = 0 })
 }
 
-func InitializeScenario(ctx *godog.ScenarioContext) {
-	ctx.BeforeScenario(func(*godog.Scenario) {
+func InitializeScenario(sc *godog.ScenarioContext) {
+	sc.Before(func(ctx context.Context, sc *godog.Scenario) (context.Context, error) {
 		Godogs = 0 // clean the state before every scenario
+
+		return ctx, nil
 	})
 
-	ctx.Step(`^there are (\d+) godogs$`, thereAreGodogs)
-	ctx.Step(`^I eat (\d+)$`, iEat)
-	ctx.Step(`^there should be (\d+) remaining$`, thereShouldBeRemaining)
+	sc.Step(`^there are (\d+) godogs$`, thereAreGodogs)
+	sc.Step(`^I eat (\d+)$`, iEat)
+	sc.Step(`^there should be (\d+) remaining$`, thereShouldBeRemaining)
 }
+```
+
+You can also pass the state between steps and hooks of a scenario using `context.Context`. 
+Step definitions can receive and return `context.Context`.
+
+```go
+type cntCtxKey struct{} // Key for a particular context value type.
+
+s.Step("^I have a random number of godogs$", func(ctx context.Context) context.Context {
+	// Creating a random number of godog and storing it in context for future reference.
+	cnt := rand.Int()
+	Godogs = cnt
+	return context.WithValue(ctx, cntCtxKey{}, cnt)
+})
+
+s.Step("I eat all available godogs", func(ctx context.Context) error {
+	// Getting previously stored number of godogs from context.
+	cnt := ctx.Value(cntCtxKey{}).(uint32)
+	if Godogs < cnt {
+		return errors.New("can't eat more than I have")
+	}
+	Godogs -= cnt
+	return nil
+})
 ```
 
 When you run godog again - `godog`
 
 You should see a passing run:
-```
+```gherkin
 Feature: eat godogs
   In order to be happy
   As a hungry gopher
@@ -295,13 +333,16 @@ Feature: eat godogs
     Given there are 12 godogs        # godogs_test.go:10 -> thereAreGodogs
     When I eat 5                     # godogs_test.go:14 -> iEat
     Then there should be 7 remaining # godogs_test.go:22 -> thereShouldBeRemaining
-
+```
+```
 1 scenarios (1 passed)
 3 steps (3 passed)
 258.302µs
 ```
 
-We have hooked to **BeforeScenario** event in order to reset the application state before each scenario. You may hook into more events, like **AfterStep** to print all state in case of an error. Or **BeforeSuite** to prepare a database.
+We have hooked to `ScenarioContext` **Before** event in order to reset the application state before each scenario. 
+You may hook into more events, like `sc.StepContext()` **After** to print all state in case of an error. 
+Or **BeforeSuite** to prepare a database.
 
 By now, you should have figured out, how to use **godog**. Another advice is to make steps orthogonal, small and simple to read for a user. Whether the user is a dumb website user or an API developer, who may understand a little more technical context - it should target that user.
 
@@ -336,21 +377,67 @@ See implementation examples:
 
 ### Running Godog with go test
 
-You may integrate running **godog** in your **go test** command. You can run it using go [TestMain](https://golang.org/pkg/testing/#hdr-Main) func available since **go 1.4**. In this case it is not necessary to have **godog** command installed. See the following examples.
+You may integrate running **godog** in your **go test** command. 
+
+#### Subtests of *testing.T
+
+You can run test suite using go [Subtests](https://pkg.go.dev/testing#hdr-Subtests_and_Sub_benchmarks).
+In this case it is not necessary to have **godog** command installed. See the following example.
+
+```go
+package main_test
+
+import (
+	"testing"
+
+	"github.com/cucumber/godog"
+)
+
+func TestFeatures(t *testing.T) {
+  suite := godog.TestSuite{
+    ScenarioInitializer: func(s *godog.ScenarioContext) {
+      // Add step definitions here.
+    },
+    Options: &godog.Options{
+      Format:   "pretty",
+      Paths:    []string{"features"},
+      TestingT: t, // Testing instance that will run subtests.
+    },
+  }
+
+  if suite.Run() != 0 {
+    t.Fatal("non-zero status returned, failed to run feature tests")
+  }
+}
+```
+
+Then you can run suite.
+```
+go test -test.v -test.run ^TestFeatures$
+```
+
+Or a particular scenario.
+```
+go test -test.v -test.run ^TestFeatures$/^my_scenario$
+```
+
+#### TestMain
+
+You can run test suite using go [TestMain](https://golang.org/pkg/testing/#hdr-Main) func available since **go 1.4**. 
+In this case it is not necessary to have **godog** command installed. See the following examples.
 
 The following example binds **godog** flags with specified prefix `godog` in order to prevent flag collisions.
 
-``` go
+```go
 package main
 
 import (
-	"flag" // godog v0.10.0 and earlier
 	"os"
 	"testing"
 
 	"github.com/cucumber/godog"
 	"github.com/cucumber/godog/colors"
-	flag "github.com/spf13/pflag" // godog v0.11.0 (latest)
+	"github.com/spf13/pflag" // godog v0.11.0 and later
 )
 
 var opts = godog.Options{
@@ -359,13 +446,13 @@ var opts = godog.Options{
 }
 
 func init() {
-	godog.BindFlags("godog.", flag.CommandLine, &opts) // godog v0.10.0 and earlier
-	godog.BindCommandLineFlags("godog.", &opts)        // godog v0.11.0 (latest)
+	godog.BindFlags("godog.", pflag.CommandLine, &opts) // godog v0.10.0 and earlier
+	godog.BindCommandLineFlags("godog.", &opts)        // godog v0.11.0 and later
 }
 
 func TestMain(m *testing.M) {
-	flag.Parse()
-	opts.Paths = flag.Args()
+	pflag.Parse()
+	opts.Paths = pflag.Args()
 
 	status := godog.TestSuite{
 		Name: "godogs",
@@ -392,7 +479,7 @@ go test -v --godog.format=pretty --godog.random -race -coverprofile=coverage.txt
 
 The following example does not bind godog flags, instead manually configuring needed options.
 
-``` go
+```go
 func TestMain(m *testing.M) {
 	opts := godog.Options{
 		Format:    "progress",
@@ -418,7 +505,7 @@ func TestMain(m *testing.M) {
 
 You can even go one step further and reuse **go test** flags, like **verbose** mode in order to switch godog **format**. See the following example:
 
-``` go
+```go
 func TestMain(m *testing.M) {
 	format := "progress"
 	for _, arg := range os.Args[1:] {
@@ -463,7 +550,7 @@ If you want to filter scenarios by tags, you can use the `-t=<expression>` or `-
 ### Using assertion packages like testify with Godog
 A more extensive example can be [found here](/_examples/assert-godogs).
 
-``` go
+```go
 func thereShouldBeRemaining(remaining int) error {
 	return assertExpectedAndActual(
 		assert.Equal, Godogs, remaining,
@@ -495,14 +582,6 @@ func (a *asserter) Errorf(format string, args ...interface{}) {
 ### Configure common options for godog CLI
 
 There are no global options or configuration files. Alias your common or project based commands: `alias godog-wip="godog --format=progress --tags=@wip"`
-
-### Testing browser interactions
-
-**godog** does not come with builtin packages to connect to the browser. You may want to look at [selenium](http://www.seleniumhq.org/) and probably [phantomjs](http://phantomjs.org/). See also the following components:
-
-1. [browsersteps](https://github.com/llonchj/browsersteps) - provides basic context steps to start selenium and navigate browser content.
-2. You may wish to have [goquery](https://github.com/PuerkitoBio/goquery)
-   in order to work with HTML responses like with JQuery.
 
 ### Concurrency
 

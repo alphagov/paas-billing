@@ -9,8 +9,10 @@ github.com/cloudfoundry-community/go-cfclient
 # github.com/cloudfoundry/gofileutils v0.0.0-20170111115228-4d0c80011a0f
 github.com/cloudfoundry/gofileutils/fileutils
 # github.com/cucumber/gherkin-go/v11 v11.0.0
-github.com/cucumber/gherkin-go/v11
-# github.com/cucumber/godog v0.11.0
+## explicit
+# github.com/cucumber/gherkin-go/v19 v19.0.3
+github.com/cucumber/gherkin-go/v19
+# github.com/cucumber/godog v0.12.0
 ## explicit
 github.com/cucumber/godog
 github.com/cucumber/godog/colors
@@ -24,16 +26,15 @@ github.com/cucumber/godog/internal/storage
 github.com/cucumber/godog/internal/tags
 github.com/cucumber/godog/internal/utils
 # github.com/cucumber/messages-go/v10 v10.0.3
-github.com/cucumber/messages-go/v10
+## explicit
+# github.com/cucumber/messages-go/v16 v16.0.1
+github.com/cucumber/messages-go/v16
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 ## explicit
 github.com/dgrijalva/jwt-go
-# github.com/gofrs/uuid v3.3.0+incompatible
+# github.com/gofrs/uuid v4.0.0+incompatible
 ## explicit
 github.com/gofrs/uuid
-# github.com/gogo/protobuf v1.3.1
-github.com/gogo/protobuf/io
-github.com/gogo/protobuf/proto
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto
 # github.com/hashicorp/go-immutable-radix v1.3.0
@@ -52,8 +53,6 @@ github.com/hpcloud/tail/winfile
 ## explicit
 github.com/labstack/echo
 github.com/labstack/echo/middleware
-# github.com/labstack/echo/v4 v4.1.6
-## explicit
 # github.com/labstack/gommon v0.2.9
 ## explicit
 github.com/labstack/gommon/bytes

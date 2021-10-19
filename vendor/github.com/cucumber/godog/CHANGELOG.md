@@ -8,17 +8,37 @@ This document is formatted according to the principles of [Keep A CHANGELOG](htt
 
 ---
 
-## [Unreleased]
+## [v0.12.0]
 
 ### Added
 
+- Support for step definitions without return ([364](https://github.com/cucumber/godog/pull/364) - [titouanfreville])
+- Contextualized hooks for scenarios and steps ([409](https://github.com/cucumber/godog/pull/409) - [vearutop])
+- Step result status in After hook ([409](https://github.com/cucumber/godog/pull/409) - [vearutop])
+- Support auto converting doc strings to plain strings ([380](https://github.com/cucumber/godog/pull/380) - [chirino])
+- Use multiple formatters in the same test run ([392](https://github.com/cucumber/godog/pull/392) - [vearutop])
+- Added `RetrieveFeatures()` method to `godog.TestSuite` ([276](https://github.com/cucumber/godog/pull/276) - [radtriste])
+- Added support to create custom formatters ([372](https://github.com/cucumber/godog/pull/372) - [leviable])
+
 ### Changed
 
+- Upgraded gherkin-go to v19 and messages-go to v16 ([402](https://github.com/cucumber/godog/pull/402) - [mbow])
+- Generate simpler snippets that use *godog.DocString and *godog.Table ([379](https://github.com/cucumber/godog/pull/379)) - [chirino])
+
 ### Deprecated
+
+- `ScenarioContext.BeforeScenario`, use `ScenarioContext.Before` ([409](https://github.com/cucumber/godog/pull/409)) - [vearutop])
+- `ScenarioContext.AfterScenario`, use `ScenarioContext.After` ([409](https://github.com/cucumber/godog/pull/409)) - [vearutop])
+- `ScenarioContext.BeforeStep`, use `ScenarioContext.StepContext().Before` ([409](https://github.com/cucumber/godog/pull/409)) - [vearutop])
+- `ScenarioContext.AfterStep`, use `ScenarioContext.StepContext().After` ([409](https://github.com/cucumber/godog/pull/409)) - [vearutop])
 
 ### Removed
 
 ### Fixed
+
+- Incorrect step definition output for Data Tables ([411](https://github.com/cucumber/godog/pull/411) - [karfrank])
+- `ScenarioContext.AfterStep` not invoked after a failed case (([409](https://github.com/cucumber/godog/pull/409)) - [vearutop]))
+- Can't execute multiple specific scenarios in the same feature file (([414](https://github.com/cucumber/godog/pull/414)) - [vearutop]))
 
 ## [v0.11.0]
 
@@ -55,6 +75,8 @@ This document is formatted according to the principles of [Keep A CHANGELOG](htt
 - doc(FAQ/TestMain): `testing.M.Run()` is optional ([353](https://github.com/cucumber/godog/pull/353) - [hansbogert])
 - Made a fix for the unstable Randomize Run tests ([354](https://github.com/cucumber/godog/pull/354) - [lonnblad])
 - Fixed an issue when go test is parsing command-line flags ([359](https://github.com/cucumber/godog/pull/359) - [lonnblad])
+- Make pickleStepIDs unique accross multiple paths ([366](https://github.com/cucumber/godog/pull/366) - [rickardenglund])
+
 
 ## [v0.10.0]
 
@@ -168,7 +190,7 @@ This document is formatted according to the principles of [Keep A CHANGELOG](htt
 
 <!-- Releases -->
 
-[unreleased]: https://github.com/cucumber/godog/compare/v0.11.0...master
+[unreleased]: https://github.com/cucumber/godog/compare/v0.11.0...main
 [v0.11.0]: https://github.com/cucumber/godog/compare/v0.10.0...v0.11.0
 [v0.10.0]: https://github.com/cucumber/godog/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/cucumber/godog/compare/v0.8.1...v0.9.0
@@ -187,3 +209,9 @@ This document is formatted according to the principles of [Keep A CHANGELOG](htt
 [denis-trofimov]: https://github.com/denis-trofimov
 [leviable]: https://github.com/leviable
 [hansbogert]: https://github.com/hansbogert
+[rickardenglund]: https://github.com/rickardenglund
+[mbow]: https://github.com/mbow
+[vearutop]: https://github.com/vearutop
+[chirino]: https://github.com/chirino
+[radtriste]: https://github.com/radtriste
+[karfrank]: https://github.com/karfrank
