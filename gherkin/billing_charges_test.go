@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"io/ioutil"
@@ -10,8 +11,10 @@ import (
 	"time"
 
 	"github.com/alphagov/paas-billing/testenv"
+	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/cucumber/godog"
 	"github.com/gofrs/uuid"
+	"github.com/lib/pq"
 )
 
 // This is a simplified test suite designed only to be run on a local database for now.
@@ -148,29 +151,98 @@ func aCleanBillingDatabase() error {
 	tableList := "compose_audit_events, consolidated_billable_events, consolidation_history, events, app_usage_events, service_usage_events, currency_rates, vat_rates, pricing_plans, pricing_plan_components"
 	clearDatabaseTables(tableList)
 
-	// Add data to the following tables: vat_rates, currency_rates, pricing_plans, pricing_plan_components. Use the data in paas-billing/billing-db/data.
-	tables := []string{"currency_rates",
-		"vat_rates",
-		"pricing_plans",
-		"pricing_plan_components"}
+	// Add data to the following tables:
+	// vat_rates, currency_rates, pricing_plans, pricing_plan_components.
 
-	for i, table := range tables {
-		_ = i
-		fmt.Printf("Populating data in %s table...\n", table)
-		table = pathToStaticTableData + table + ".dat"
-		content, err := ioutil.ReadFile(table)
+	planConfig, err := eventstore.LoadConfig("../config.json")
+	if err != nil {
+	  panic(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 10 * time.Minute )
+	defer cancel()
+
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	for _, vr := range planConfig.VATRates {
+		_, err := tx.Exec(`
+			insert into vat_rates (
+				code, valid_from, rate
+			) values (
+				$1, $2, $3
+			)
+		`, vr.Code, vr.ValidFrom, vr.Rate)
 		if err != nil {
-			panic(err)
+			return wrapPqError(err, "invalid vat rate")
 		}
-		sql := string(content)
-		rows, err := db.Query(sql)
+	}
+
+	for _, cr := range planConfig.CurrencyRates {
+		_, err := tx.Exec(`
+			insert into currency_rates (
+				code, valid_from, rate
+			) values (
+				$1, $2, $3
+			)
+		`, cr.Code, cr.ValidFrom, cr.Rate)
 		if err != nil {
-			panic(err)
+			return wrapPqError(err, "invalid currency rate")
 		}
-		_ = rows
+	}
+
+	for _, pp := range planConfig.PricingPlans {
+		_, err := tx.Exec(`insert into pricing_plans (
+			plan_guid, valid_from, name,
+			memory_in_mb, storage_in_mb, number_of_nodes
+		) values (
+			$1, $2, $3,
+			$4, $5, $6
+		)`, pp.PlanGUID, pp.ValidFrom, pp.Name,
+			pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
+		)
+		if err != nil {
+			return wrapPqError(err, "invalid pricing plan")
+		}
+		for _, ppc := range pp.Components {
+			_, err := tx.Exec(`insert into pricing_plan_components (
+				plan_guid, valid_from, name,
+				formula, currency_code, vat_code
+			) values (
+				$1, $2, $3,
+				$4, $5, $6
+			)`, pp.PlanGUID, pp.ValidFrom, ppc.Name, ppc.Formula, ppc.CurrencyCode, ppc.VATCode)
+			if err != nil {
+				return wrapPqError(err, "invalid pricing plan component")
+			}
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		panic(err)
 	}
 
 	return nil
+}
+
+func wrapPqError(err error, prefix string) error {
+	msg := err.Error()
+	if err, ok := err.(*pq.Error); ok {
+		msg = err.Message
+		if err.Detail != "" {
+			msg += ": " + err.Detail
+		}
+		if err.Hint != "" {
+			msg += ": " + err.Hint
+		}
+		if err.Where != "" {
+			msg += ": " + err.Where
+		}
+	}
+	return fmt.Errorf("%s: %s", prefix, msg)
 }
 
 // Given
