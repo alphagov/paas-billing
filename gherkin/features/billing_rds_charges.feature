@@ -55,3 +55,14 @@ Feature: Test AWS RDS bills calculated correctly
 # Note: the AWS charges exclude VAT
 # References for calculation: see comparison chart above. Also https://aws.amazon.com/rds/previous-generation/ and https://aws.amazon.com/rds/postgresql/pricing/
 # You can get the number of seconds between two dates easily using `select extract(epoch from ('2020-06-07 00:59:00'::timestamp - '2020-01-01 00:00:00'::timestamp));`
+
+####
+
+# For later on, so we can test the full data flow from events -> billing figures.
+
+#  Scenario: Test addition of events
+#  Given Add events
+#    | event_guid | resource_guid | resource_name | resource_type | org_guid | org_name | space_guid | space_name | duration | plan_guid | plan_name | service_guid | service_name | number_of_nodes | memory_in_mb | storage_in_mb |
+#    | 11111111-2222-3333-4444-555555555555 | aaaaaaaa-3333-4444-5555-888888888888 | notify-delivery-worker-priority-rollback | app           | aaaaaaaa-bbbb-1111-2222-333333333333 | govuk-notify | aaaaaaaa-0000-4444-5555-444444444444 | preview    | ["2017-09-07 18:00:47+00","2017-09-08 11:05:01+00") | 00000000-1111-2222-3333-444444444444 | app       | aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee | app          |               1 |         1024 |             0 |
+#  When load events into billing database
+#  Then a tenant should have a small-10.5 with a valid_from of '2017-09-07 18:00:47+00'
