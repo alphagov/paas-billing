@@ -55,7 +55,7 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 
 	ctx.BeforeSuite(func() {
 		fmt.Println("Connecting to the database")
-		conn := "user=billinguser dbname=billing password=billinguser host=localhost sslmode=disable"
+		conn := "user=postgres dbname=postgres host=localhost sslmode=disable"
 		db, err = sql.Open("postgres", conn)
 		if err != nil {
 			panic(err)
