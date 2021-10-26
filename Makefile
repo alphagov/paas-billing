@@ -32,6 +32,12 @@ test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fe
 	$(eval export APP_ROOT=${APP_ROOT})
 	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skipPackage acceptance_tests
 
+gherkin_setup:
+	mkdir -p gherkin/features
+	rm gherkin/features/*
+	cp ../paas-cf/config/billing/tests/${AWS_REGION}_billing_rds_charges.feature gherkin/features/
+	cp ../paas-cf/config/billing/output/${AWS_REGION}.json config.json
+
 # .PHONY: gherkin_test
 gherkin_test:
 	cd gherkin && godog
