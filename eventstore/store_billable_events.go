@@ -88,9 +88,9 @@ func (s *EventStore) getBillableEventRowsV2(tx *sql.Tx, filter eventio.EventFilt
 	var args []interface{}
 	if len(filter.OrgGUIDs) > 0 {
 		var queries []string
-		i := 0
+		i := 1
 		for _, guid := range filter.OrgGUIDs {
-			thisQuery := fmt.Sprintf(`select * from get_tenant_bill_api($%d, $%d, $%d)`, i, i+1, i+2)
+			thisQuery := fmt.Sprintf(`select * from get_tenant_bill_api(cast ($%d as uuid), $%d, $%d)`, i, i+1, i+2)
 			queries = append(queries, thisQuery)
 			args = append(args, guid, filter.RangeStart, filter.RangeStop)
 			i = i + 3
