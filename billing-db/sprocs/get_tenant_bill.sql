@@ -197,7 +197,7 @@ $$;
 -- Calculate bill for a given month, or any date/time range, for a tenant, based on GUID.
 CREATE OR REPLACE FUNCTION get_tenant_bill_api
 (
-    _org_guid TEXT,
+    _org_guid UUID,
     _from_date TIMESTAMP,
     _to_date TIMESTAMP
 )
