@@ -34,7 +34,7 @@ test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fe
 
 gherkin_setup:
 	mkdir -p gherkin/features
-	rm gherkin/features/*
+	rm gherkin/features/* || true
 	cp ../paas-cf/config/billing/tests/${AWS_REGION}_billing_rds_charges.feature gherkin/features/
 	cp ../paas-cf/config/billing/output/${AWS_REGION}.json config.json
 
