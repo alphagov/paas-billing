@@ -143,6 +143,7 @@ func (s *EventStore) regenerateEvents() error {
 
 	if err := s.runSQLFilesInTransaction(
 		ctx,
+    "create_events.sql",
     "update_resources.sql",
 	); err != nil {
 		return err
