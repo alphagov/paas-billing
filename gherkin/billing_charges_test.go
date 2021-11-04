@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alphagov/paas-billing/testenv"
 	"github.com/alphagov/paas-billing/eventstore"
+	"github.com/alphagov/paas-billing/testenv"
 	"github.com/cucumber/godog"
 	"github.com/gofrs/uuid"
 	"github.com/lib/pq"
@@ -27,15 +27,15 @@ var (
 	err    error
 )
 
-var pathToSqlDefinitions string
-var pathToStaticTableData string
+const (
+	pathToSqlDefinitions = "../eventstore/sql/"
 
-var defaultEventGuid string
-var defaultResourceGuid string
-var defaultOrgGuid string
-var defaultOrgName string
-var defaultSpaceGuid string
-var defaultSpaceName string
+	defaultResourceGuid = "11111111-1111-1111-1111-123456789123"
+	defaultOrgGuid      = "22222222-2222-2222-2222-123456789123"
+	defaultOrgName      = "test-org-name"
+	defaultSpaceGuid    = "33333333-3333-3333-3333-123456789123"
+	defaultSpaceName    = "test-space-name"
+)
 
 // Month and year for which billing consolidation is being run
 var startInterval time.Time
@@ -43,15 +43,6 @@ var endInterval time.Time
 
 // Run at the start of the tests
 func InitializeTestSuite(ctx *godog.TestSuiteContext) {
-	pathToSqlDefinitions = "../eventstore/sql/"
-	pathToStaticTableData = "../billing-db/data/"
-
-	defaultEventGuid = "00000000-0000-0000-0000-123456789123"
-	defaultResourceGuid = "11111111-1111-1111-1111-123456789123"
-	defaultOrgGuid = "22222222-2222-2222-2222-123456789123"
-	defaultOrgName = "test-org-name"
-	defaultSpaceGuid = "33333333-3333-3333-3333-123456789123"
-	defaultSpaceName = "test-space-name"
 
 	ctx.BeforeSuite(func() {
 		fmt.Println("Connecting to the database")
@@ -60,7 +51,6 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 		if err != nil {
 			panic(err)
 		}
-		// defer db.Close()
 
 		err = db.Ping()
 		if err != nil {
@@ -81,23 +71,20 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 			"create_consolidated_billable_events.sql",
 			"create_compose_audit_events.sql"}
 
-		for i, table := range tables {
-			_ = i
+		for _, table := range tables {
 			table = pathToSqlDefinitions + table
 			fmt.Printf("Creating tables and other database objects in the file: %s...\n", table)
 			content, err := ioutil.ReadFile(table)
 			if err != nil {
 				panic(err)
 			}
-			sql := string(content)
-			rows, err := db.Query(sql)
-			if err != nil {
+			sqlQuery := string(content)
+			_, sqlErr := db.Query(sqlQuery)
+			if sqlErr != nil {
 				panic(err)
 			}
-			_ = rows
 		}
 
-		// defer db.Close()
 	})
 
 	ctx.AfterSuite(func() { fmt.Println("After running test suite") })
@@ -132,15 +119,14 @@ func clearDatabaseTables(tables string) error {
 
 	tables = strings.Replace(tables, " ", "", -1)
 	tableList := strings.Split(tables, ",")
+	fmt.Printf("tablecat '%T'", tableList)
 
-	for i := 0; i < len(tableList); i++ {
-		sql := fmt.Sprintf("DELETE FROM %s;", tableList[i])
-		// fmt.Printf("Running '%s'\n", sql)
-		rows, err := db.Query(sql)
+	for _, table := range tableList {
+		sqlQuery := fmt.Sprintf("DELETE FROM %s;", table)
+		_, err := db.Query(sqlQuery)
 		if err != nil {
 			panic(err)
 		}
-		_ = rows
 	}
 
 	return nil
@@ -156,10 +142,10 @@ func aCleanBillingDatabase() error {
 
 	planConfig, err := eventstore.LoadConfig("../config.json")
 	if err != nil {
-	  panic(err)
+		panic(err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.TODO(), 10 * time.Minute )
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
 	tx, err := db.BeginTx(ctx, nil)
@@ -293,10 +279,9 @@ func aTenantHasSomethingBetweenyyyymmddAndyyyymmdd(resource, fromYear, fromMonth
 }
 
 func addEntryToBillableEventComponents(resource, fromDate, toDate string) error {
-	// fmt.Printf("resource = '%s', from date = '%s', to date = '%s'\n", resource, fromDate, toDate)
 	// Add an entry to the events table
-	event_guid, err := uuid.NewV4()
-	sql := fmt.Sprintf(`INSERT INTO events (event_guid,
+	eventGUID, err := uuid.NewV4()
+	sqlQuery := fmt.Sprintf(`INSERT INTO events (event_guid,
 		resource_guid,
 		resource_name,
 		resource_type,
@@ -325,15 +310,12 @@ func addEntryToBillableEventComponents(resource, fromDate, toDate string) error 
 		p.storage_in_mb,
 		p.number_of_nodes
 		FROM pricing_plans p
-		WHERE p.name = '%s';`, event_guid.String(), defaultResourceGuid, defaultOrgGuid, defaultOrgName, defaultSpaceGuid, defaultSpaceName, fromDate, toDate, resource)
+		WHERE p.name = '%s';`, eventGUID.String(), defaultResourceGuid, defaultOrgGuid, defaultOrgName, defaultSpaceGuid, defaultSpaceName, fromDate, toDate, resource)
 
-	// fmt.Printf("Adding row to events table (%s)...\n", sql[0:400])
-
-	rows, err := db.Query(sql)
+	_, err = db.Query(sqlQuery)
 	if err != nil {
 		panic(err)
 	}
-	_ = rows
 
 	return nil
 }
@@ -352,7 +334,7 @@ func billingIsRun(monthAndYear string) error {
 
 	// Need to add an entry to consolidation_history first.
 	// We are not using the golang function for this, given this version of billing is going to change in the near future. We are just replicating the SQL the current version of billing runs.
-	sql := fmt.Sprintf(`insert into consolidation_history (
+	sqlQuery := fmt.Sprintf(`insert into consolidation_history (
 		consolidated_range,
 		created_at
 	) values (
@@ -360,23 +342,21 @@ func billingIsRun(monthAndYear string) error {
 		NOW()
 	);`, startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
-	rows, err := db.Query(sql)
+	_, err := db.Query(sqlQuery)
 	if err != nil {
 		panic(err)
 	}
-	_ = rows
 
 	// Run code to populate billable_event_components.
 	content, err := ioutil.ReadFile(pathToSqlDefinitions + "create_billable_event_components.sql")
 	if err != nil {
 		panic(err)
 	}
-	sql = string(content)
-	rows, err = db.Query(sql)
+	sqlQuery = string(content)
+	_, err = db.Query(sqlQuery)
 	if err != nil {
 		panic(err)
 	}
-	_ = rows
 
 	return nil
 }
@@ -389,7 +369,7 @@ func theBillShouldBe(pounds, pence int) error {
 
 	// We need to run the billing consolidation here.
 	// Original code taken from paas-billing/eventstore/store_consolidated_billable_events.go:consolidate() and paas-billing/eventstore/store_billable_events.go:WithBillableEvents()
-	sql := fmt.Sprintf(`with
+	sqlQuery := fmt.Sprintf(`with
 		filtered_range as (
 			select tstzrange('%s', '%s') as filtered_range -- durationArgPosition
 		),
@@ -522,43 +502,40 @@ func theBillShouldBe(pounds, pence int) error {
 			billable_events,
 			filtered_range;`, startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
-	// fmt.Printf("Running '%s'...\n", sql[0:75])
-
-	rows, err := db.Query(sql)
+	_, err := db.Query(sqlQuery)
 	if err != nil {
 		panic(err)
 	}
-	_ = rows
 
 	fmt.Printf("Examining billing bill for time interval: '%s' to '%s'...\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
 	// Get the billing bill from the database
-	rows, err = db.Query(`SELECT price->'ex_vat' AS ex_vat, price->'inc_vat' AS inc_vat FROM consolidated_billable_events;`)
+	rows, err := db.Query(`SELECT price->'ex_vat' AS ex_vat, price->'inc_vat' AS inc_vat FROM consolidated_billable_events;`)
 	if err != nil {
 		panic(err)
 	}
 
-	var inc_vat_db, ex_vat_db string
-	var inc_vat, ex_vat float64
+	var intVATdb, exVATDB string
+	var incVAT, exVAT float64
 	for rows.Next() {
-		err = rows.Scan(&ex_vat_db, &inc_vat_db)
+		err = rows.Scan(&exVATDB, &intVATdb)
 
 		if err != nil {
 			panic(err)
 		}
 
-		inc_vat_charge, err := strconv.ParseFloat(strings.Replace(inc_vat_db, "\"", "", -1), 64)
+		incVATCharge, err := strconv.ParseFloat(strings.Replace(intVATdb, "\"", "", -1), 64)
 		if err != nil {
 			panic(err)
 		}
 
-		ex_vat_charge, err := strconv.ParseFloat(strings.Replace(ex_vat_db, "\"", "", -1), 64)
+		exVATCharge, err := strconv.ParseFloat(strings.Replace(exVATDB, "\"", "", -1), 64)
 		if err != nil {
 			panic(err)
 		}
 
-		inc_vat += inc_vat_charge
-		ex_vat += ex_vat_charge
+		incVAT += incVATCharge
+		exVAT += exVATCharge
 	}
 
 	if err = rows.Err(); err != nil {
@@ -566,19 +543,19 @@ func theBillShouldBe(pounds, pence int) error {
 	}
 
 	// Now examine the billing bill calculated by billing and check it's the same as that specified in the Gherkin test
-	fmt.Printf("Bill calculated by billing excluding vat = £%f and including vat = £%f\n", ex_vat, inc_vat)
+	fmt.Printf("Bill calculated by billing excluding vat = £%f and including vat = £%f\n", exVAT, incVAT)
 
-	ex_vat = math.Round(ex_vat*100) / 100
-	inc_vat = math.Round(inc_vat*100) / 100
+	exVAT = math.Round(exVAT*100) / 100
+	incVAT = math.Round(incVAT*100) / 100
 
 	// TODO: Investigate rounding in golang. The number 6.44448 is rounded to 6.44 not 6.45.
 
 	expectedBill := float64((pounds*100)+pence) / 100
-	if inc_vat != expectedBill {
-		return fmt.Errorf("Billing calculation is not as expected. Expected bill (from Gherkin test) = £%f, bill calculated by Paas billing = £%f\n", expectedBill, inc_vat)
+	if incVAT != expectedBill {
+		return fmt.Errorf("Billing calculation is not as expected. Expected bill (from Gherkin test) = £%f, bill calculated by Paas billing = £%f\n", expectedBill, incVAT)
 	} else {
 		// Print in green
-		fmt.Print(string("\033[32m"), "\n*** Test passed ***\n\n")
+		fmt.Print("\033[32m", "\n*** Test passed ***\n\n")
 	}
 
 	return nil
