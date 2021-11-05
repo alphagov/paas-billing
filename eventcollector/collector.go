@@ -62,19 +62,7 @@ func (c *EventCollector) Run(ctx context.Context) error {
 				c.logger.Error("collect-error", err)
 				continue
 			}
-			parsed_time, err := time.Parse(time.RFC3339,
-					        "2016-01-01T00:00:00+00:00")
-			if err != nil {
-				c.state = Scheduled
-				c.logger.Error("Time parsing error", err)
-				continue
-			}
-			_, err = c.store.UpdateResources(ctx, parsed_time)
-			if err != nil {
-				c.state = Scheduled
-				c.logger.Error("Failed to update resources", err)
-				continue
-			}
+
 			c.eventsCollected += len(collectedEvents)
 			elapsed := time.Since(startTime)
 			c.logger.Info("collected", lager.Data{
