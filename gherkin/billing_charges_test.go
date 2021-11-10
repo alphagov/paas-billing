@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/alphagov/paas-billing/testenv"
 	"github.com/cucumber/godog"
@@ -37,6 +39,8 @@ const (
 	defaultSpaceName    = "test-space-name"
 )
 
+var logger = getDefaultLogger()
+
 // Month and year for which billing consolidation is being run
 var startInterval time.Time
 var endInterval time.Time
@@ -49,12 +53,14 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 		conn := "user=postgres dbname=postgres host=localhost sslmode=disable"
 		db, err = sql.Open("postgres", conn)
 		if err != nil {
-			panic(err)
+			logger.Fatal("unable to connect to the database", err)
+			os.Exit(1)
 		}
 
 		err = db.Ping()
 		if err != nil {
-			panic(err)
+			logger.Fatal("unable ping the database", err)
+			os.Exit(1)
 		}
 
 		tables := []string{"create_custom_types.sql",
@@ -76,12 +82,14 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 			fmt.Printf("Creating tables and other database objects in the file: %s...\n", table)
 			content, err := ioutil.ReadFile(table)
 			if err != nil {
-				panic(err)
+				logger.Error("unable to read table from file", err)
+				return
 			}
 			sqlQuery := string(content)
-			_, sqlErr := db.Query(sqlQuery)
-			if sqlErr != nil {
-				panic(err)
+			_, err = db.Query(sqlQuery)
+			if err != nil {
+				logger.Error("failed to query the database", err, lager.Data{"query": sqlQuery})
+				return
 			}
 		}
 
@@ -119,13 +127,13 @@ func clearDatabaseTables(tables string) error {
 
 	tables = strings.Replace(tables, " ", "", -1)
 	tableList := strings.Split(tables, ",")
-	fmt.Printf("tablecat '%T'", tableList)
 
 	for _, table := range tableList {
 		sqlQuery := fmt.Sprintf("DELETE FROM %s;", table)
 		_, err := db.Query(sqlQuery)
 		if err != nil {
-			panic(err)
+			logger.Error("failed to clear table", err, lager.Data{"table": table})
+			return err
 		}
 	}
 
@@ -139,10 +147,10 @@ func aCleanBillingDatabase() error {
 
 	// Add data to the following tables:
 	// vat_rates, currency_rates, pricing_plans, pricing_plan_components.
-
 	planConfig, err := eventstore.LoadConfig("../config.json")
 	if err != nil {
-		panic(err)
+		logger.Error("failed to load configuration", err)
+		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -163,7 +171,7 @@ func aCleanBillingDatabase() error {
 			)
 		`, vr.Code, vr.ValidFrom, vr.Rate)
 		if err != nil {
-			return wrapPqError(err, "invalid vat rate")
+			return wrapPqError(err, "invalid VAT rate")
 		}
 	}
 
@@ -559,4 +567,15 @@ func theBillShouldBe(pounds, pence int) error {
 	}
 
 	return nil
+}
+
+func getDefaultLogger() lager.Logger {
+	logger := lager.NewLogger("paas-billing-test")
+	logLevel := lager.INFO
+	if strings.ToLower(os.Getenv("LOG_LEVEL")) == "debug" {
+		logLevel = lager.DEBUG
+	}
+	logger.RegisterSink(lager.NewWriterSink(os.Stdout, logLevel))
+
+	return logger
 }
