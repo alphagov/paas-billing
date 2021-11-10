@@ -32,6 +32,28 @@ test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fe
 	$(eval export APP_ROOT=${APP_ROOT})
 	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skipPackage acceptance_tests
 
+# .PHONY: gherkin_test
+gherkin_test: gherkin_test_lon gherkin_test_ie
+	
+# .PHONY: gherkin_test_lon
+gherkin_test_lon:
+	mkdir -p gherkin/features
+	cp ../paas-cf/config/billing/tests/eu-west-1_billing_rds_charges.feature gherkin/features/
+	cp ../paas-cf/config/billing/output/eu-west-1.json config.json
+	cd gherkin && godog
+	rm config.json
+	rm gherkin/features/*
+
+gherkin_test_ie:
+	mkdir -p gherkin/features
+	cp ../paas-cf/config/billing/tests/eu-west-2_billing_rds_charges.feature gherkin/features/
+	cp ../paas-cf/config/billing/output/eu-west-2.json config.json
+	cd gherkin && godog
+	rm config.json
+	rm gherkin/features/*
+
+
+
 .PHONY: smoke
 smoke:
 	## Runs the app/blackbox tests against a dev environment as a smoke test to check
