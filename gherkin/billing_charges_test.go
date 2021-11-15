@@ -1,22 +1,17 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"math"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/alphagov/paas-billing/testenv"
 	"github.com/cucumber/godog"
 	"github.com/gofrs/uuid"
-	"github.com/lib/pq"
 )
 
 // This is a simplified test suite designed only to be run on a local database for now.
@@ -29,70 +24,89 @@ var (
 	err    error
 )
 
-const (
-	pathToSqlDefinitions = "../eventstore/sql/"
+var pathToSqlDefinitions string
+var pathToStaticTableData string
 
-	defaultResourceGuid = "11111111-1111-1111-1111-123456789123"
-	defaultOrgGuid      = "22222222-2222-2222-2222-123456789123"
-	defaultOrgName      = "test-org-name"
-	defaultSpaceGuid    = "33333333-3333-3333-3333-123456789123"
-	defaultSpaceName    = "test-space-name"
-)
-
-var logger = getDefaultLogger()
+var defaultEventGuid string
+var defaultResourceGuid string
+var defaultResourceName string
+var defaultResourceType string
+var defaultOrgGuid string
+var defaultOrgName string
+var defaultSpaceGuid string
+var defaultSpaceName string
 
 // Month and year for which billing consolidation is being run
 var startInterval time.Time
 var endInterval time.Time
 
+// The resource that the tenant is provisioning. This is what we are going to be calculating the bill for.
+var tenantResource string
+
 // Run at the start of the tests
 func InitializeTestSuite(ctx *godog.TestSuiteContext) {
+	pathToSqlDefinitions = "../eventstore/sql/"
+	pathToStaticTableData = "../billing-db/data/"
+
+	defaultEventGuid = "00000000-0000-0000-0000-123456789123"
+	defaultResourceGuid = "11111111-1111-1111-1111-123456789123"
+	defaultResourceName = "gherkin_test_resource"
+	defaultResourceType = "app"
+	defaultOrgGuid = "22222222-2222-2222-2222-123456789123"
+	defaultOrgName = "test-org-name"
+	defaultSpaceGuid = "33333333-3333-3333-3333-123456789123"
+	defaultSpaceName = "test-space-name"
 
 	ctx.BeforeSuite(func() {
 		fmt.Println("Connecting to the database")
-		conn := "user=postgres dbname=postgres host=localhost sslmode=disable"
+		conn := "user=billinguser dbname=billing password=billinguser host=localhost sslmode=disable"
 		db, err = sql.Open("postgres", conn)
 		if err != nil {
-			logger.Fatal("unable to connect to the database", err)
-			os.Exit(1)
+			panic(err)
 		}
+		// defer db.Close()
 
 		err = db.Ping()
 		if err != nil {
-			logger.Fatal("unable ping the database", err)
-			os.Exit(1)
+			panic(err)
 		}
 
-		tables := []string{"create_custom_types.sql",
-			"create_base_objects.sql",
-			"create_spaces.sql",
-			"create_service_usage_events.sql",
-			"create_app_usage_events.sql",
-			"create_services.sql",
-			"create_service_plans.sql",
-			"create_orgs.sql",
-			"create_compose_audit_events.sql",
-			"create_events.sql",
-			"create_custom_types.sql",
-			"create_consolidated_billable_events.sql",
-			"create_compose_audit_events.sql"}
+		tables := []string{"../eventstore/sql/create_custom_types.sql",
+			"../eventstore/sql/create_base_objects.sql",
+			"../eventstore/sql/create_spaces.sql",
+			"../eventstore/sql/create_service_usage_events.sql",
+			"../eventstore/sql/create_app_usage_events.sql",
+			"../eventstore/sql/create_services.sql",
+			"../eventstore/sql/create_service_plans.sql",
+			"../eventstore/sql/create_orgs.sql",
+			"../eventstore/sql/create_compose_audit_events.sql",
+			"../eventstore/sql/create_events.sql",
+			"../eventstore/sql/create_custom_types.sql",
+			"../eventstore/sql/create_consolidated_billable_events.sql",
+			"../eventstore/sql/create_compose_audit_events.sql",
+			"../billing-db/tables/resources.sql",
+			"../billing-db/tables/charges.sql",
+			"../billing-db/tables/vat_rates_new.sql",
+			"../billing-db/tables/billing_formulae.sql",
+			"../billing-db/tables/currency_rates.sql"}
 
-		for _, table := range tables {
-			table = pathToSqlDefinitions + table
+		for i, table := range tables {
+			_ = i
+			// table = pathToSqlDefinitions + table
 			fmt.Printf("Creating tables and other database objects in the file: %s...\n", table)
 			content, err := ioutil.ReadFile(table)
 			if err != nil {
-				logger.Error("unable to read table from file", err)
-				return
+				panic(err)
 			}
-			sqlQuery := string(content)
-			_, err = db.Query(sqlQuery)
+			sql := string(content)
+			rows, err := db.Query(sql)
 			if err != nil {
-				logger.Error("failed to query the database", err, lager.Data{"query": sqlQuery})
-				return
+				panic(err)
 			}
+			_ = rows
 		}
 
+		// defer db.Close()
 	})
 
 	ctx.AfterSuite(func() { fmt.Println("After running test suite") })
@@ -111,10 +125,10 @@ func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^(?:a|the) tenant has a ([A-Za-z_\- \.0-9]+) between \'(\d+)-(\d+)-(\d+)\' and \'(\d+)-(\d+)-(\d+)\'$`, aTenantHasSomethingBetweenyyyymmddAndyyyymmdd)
 
 	// When
-	ctx.Step(`^billing is run for ([A-Za-z 0-9]+)$`, billingIsRun)
+	ctx.Step(`^billing is run$`, billingIsRun)
 
 	// Then
-	ctx.Step(`^the bill, including VAT, should be £(\d+)\.(\d+)$`, theBillShouldBe)
+	ctx.Step(`^the bill, including VAT, for ([A-Za-z 0-9]+) should be £(\d+)\.(\d+)$`, theBillShouldBe)
 }
 
 // Background
@@ -128,13 +142,14 @@ func clearDatabaseTables(tables string) error {
 	tables = strings.Replace(tables, " ", "", -1)
 	tableList := strings.Split(tables, ",")
 
-	for _, table := range tableList {
-		sqlQuery := fmt.Sprintf("DELETE FROM %s;", table)
-		_, err := db.Query(sqlQuery)
+	for i := 0; i < len(tableList); i++ {
+		sql := fmt.Sprintf("TRUNCATE TABLE %s;", tableList[i])
+		// fmt.Printf("Running '%s'\n", sql)
+		rows, err := db.Query(sql)
 		if err != nil {
-			logger.Error("failed to clear table", err, lager.Data{"table": table})
-			return err
+			panic(err)
 		}
+		_ = rows
 	}
 
 	return nil
@@ -142,154 +157,90 @@ func clearDatabaseTables(tables string) error {
 
 func aCleanBillingDatabase() error {
 	// Clear out any data from previous tests.
-	tableList := "compose_audit_events, consolidated_billable_events, consolidation_history, events, app_usage_events, service_usage_events, currency_rates, vat_rates, pricing_plans, pricing_plan_components"
+	tableList := "resources, events, app_usage_events, service_usage_events, currency_exchange_rates, vat_rates_new, charges"
 	clearDatabaseTables(tableList)
 
-	// Add data to the following tables:
-	// vat_rates, currency_rates, pricing_plans, pricing_plan_components.
-	planConfig, err := eventstore.LoadConfig("../config.json")
-	if err != nil {
-		logger.Error("failed to load configuration", err)
-		return err
-	}
+	// Add data to the following tables: vat_rates, currency_rates, pricing_plans, pricing_plan_components. Use the data in paas-billing/billing-db/data.
+	tables := []string{"currency_exchange_rates",
+		"vat_rates_new",
+		"charges"}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
+	// TODO: We need to refresh a copy of the database using a copy of the data in paas-cf. Do not use the code below to refresh from data files.
 
-	tx, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	for _, vr := range planConfig.VATRates {
-		_, err := tx.Exec(`
-			insert into vat_rates (
-				code, valid_from, rate
-			) values (
-				$1, $2, $3
-			)
-		`, vr.Code, vr.ValidFrom, vr.Rate)
+	for i, table := range tables {
+		_ = i
+		fmt.Printf("Populating data in %s table...\n", table)
+		table = pathToStaticTableData + table + ".dat"
+		content, err := ioutil.ReadFile(table)
 		if err != nil {
-			return wrapPqError(err, "invalid VAT rate")
+			panic(err)
 		}
-	}
-
-	for _, cr := range planConfig.CurrencyRates {
-		_, err := tx.Exec(`
-			insert into currency_rates (
-				code, valid_from, rate
-			) values (
-				$1, $2, $3
-			)
-		`, cr.Code, cr.ValidFrom, cr.Rate)
+		sql := string(content)
+		rows, err := db.Query(sql)
 		if err != nil {
-			return wrapPqError(err, "invalid currency rate")
+			panic(err)
 		}
-	}
-
-	for _, pp := range planConfig.PricingPlans {
-		_, err := tx.Exec(`insert into pricing_plans (
-			plan_guid, valid_from, name,
-			memory_in_mb, storage_in_mb, number_of_nodes
-		) values (
-			$1, $2, $3,
-			$4, $5, $6
-		)`, pp.PlanGUID, pp.ValidFrom, pp.Name,
-			pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
-		)
-		if err != nil {
-			return wrapPqError(err, "invalid pricing plan")
-		}
-		for _, ppc := range pp.Components {
-			_, err := tx.Exec(`insert into pricing_plan_components (
-				plan_guid, valid_from, name,
-				formula, currency_code, vat_code
-			) values (
-				$1, $2, $3,
-				$4, $5, $6
-			)`, pp.PlanGUID, pp.ValidFrom, ppc.Name, ppc.Formula, ppc.CurrencyCode, ppc.VATCode)
-			if err != nil {
-				return wrapPqError(err, "invalid pricing plan component")
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(err)
+		_ = rows
 	}
 
 	return nil
 }
 
-func wrapPqError(err error, prefix string) error {
-	msg := err.Error()
-	if err, ok := err.(*pq.Error); ok {
-		msg = err.Message
-		if err.Detail != "" {
-			msg += ": " + err.Detail
-		}
-		if err.Hint != "" {
-			msg += ": " + err.Hint
-		}
-		if err.Where != "" {
-			msg += ": " + err.Where
-		}
-	}
-	return fmt.Errorf("%s: %s", prefix, msg)
-}
-
 // Given
 
 // Datetime args are in the form 'yyyy-mm-dd HH:MM' and 'yyyy-mm-dd'
-func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmdd(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
+func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmdd(planName, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
 }
 
 // Datetime args are in the form 'yyyy-mm-dd' and 'yyyy-mm-dd HH:MM'
-func aTenantHasSomethingBetweenyyyymmddAndyyyymmddHHMM(resource, fromYear, fromMonth, fromDay, toYear, toMonth, toDay, toHour, toMinute string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
+func aTenantHasSomethingBetweenyyyymmddAndyyyymmddHHMM(planName, fromYear, fromMonth, fromDay, toYear, toMonth, toDay, toHour, toMinute string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
 }
 
 // Datetime args are in the form 'yyyy-mm-dd' and 'yyyy-mm-dd HH:MM:ss'
-func aTenantHasSomethingBetweenyyyymmddAndyyyymmddHHMMss(resource, fromYear, fromMonth, fromDay, toYear, toMonth, toDay, toHour, toMinute, toSecond string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
+func aTenantHasSomethingBetweenyyyymmddAndyyyymmddHHMMss(planName, fromYear, fromMonth, fromDay, toYear, toMonth, toDay, toHour, toMinute, toSecond string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
 }
 
 // Datetime args are in the form 'yyyy-mm-dd HH:MM:ss' and 'yyyy-mm-dd'
-func aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmdd(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond, toYear, toMonth, toDay string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond), fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
+func aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmdd(planName, fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond, toYear, toMonth, toDay string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s %s:%s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond), fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
 }
 
 // Datetime args are in the form 'yyyy-mm-dd HH:MM:ss' and 'yyyy-mm-dd HH:MM:ss'
-func aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMMss(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond, toYear, toMonth, toDay, toHour, toMinute, toSecond string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond), fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
+func aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMMss(planName, fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond, toYear, toMonth, toDay, toHour, toMinute, toSecond string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s %s:%s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond), fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
 }
 
 // Datetime args are in the form 'yyyy-mm-dd HH:MM:ss' and 'yyyy-mm-dd HH:MM'
-func aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMM(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond, toYear, toMonth, toDay, toHour, toMinute string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond), fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
+func aTenantHasSomethingBetweenyyyymmddHHMMssAndyyyymmddHHMM(planName, fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond, toYear, toMonth, toDay, toHour, toMinute string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s %s:%s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute, fromSecond), fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
 }
 
 // Datetime args are in the form 'yyyy-mm-dd HH:MM' and 'yyyy-mm-dd HH:MM:ss'
-func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMMss(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay, toHour, toMinute, toSecond string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
+func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMMss(planName, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay, toHour, toMinute, toSecond string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s %s:%s:%s", toYear, toMonth, toDay, toHour, toMinute, toSecond))
 }
 
 // Datetime args are in the form 'yyyy-mm-dd HH:MM' and 'yyyy-mm-dd HH:MM'
-func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMM(resource, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay, toHour, toMinute string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
+func aTenantHasSomethingBetweenyyyymmddHHMMAndyyyymmddHHMM(planName, fromYear, fromMonth, fromDay, fromHour, fromMinute, toYear, toMonth, toDay, toHour, toMinute string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s %s:%s", fromYear, fromMonth, fromDay, fromHour, fromMinute)+":00", fmt.Sprintf("%s-%s-%s %s:%s", toYear, toMonth, toDay, toHour, toMinute)+":00")
 }
 
 // Datetime args are in the form 'yyyy-mm-dd' and 'yyyy-mm-dd'
-func aTenantHasSomethingBetweenyyyymmddAndyyyymmdd(resource, fromYear, fromMonth, fromDay, toYear, toMonth, toDay string) error {
-	return addEntryToBillableEventComponents(resource, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
+func aTenantHasSomethingBetweenyyyymmddAndyyyymmdd(planName, fromYear, fromMonth, fromDay, toYear, toMonth, toDay string) error {
+	return addEntryToBilling(planName, fmt.Sprintf("%s-%s-%s", fromYear, fromMonth, fromDay)+" 00:00:00", fmt.Sprintf("%s-%s-%s", toYear, toMonth, toDay)+" 00:00:00")
 }
 
-func addEntryToBillableEventComponents(resource, fromDate, toDate string) error {
+func addEntryToBilling(planName, fromDate, toDate string) error {
+	// fmt.Printf("resource = '%s', from date = '%s', to date = '%s'\n", resource, fromDate, toDate)
 	// Add an entry to the events table
-	eventGUID, err := uuid.NewV4()
-	sqlQuery := fmt.Sprintf(`INSERT INTO events (event_guid,
+	event_guid, err := uuid.NewV4()
+	sql := fmt.Sprintf(`INSERT INTO resources
+	(
+		valid_from, 
+		valid_to,
 		resource_guid,
 		resource_name,
 		resource_type,
@@ -297,253 +248,108 @@ func addEntryToBillableEventComponents(resource, fromDate, toDate string) error 
 		org_name,
 		space_guid,
 		space_name,
-		duration,
-		plan_guid,
 		plan_name,
+		plan_guid,
+		storage_in_mb
 		memory_in_mb,
-		storage_in_mb,
-		number_of_nodes)
-		SELECT '%s', -- event-guid
-		'%s', -- resource_guid
-		'raw-msg-service-instance-name',
-		'service', -- resource_type
-		'%s', -- org-guid
-		'%s',
-		'%s', -- space-guid
-		'%s',
-		TSTZRANGE('%s', '%s'),
-		p.plan_guid,
-		p.name,
-		p.memory_in_mb,
-		p.storage_in_mb,
-		p.number_of_nodes
-		FROM pricing_plans p
-		WHERE p.name = '%s';`, eventGUID.String(), defaultResourceGuid, defaultOrgGuid, defaultOrgName, defaultSpaceGuid, defaultSpaceName, fromDate, toDate, resource)
+		number_of_nodes,
+		cf_event_guid,
+		last_updated
+	)
+	SELECT	'%s', -- valid_from
+			'%s', -- valid_to
+			'%s', -- resource_guid
+			'%s', -- resource_name
+			'%s', -- resource_type
+			'%s', -- org_guid
+			'%s', -- org_name
+			'%s', -- space_guid
+			'%s', -- space_name
+			c.plan_name,
+			c.plan_guid,
+			c.storage_in_mb,
+			c.memory_in_mb,
+			c.number_of_nodes,
+			'%s', -- cf_event_guid
+			NOW()
+	FROM charges c WHERE c.plan_name = '%s';`, // TODO: Also filter on valid_from/valid_to since may need more than one entry here. Can use range filters since performance of these tests not an issue.
+		fromDate,
+		toDate,
+		defaultResourceGuid,
+		defaultResourceName,
+		defaultResourceType,
+		defaultOrgGuid,
+		defaultOrgName,
+		defaultSpaceGuid,
+		defaultSpaceName,
+		event_guid.String(), /* cf_event_guid */
+		planName)
 
-	_, err = db.Query(sqlQuery)
+	// fmt.Printf("Adding row to events table (%s)...\n", sql[0:400])
+
+	rows, err := db.Query(sql)
 	if err != nil {
 		panic(err)
 	}
+	_ = rows
+
+	fmt.Printf("Bill will be calculated for the interval: '%s' to '%s'.\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
 
 	return nil
 }
 
 // When
 
-func billingIsRun(monthAndYear string) error {
-	fmt.Printf("Running billing consolidation for %s\n", startInterval.String())
-	monthAndYear = strings.TrimSpace(monthAndYear)
-	startInterval, err = time.Parse("Jan 2006", monthAndYear)
-	if err != nil {
-		panic(err)
-	}
-
-	endInterval = startInterval.AddDate(0, 1, 0)
-
-	// Need to add an entry to consolidation_history first.
-	// We are not using the golang function for this, given this version of billing is going to change in the near future. We are just replicating the SQL the current version of billing runs.
-	sqlQuery := fmt.Sprintf(`insert into consolidation_history (
-		consolidated_range,
-		created_at
-	) values (
-		tstzrange('%s', '%s'),
-		NOW()
-	);`, startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
-
-	_, err := db.Query(sqlQuery)
-	if err != nil {
-		panic(err)
-	}
-
-	// Run code to populate billable_event_components.
-	content, err := ioutil.ReadFile(pathToSqlDefinitions + "create_billable_event_components.sql")
-	if err != nil {
-		panic(err)
-	}
-	sqlQuery = string(content)
-	_, err = db.Query(sqlQuery)
-	if err != nil {
-		panic(err)
-	}
-
+// Empty function.
+func billingIsRun() error {
 	return nil
 }
 
 // Then
 
 // The month and year must be passed in with a three-letter month. If the user is to pass in a full month name then need to write more code to convert it to three letters.
-func theBillShouldBe(pounds, pence int) error {
-	fmt.Printf("Running billing consolidation for interval: '%s' to '%s'.\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
-
-	// We need to run the billing consolidation here.
-	// Original code taken from paas-billing/eventstore/store_consolidated_billable_events.go:consolidate() and paas-billing/eventstore/store_billable_events.go:WithBillableEvents()
-	sqlQuery := fmt.Sprintf(`with
-		filtered_range as (
-			select tstzrange('%s', '%s') as filtered_range -- durationArgPosition
-		),
-		components_with_price as (
-			select
-				b.event_guid,
-				b.resource_guid,
-				b.resource_name,
-				b.resource_type,
-				b.org_guid,
-				b.org_name,
-				b.space_guid,
-				b.space_name,
-				b.plan_guid,
-				b.plan_name,
-				b.duration * filtered_range as duration,
-				b.number_of_nodes,
-				b.memory_in_mb,
-				b.storage_in_mb,
-				b.component_name,
-				b.component_formula,
-				b.vat_code,
-				b.vat_rate,
-				'GBP' as currency_code,
-				(eval_formula(
-					b.memory_in_mb,
-					b.storage_in_mb,
-					b.number_of_nodes,
-					b.duration * filtered_range,
-					b.component_formula
-				) * b.currency_rate) as price_ex_vat
-			from
-				filtered_range,
-				billable_event_components b
-			where
-				duration && filtered_range
-				-- filterQuery
-			order by
-				lower(duration) asc
-		),
-		billable_events as (
-			select
-				event_guid,
-				min(lower(duration)) as event_start,
-				max(upper(duration)) as event_stop,
-				resource_guid,
-				resource_name,
-				resource_type,
-				org_guid,
-				org_name,
-				null::uuid as quota_definition_guid,
-				space_guid,
-				space_name,
-				plan_guid,
-				number_of_nodes,
-				memory_in_mb,
-				storage_in_mb,
-				json_build_object(
-					'ex_vat', (sum(price_ex_vat))::text,
-					'inc_vat', (sum(price_ex_vat * (1 + vat_rate)))::text,
-					'details', json_agg(json_build_object(
-						'name', component_name,
-						'start', lower(duration),
-						'stop', upper(duration),
-						'plan_name', plan_name,
-						'ex_vat', (price_ex_vat)::text,
-						'inc_vat', (price_ex_vat * (1 + vat_rate))::text,
-						'vat_rate', (vat_rate)::text,
-						'vat_code', vat_code,
-						'currency_code', currency_code
-					))
-				) as price
-			from
-				components_with_price
-			group by
-				event_guid,
-				resource_guid,
-				resource_name,
-				resource_type,
-				org_guid,
-				org_name,
-				quota_definition_guid,
-				space_guid,
-				space_name,
-				plan_guid,
-				number_of_nodes,
-				memory_in_mb,
-				storage_in_mb
-			order by
-				event_guid
-	  )
-	  `+`insert into consolidated_billable_events (
-			consolidated_range,
-
-			event_guid,
-			duration,
-			resource_guid,
-			resource_name,
-			resource_type,
-			org_guid,
-			org_name,
-			space_guid,
-			space_name,
-			plan_guid,
-			quota_definition_guid,
-			number_of_nodes,
-			memory_in_mb,
-			storage_in_mb,
-			price
-		)
-		select
-			filtered_range,
-
-			billable_events.event_guid,
-			tstzrange(billable_events.event_start, billable_events.event_stop),
-			billable_events.resource_guid,
-			billable_events.resource_name,
-			billable_events.resource_type,
-			billable_events.org_guid,
-			billable_events.org_name,
-			billable_events.space_guid,
-			billable_events.space_name,
-			billable_events.plan_guid,
-			billable_events.quota_definition_guid,
-			billable_events.number_of_nodes,
-			billable_events.memory_in_mb,
-			billable_events.storage_in_mb,
-			billable_events.price
-		from
-			billable_events,
-			filtered_range;`, startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
-
-	_, err := db.Query(sqlQuery)
+// We will need to enhance this to accept dates within a month. Currently, the code has only been written for complete months.
+func theBillShouldBe(monthAndYear string, pounds, pence int) error {
+	monthAndYear = strings.TrimSpace(monthAndYear)
+	startInterval, err = time.Parse("Jan 2006", monthAndYear)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Printf("Examining billing bill for time interval: '%s' to '%s'...\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
+	// Add a month
+	endInterval = startInterval.AddDate(0, 1, 0)
 
-	// Get the billing bill from the database
-	rows, err := db.Query(`SELECT price->'ex_vat' AS ex_vat, price->'inc_vat' AS inc_vat FROM consolidated_billable_events;`)
+	// We are not using the golang function for this, given this version of billing is going to change in the near future. We are just replicating the SQL the current version of billing runs.
+	sql := fmt.Sprintf(`SELECT SUM(charge_gbp_exc_vat) AS ex_vat_db, SUM(charge_gbp_inc_vat) AS ex_vat_db FROM calculate_bill();`)
+
+	rows, err := db.Query(sql)
 	if err != nil {
 		panic(err)
 	}
 
-	var intVATdb, exVATDB string
-	var incVAT, exVAT float64
+	fmt.Printf("Examining billing bill for the time interval: '%s' to '%s'...\n", startInterval.Format("2006-01-02"), endInterval.Format("2006-01-02"))
+
+	var inc_vat_db, ex_vat_db string
+	var inc_vat, ex_vat float64
 	for rows.Next() {
-		err = rows.Scan(&exVATDB, &intVATdb)
+		err = rows.Scan(&ex_vat_db, &inc_vat_db)
 
 		if err != nil {
 			panic(err)
 		}
 
-		incVATCharge, err := strconv.ParseFloat(strings.Replace(intVATdb, "\"", "", -1), 64)
+		inc_vat_charge, err := strconv.ParseFloat(strings.Replace(inc_vat_db, "\"", "", -1), 64)
 		if err != nil {
 			panic(err)
 		}
 
-		exVATCharge, err := strconv.ParseFloat(strings.Replace(exVATDB, "\"", "", -1), 64)
+		ex_vat_charge, err := strconv.ParseFloat(strings.Replace(ex_vat_db, "\"", "", -1), 64)
 		if err != nil {
 			panic(err)
 		}
 
-		incVAT += incVATCharge
-		exVAT += exVATCharge
+		inc_vat += inc_vat_charge
+		ex_vat += ex_vat_charge
 	}
 
 	if err = rows.Err(); err != nil {
@@ -551,31 +357,20 @@ func theBillShouldBe(pounds, pence int) error {
 	}
 
 	// Now examine the billing bill calculated by billing and check it's the same as that specified in the Gherkin test
-	fmt.Printf("Bill calculated by billing excluding vat = £%f and including vat = £%f\n", exVAT, incVAT)
+	fmt.Printf("Bill calculated by billing excluding vat = £%f and including vat = £%f\n", ex_vat, inc_vat)
 
-	exVAT = math.Round(exVAT*100) / 100
-	incVAT = math.Round(incVAT*100) / 100
+	ex_vat = math.Round(ex_vat*100) / 100
+	inc_vat = math.Round(inc_vat*100) / 100
 
 	// TODO: Investigate rounding in golang. The number 6.44448 is rounded to 6.44 not 6.45.
 
 	expectedBill := float64((pounds*100)+pence) / 100
-	if incVAT != expectedBill {
-		return fmt.Errorf("Billing calculation is not as expected. Expected bill (from Gherkin test) = £%f, bill calculated by Paas billing = £%f\n", expectedBill, incVAT)
+	if inc_vat != expectedBill {
+		return fmt.Errorf("Billing calculation is not as expected. Expected bill (from Gherkin test) = £%f, bill calculated by Paas billing = £%f\n", expectedBill, inc_vat)
 	} else {
 		// Print in green
-		fmt.Print("\033[32m", "\n*** Test passed ***\n\n")
+		fmt.Print(string("\033[32m"), "\n*** Test passed ***\n\n")
 	}
 
 	return nil
-}
-
-func getDefaultLogger() lager.Logger {
-	logger := lager.NewLogger("paas-billing-test")
-	logLevel := lager.INFO
-	if strings.ToLower(os.Getenv("LOG_LEVEL")) == "debug" {
-		logLevel = lager.DEBUG
-	}
-	logger.RegisterSink(lager.NewWriterSink(os.Stdout, logLevel))
-
-	return logger
 }

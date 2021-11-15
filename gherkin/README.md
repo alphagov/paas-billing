@@ -8,12 +8,12 @@ Because this is an MVP, a hard-coded username/password is used when running the 
 
 ## How to set up
 
-1. Install Gherkin
+1. Install Gherkin and ensure you have `go@1.16` installed.
 
 In this directory run:
 
 ```
-go get github.com/cucumber/godog/cmd/godog@v0.11.0
+go get github.com/cucumber/godog/cmd/godog@v0.12.0
 ```
 
 2. Download and set up a local Postgres database on your laptop.
@@ -37,15 +37,12 @@ CREATE DATABASE billing;
 CREATE USER billinguser WITH PASSWORD 'billinguser' SUPERUSER;
 ```
 
-
 ## How to run
 
-Run the tests using Gherkin
+Run the tests using Gherkin. In the root directory of this repository, run:
 
 ```
 make gherkin_test
 ```
 
 This will copy the config and tests from `../paas-cf/billing/config/` for each region we deploy in and run the tests in turn. This is done each region has different costs and we need to test locally for the region we are in.
-
-
