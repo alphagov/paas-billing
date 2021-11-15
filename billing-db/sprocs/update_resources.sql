@@ -1,7 +1,7 @@
 -- Do not run too far back in time or will take too long to update resources during which time users won't be able to generate billing reports
 CREATE OR REPLACE FUNCTION update_resources
 (
-    _from_date TIMESTAMPTZ
+    _from_date TIMESTAMPTZ DEFAULT NULL
 )
 RETURNS TABLE
 (
@@ -16,8 +16,14 @@ BEGIN
 	DROP TABLE IF EXISTS resources_new;
 	DROP TABLE IF EXISTS events_temp;
 
+	IF _from_date IS NULL
+	THEN
+		SELECT COALESCE(MAX(valid_from), '1970-01-01') INTO _from_date
+		FROM resources;
+	END IF;
+
     -- Grab all app and service events into a temp table. Later, we can filter these.
-	
+
 	-- Start of code from create_events.sql.
 	CREATE TABLE events_temp (
 		event_guid uuid PRIMARY KEY NOT NULL,
