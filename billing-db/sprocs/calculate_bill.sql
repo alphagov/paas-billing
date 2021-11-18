@@ -298,7 +298,7 @@ BEGIN
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = (storage_in_mb/1024) * time_in_seconds::DECIMAL/2678401) * external_price,
+    SET charge_usd_exc_vat = (storage_in_mb/1024) * (time_in_seconds::DECIMAL/2678401) * external_price,
         is_processed = TRUE
     WHERE generic_formula = '($storage_in_mb/1024) * ($time_in_seconds/2678401) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
