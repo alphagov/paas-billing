@@ -6,7 +6,7 @@
 -- * Use "\a" to ensure your output is unaligned
 -- * Use "\f ," to output the results separated by commas
 -- * Use "\o /tmp/results-ireland.csv" to save the output in a CSV
--- * Use "\i scripts/usage-and-adoption-generate-csv.sql" to run this query
+-- * Use "\i scripts/ireland-usage-and-adoption-generate-csv.sql" to run this query
 
 WITH
 distinct_orgs_first_seen AS (
@@ -31,7 +31,7 @@ distinct_orgs_first_seen AS (
 ),
 org_bills_by_plan_by_month AS
   (SELECT date_trunc('month', DAY)::date AS mon,
-          'london' AS region,
+          'ireland' AS region,
           org_guid,
           CASE
               WHEN plan_name = 'app' THEN 'compute'
@@ -43,10 +43,11 @@ org_bills_by_plan_by_month AS
               WHEN plan_name ~ 'influx.*' THEN 'influxdb'
               WHEN plan_name ~ 'redis.*' THEN 'redis'
               WHEN plan_name ~ 'aws-s3.*' THEN 's3'
+              WHEN plan_name ~ 'aws-sqs-queue.*' THEN 'sqs'
               ELSE plan_name::text
           END AS service,
           sum(cost) AS total_cost
-   FROM tmp_billable_event_components_by_day
+   FROM billable_event_components_by_day
    GROUP BY mon, region, org_guid, service
 ),
 aggregated_org_bills_by_plan_by_month AS (
@@ -70,6 +71,7 @@ SELECT mon,
        COALESCE(service_costs->>'redis', '0') AS redis,
        COALESCE(service_costs->>'s3', '0') AS s3,
        COALESCE(service_costs->>'influxdb', '0') AS influxdb,
+       COALESCE(service_costs->>'sqs', '0') AS sqs,
 
        COALESCE(service_costs->>'compute', '0')::numeric
        + COALESCE(service_costs->>'postgres', '0')::numeric
@@ -78,6 +80,7 @@ SELECT mon,
        + COALESCE(service_costs->>'redis', '0')::numeric
        + COALESCE(service_costs->>'s3', '0')::numeric
        + COALESCE(service_costs->>'influxdb', '0')::numeric
+       + COALESCE(service_costs->>'sqs', '0')::numeric
        AS total
 FROM aggregated_org_bills_by_plan_by_month JOIN distinct_orgs_first_seen
 ON aggregated_org_bills_by_plan_by_month.org_guid = distinct_orgs_first_seen.org_guid
@@ -86,5 +89,6 @@ WHERE true
       AND org_name NOT LIKE 'BACC%'
       AND org_name NOT LIKE 'ACC%'
       AND org_name NOT LIKE 'SMOKE%'
+      AND org_name NOT LIKE 'ASATS%'
       AND org_name !~* '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
 ORDER BY mon ASC
