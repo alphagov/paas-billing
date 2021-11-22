@@ -86,7 +86,6 @@ BEGIN
     -- ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
     -- Get a unique copy of some of the charges table before running the UNION ALL query below.
-    DROP TABLE IF EXISTS charges_formulae;
     CREATE TABLE charges_formulae
     AS
     SELECT DISTINCT c.plan_guid,
