@@ -76,6 +76,7 @@ RETURNS TABLE
 )
 LANGUAGE plpgsql AS $$
 DECLARE _unprocessed_formula VARCHAR DEFAULT NULL;
+DECLARE _unprocessed_resource_name VARCHAR DEFAULT NULL;
 BEGIN
     TRUNCATE TABLE billable_by_component;
     DROP TABLE IF EXISTS billable_by_component_fx;
@@ -660,6 +661,16 @@ BEGIN
     WHERE br.valid_from < v.valid_from
     AND   br.valid_to > v.valid_to
     AND   v.vat_code = br.vat_code;
+
+    -- Check that the cost of all resources have been calculated in the above. This may not happen if, for example, there are NULL values for memory_in_mb, storage_in_mb or number_of_nodes in the charges (or possibly resources) tables.
+    SELECT resource_name INTO _unprocessed_resource_name
+    FROM billable_by_component
+    WHERE charge_usd_exc_vat IS NULL
+    LIMIT 1;
+
+    IF _unprocessed_resource_name IS NOT NULL THEN
+        RAISE EXCEPTION 'Bill not calculated for the resource: "%". Please investigate entry in the charges table for this resource.', _unprocessed_resource_name; 
+    END IF;
 
     RETURN QUERY
     SELECT bac.org_name,
