@@ -332,13 +332,13 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 
 func (s *EventStore) initCharges(tx *sql.Tx) (err error) {
 	s.logger.Info("truncating-charges")
-	_, err := tx.Exec("truncate table charges")
+	_, err = tx.Exec("truncate table charges")
 	if err != nil {
 		return wrapPqError(err, "invalid pricing plan component")
 	}
 
 	s.logger.Info("truncating-billing_formulae")
-	_, err := tx.Exec("truncate table billing_formulae")
+	_, err = tx.Exec("truncate table billing_formulae")
 	if err != nil {
 		return wrapPqError(err, "invalid pricing plan component")
 	}
