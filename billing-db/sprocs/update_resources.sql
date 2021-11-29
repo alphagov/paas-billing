@@ -1,31 +1,10 @@
 -- Do not run too far back in time or will take too long to update resources during which time users won't be able to generate billing reports
-CREATE OR REPLACE FUNCTION update_resources
-(
-    _from_date TIMESTAMPTZ DEFAULT NULL
-)
-RETURNS TABLE
-(
-	num_rows_added INT
-)
+CREATE OR REPLACE FUNCTION prepare_update_resources_tables()
+RETURNS INT
 LANGUAGE plpgsql AS $$
-DECLARE _run_date TIMESTAMPTZ := NOW();
-DECLARE _num_rows_added INT;
 BEGIN
-	-- Events are source of truth. Do not 'fix' or manually update the resources table since running this stored function will delete those changes. Having this code take account of any manual changes in resources risks opening us up to lots of edge cases where we may get corrupted records in resources.
-
-	DROP TABLE IF EXISTS resources_new;
-	DROP TABLE IF EXISTS events_temp;
-
-	IF _from_date IS NULL
-	THEN
-		SELECT COALESCE(MAX(valid_from), '1970-01-01') INTO _from_date
-		FROM resources;
-	END IF;
-
-    -- Grab all app and service events into a temp table. Later, we can filter these.
-
-	-- Start of code from create_events.sql.
-	CREATE TABLE events_temp (
+  CREATE TEMPORARY TABLE IF NOT EXISTS resources_new (LIKE resources);
+  CREATE TEMPORARY TABLE IF NOT EXISTS events_temp (
 		event_guid uuid PRIMARY KEY NOT NULL,
 		resource_guid uuid NOT NULL,
 		resource_name text NOT NULL,
@@ -45,11 +24,34 @@ BEGIN
 
 		CONSTRAINT duration_must_not_be_empty CHECK (not isempty(duration))
 	);
+  TRUNCATE TABLE resources_new;
+  TRUNCATE TABLE events_temp;
 
+  RETURN 0;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION events_to_resources
+(
+    _from_date TIMESTAMPTZ DEFAULT '1970-01-01'
+)
+RETURNS TABLE
+(
+	num_rows_added BIGINT
+)
+LANGUAGE plpgsql AS $$
+DECLARE _run_date TIMESTAMPTZ := NOW();
+DECLARE _num_rows_added BIGINT;
+BEGIN
+	-- Events are source of truth. Do not 'fix' or manually update the resources table since running this stored function will delete those changes. Having this code take account of any manual changes in resources risks opening us up to lots of edge cases where we may get corrupted records in resources.
+
+    -- Grab all app and service events into a temp table. Later, we can filter these.
+
+	-- Start of code from create_events.sql.
 	INSERT INTO events_temp WITH
 	raw_events as (
 		(
-			select
+		 select
 				id as event_sequence,
 				guid::uuid as event_guid,
 				'app' as event_type,
@@ -335,12 +337,6 @@ BEGIN
 	-- Time: 512789.521 ms (08:32.790)
 	-- End of code from create_events.sql
 
-	CREATE TEMPORARY TABLE resources_new
-	AS
-	SELECT *
-	FROM   resources
-	WHERE  1=2;
-
 	INSERT INTO resources_new
 	(
 		valid_from,
@@ -379,6 +375,26 @@ BEGIN
 	FROM events_temp
 	WHERE LOWER(duration) >= _from_date;
 
+-- tear here for avoiding locking of resources during event processing (?!).
+
+
+	RETURN QUERY
+	SELECT COUNT(*) FROM resources_new AS num_rows_added;
+END
+$$;
+
+CREATE OR REPLACE FUNCTION update_resources
+(
+    _from_date TIMESTAMPTZ DEFAULT '1970-01-01'
+)
+RETURNS TABLE
+(
+	num_rows_added INT
+)
+LANGUAGE plpgsql AS $$
+DECLARE _run_date TIMESTAMPTZ := NOW();
+DECLARE _num_rows_added INT;
+BEGIN
     -- Delete any records in resources with a valid_from after from_date.
 	DELETE FROM resources
 	WHERE  valid_from > _from_date;
