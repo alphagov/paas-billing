@@ -1003,7 +1003,17 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"raw_message": eventRawMessage,
 			})).To(Succeed())
 
-		Expect(db.Query(`select * from update_resources('1970-01-01T00:00:00Z')`)).To(MatchJSON(testenv.Rows{
+		Expect(db.Query(`select * from prepare_update_resources_tables()`)).To(MatchJSON(testenv.Rows{
+			{
+				"prepare_update_resources_tables": 0,
+			},
+		}))
+		Expect(db.Query(`select * from events_to_resources('1970-01-01')`)).To(MatchJSON(testenv.Rows{
+			{
+				"num_rows_added": 2,
+			},
+		}))
+		Expect(db.Query(`select * from update_resources('1970-01-01')`)).To(MatchJSON(testenv.Rows{
 			{
 				"num_rows_added": 2,
 			},
@@ -1443,7 +1453,17 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"raw_message": eventRawMessage,
 			})).To(Succeed())
 
-		Expect(db.Query(`select * from update_resources('1970-01-01T00:00:00Z')`)).To(MatchJSON(testenv.Rows{
+		Expect(db.Query(`select * from prepare_update_resources_tables()`)).To(MatchJSON(testenv.Rows{
+			{
+				"prepare_update_resources_tables": 0,
+			},
+		}))
+		Expect(db.Query(`select * from events_to_resources('1970-01-01')`)).To(MatchJSON(testenv.Rows{
+			{
+				"num_rows_added": 2,
+			},
+		}))
+		Expect(db.Query(`select * from update_resources('1970-01-01')`)).To(MatchJSON(testenv.Rows{
 			{
 				"num_rows_added": 2,
 			},
@@ -1541,7 +1561,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"raw_message": eventRawMessage,
 			})).To(Succeed())
 
-		Expect(db.Query(`select * from update_resources('1970-01-01T00:00:00Z')`)).To(MatchJSON(testenv.Rows{
+
+		Expect(db.Query(`select * from prepare_update_resources_tables()`)).To(MatchJSON(testenv.Rows{
+			{
+				"prepare_update_resources_tables": 0,
+			},
+		}))
+		Expect(db.Query(`select * from events_to_resources('1970-01-01')`)).To(MatchJSON(testenv.Rows{
+			{
+				"num_rows_added": 1,
+			},
+		}))
+		Expect(db.Query(`select * from update_resources('1970-01-01')`)).To(MatchJSON(testenv.Rows{
 			{
 				"num_rows_added": 1,
 			},
