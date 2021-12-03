@@ -3,6 +3,7 @@
 -- What needs to be billed. This can be used for any resources, past or future, so can be used by the billing calculator.
 CREATE TEMPORARY TABLE billable_resources
 (
+    source CHAR(3) NOT NULL,
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
     resource_guid UUID NULL,
@@ -22,6 +23,7 @@ CREATE TEMPORARY TABLE billable_resources
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
 CREATE TEMPORARY TABLE billable_by_component
 (
+    source CHAR(3) NOT NULL,
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
     -- valid_from_month - useful if we're calculating bills for more than one month
@@ -51,8 +53,8 @@ CREATE TEMPORARY TABLE billable_by_component
     is_processed BOOLEAN NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
+CREATE INDEX IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
+CREATE INDEX IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
 
 -- Calculate bill for a given month, or any date/time range, for a tenant.
 CREATE OR REPLACE FUNCTION get_tenant_bill
@@ -63,6 +65,7 @@ CREATE OR REPLACE FUNCTION get_tenant_bill
 )
 RETURNS TABLE
 (
+    -- source CHAR(3),
     org_name TEXT,
     org_guid UUID,
     plan_guid UUID,
@@ -81,6 +84,7 @@ BEGIN
 
     INSERT INTO billable_resources
     (
+        source,
         valid_from,
         valid_to,
         resource_guid,
@@ -96,9 +100,11 @@ BEGIN
         memory_in_mb,
         number_of_nodes
     )
+    -- Case 0:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:            |-----------------|
-    SELECT  GREATEST(_from_date, r.valid_from),
+    SELECT  s.source,
+            GREATEST(_from_date, r.valid_from),
             LEAST(_to_date, r.valid_to),
             r.resource_guid,
             r.resource_type,
@@ -112,16 +118,21 @@ BEGIN
             r.storage_in_mb,
             r.memory_in_mb,
             r.number_of_nodes
-    FROM  resources r
+    FROM  resources r,
+          sources s
     WHERE r.org_name = _org_name
     AND   r.valid_from < _from_date
     AND   r.valid_to > _from_date
-    AND   r.valid_to < _to_date
+    AND   r.valid_to <= _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
     UNION ALL
+    -- Case 1:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:                         |-----------------|
     -- Resource present:                      |---------------------------|
-    SELECT  r.valid_from,
+    SELECT  s.source,
+            r.valid_from,
             r.valid_to,
             r.resource_guid,
             r.resource_type,
@@ -135,16 +146,21 @@ BEGIN
             r.storage_in_mb,
             r.memory_in_mb,
             r.number_of_nodes
-    FROM  resources r
+    FROM  resources r,
+          sources s
     WHERE r.org_name = _org_name
     AND   r.valid_from >= _from_date
     AND   r.valid_from < _to_date
     AND   r.valid_to > _from_date
     AND   r.valid_to <= _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
     UNION ALL
+    -- Case 2:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:                                       |-----------------|
-    SELECT  GREATEST(_from_date, r.valid_from),
+    SELECT  s.source,
+            GREATEST(_from_date, r.valid_from),
             LEAST(_to_date, r.valid_to),
             r.resource_guid,
             r.resource_type,
@@ -158,15 +174,20 @@ BEGIN
             r.storage_in_mb,
             r.memory_in_mb,
             r.number_of_nodes
-    FROM  resources r
+    FROM  resources r,
+          sources s
     WHERE r.org_name = _org_name
-    AND   r.valid_from > _from_date
+    AND   r.valid_from >= _from_date
     AND   r.valid_from < _to_date
     AND   r.valid_to > _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
     UNION ALL
+    -- Case 3:
     -- _from_date, _to_date:                  |---------------------------|
     -- Resource present:            |---------------------------------------------|
-    SELECT  _from_date,
+    SELECT  s.source,
+            _from_date,
             _to_date,
             r.resource_guid,
             r.resource_type,
@@ -180,10 +201,324 @@ BEGIN
             r.storage_in_mb,
             r.memory_in_mb,
             r.number_of_nodes
-    FROM  resources r
+    FROM  resources r,
+          sources s
     WHERE r.org_name = _org_name
     AND   r.valid_from < _from_date
-    AND   r.valid_to > _to_date;
+    AND   r.valid_to > _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE;
+
+    RETURN QUERY
+    SELECT * FROM calculate_bill();
+END
+$$;
+
+-- Calculate bill for a given month, or any date/time range, for a tenant, based on GUID.
+CREATE OR REPLACE FUNCTION get_tenant_bill_api
+(
+    _org_guid UUID,
+    _from_date TIMESTAMP,
+    _to_date TIMESTAMP
+)
+RETURNS TABLE
+(
+    -- source CHAR(3),
+    org_name TEXT,
+    org_guid UUID,
+    plan_guid UUID,
+    plan_name TEXT,
+    space_name TEXT,
+    resource_type TEXT,
+    resource_name TEXT,
+    component_name TEXT,
+    charge_usd_exc_vat DECIMAL,
+    charge_gbp_exc_vat DECIMAL,
+    charge_gbp_inc_vat DECIMAL
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+    TRUNCATE TABLE billable_resources;
+
+    INSERT INTO billable_resources
+    (
+        source,
+        valid_from,
+        valid_to,
+        resource_guid,
+        resource_type,
+        resource_name,
+        org_guid,
+        org_name,
+        space_guid,
+        space_name,
+        plan_name,
+        plan_guid,
+        storage_in_mb,
+        memory_in_mb,
+        number_of_nodes
+    )
+    -- Case 0:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:            |-----------------|
+    SELECT  s.source,
+            GREATEST(_from_date, r.valid_from),
+            LEAST(_to_date, r.valid_to),
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.org_guid = _org_guid
+    AND   r.valid_from < _from_date
+    AND   r.valid_to > _from_date
+    AND   r.valid_to <= _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
+    UNION ALL
+    -- Case 1:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:                         |-----------------|
+    -- Resource present:                      |---------------------------|
+    SELECT  s.source,
+            r.valid_from,
+            r.valid_to,
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.org_guid = _org_guid
+    AND   r.valid_from >= _from_date
+    AND   r.valid_from < _to_date
+    AND   r.valid_to > _from_date
+    AND   r.valid_to <= _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
+    UNION ALL
+    -- Case 2:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:                                       |-----------------|
+    SELECT  s.source,
+            GREATEST(_from_date, r.valid_from),
+            LEAST(_to_date, r.valid_to),
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.org_guid = _org_guid
+    AND   r.valid_from >= _from_date
+    AND   r.valid_from < _to_date
+    AND   r.valid_to > _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
+    UNION ALL
+    -- Case 3:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:            |---------------------------------------------|
+    SELECT  s.source,
+            _from_date,
+            _to_date,
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.org_guid = _org_guid
+    AND   r.valid_from < _from_date
+    AND   r.valid_to > _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE;
+
+    RETURN QUERY
+    SELECT * FROM calculate_bill();
+END
+$$;
+
+-- Calculate bill for a given month, or any date/time range, for all tenants
+CREATE OR REPLACE FUNCTION get_full_bill_api
+(
+    _from_date TIMESTAMP,
+    _to_date TIMESTAMP
+)
+RETURNS TABLE
+(
+    -- source CHAR(3),
+    org_name TEXT,
+    org_guid UUID,
+    plan_guid UUID,
+    plan_name TEXT,
+    space_name TEXT,
+    resource_type TEXT,
+    resource_name TEXT,
+    component_name TEXT,
+    charge_usd_exc_vat DECIMAL,
+    charge_gbp_exc_vat DECIMAL,
+    charge_gbp_inc_vat DECIMAL
+)
+LANGUAGE plpgsql AS $$
+BEGIN
+    TRUNCATE TABLE billable_resources;
+
+    INSERT INTO billable_resources
+    (
+        source,
+        valid_from,
+        valid_to,
+        resource_guid,
+        resource_type,
+        resource_name,
+        org_guid,
+        org_name,
+        space_guid,
+        space_name,
+        plan_name,
+        plan_guid,
+        storage_in_mb,
+        memory_in_mb,
+        number_of_nodes
+    )
+    -- Case 0:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:            |-----------------|
+    SELECT  s.source,
+            GREATEST(_from_date, r.valid_from),
+            LEAST(_to_date, r.valid_to),
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.valid_from < _from_date
+    AND   r.valid_to > _from_date
+    AND   r.valid_to <= _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
+    UNION ALL
+    -- Case 1:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:                         |-----------------|
+    -- Resource present:                      |---------------------------|
+    SELECT  s.source,
+            r.valid_from,
+            r.valid_to,
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.valid_from >= _from_date
+    AND   r.valid_from < _to_date
+    AND   r.valid_to > _from_date
+    AND   r.valid_to <= _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
+    UNION ALL
+    -- Case 2:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:                                       |-----------------|
+    SELECT  s.source,
+            GREATEST(_from_date, r.valid_from),
+            LEAST(_to_date, r.valid_to),
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.valid_from >= _from_date
+    AND   r.valid_from < _to_date
+    AND   r.valid_to > _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE
+    UNION ALL
+    -- Case 3:
+    -- _from_date, _to_date:                  |---------------------------|
+    -- Resource present:            |---------------------------------------------|
+    SELECT  s.source,
+            _from_date,
+            _to_date,
+            r.resource_guid,
+            r.resource_type,
+            r.resource_name,
+            r.org_guid,
+            r.org_name,
+            r.space_guid,
+            r.space_name,
+            r.plan_name,
+            r.plan_guid,
+            r.storage_in_mb,
+            r.memory_in_mb,
+            r.number_of_nodes
+    FROM  resources r,
+          sources s
+    WHERE r.valid_from < _from_date
+    AND   r.valid_to > _to_date
+    AND   r.source = s.source
+    AND   s.active = TRUE;
 
     RETURN QUERY
     SELECT * FROM calculate_bill();

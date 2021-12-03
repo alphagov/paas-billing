@@ -3,6 +3,7 @@
 -- What needs to be billed. This can be used for any resources, past or future, so can be used by the billing calculator.
 CREATE TEMPORARY TABLE billable_resources
 (
+    source CHAR(3) NOT NULL, -- Note that it is assumed the plan_guid is still unique and not present more than one source
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
     resource_guid UUID NULL,
@@ -22,6 +23,7 @@ CREATE TEMPORARY TABLE billable_resources
 -- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
 CREATE TEMPORARY TABLE billable_by_component
 (
+    source CHAR(3) NOT NULL,
     valid_from TIMESTAMP NOT NULL,
     valid_to TIMESTAMP NOT NULL,
     -- valid_from_month - useful if we're calculating bills for more than one month
@@ -51,8 +53,8 @@ CREATE TEMPORARY TABLE billable_by_component
     is_processed BOOLEAN NULL
 );
 
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
-CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
+CREATE INDEX IF NOT EXISTS billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
+CREATE INDEX IF NOT EXISTS billable_by_component_i2 ON billable_by_component (generic_formula);
 
 -- For the billing calculator, we can easily create the billable_by_component table and populate it with what the user wants to get the prices for, then call the calculate_bill
 -- stored function to calculate the actual bill. This means that the calculation of prospective bills and real bills uses exactly the same code and formulae.
@@ -62,6 +64,7 @@ CREATE INDEX CONCURRENTLY IF NOT EXISTS billable_by_component_i2 ON billable_by_
 CREATE OR REPLACE FUNCTION calculate_bill ()
 RETURNS TABLE
 (
+    -- source CHAR(3),
     org_name TEXT,
     org_guid UUID,
     plan_guid UUID,
@@ -108,6 +111,7 @@ BEGIN
 
     INSERT INTO billable_by_component
     (
+        source,
         valid_from,
         valid_to,
         resource_guid,
@@ -133,7 +137,8 @@ BEGIN
     )
     -- charges.valid_from, charges.valid_to:  |---------------------------|
     -- Resource present:            |-----------------|
-    SELECT  c.valid_from,
+    SELECT  br.source,
+            c.valid_from,
             br.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -146,9 +151,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)), -- time_in_seconds
-            br.storage_in_mb,
-            br.memory_in_mb,
-            br.number_of_nodes,
+            COALESCE(br.storage_in_mb,c.storage_in_mb) AS storage_in_mb,
+            COALESCE(br.memory_in_mb,c.memory_in_mb) AS memory_in_mb,
+            COALESCE(br.number_of_nodes,c.number_of_nodes) AS number_of_nodes,
             c.external_price,
             c.generic_formula,
             c.vat_code,
@@ -160,12 +165,13 @@ BEGIN
     WHERE br.plan_guid = c.plan_guid
     AND br.valid_from < c.valid_from
     AND br.valid_to > c.valid_from
-    AND br.valid_to < c.valid_to
+    AND br.valid_to <= c.valid_to
     UNION ALL
     -- charges.valid_from, charges.valid_to:  |---------------------------|
     -- Resource present:                         |-----------------|
     -- Resource present:                      |---------------------------|
-    SELECT  br.valid_from,
+    SELECT  br.source,
+            br.valid_from,
             br.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -178,9 +184,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)), -- time_in_seconds
-            br.storage_in_mb,
-            br.memory_in_mb,
-            br.number_of_nodes,
+            COALESCE(br.storage_in_mb,c.storage_in_mb) AS storage_in_mb,
+            COALESCE(br.memory_in_mb,c.memory_in_mb) AS memory_in_mb,
+            COALESCE(br.number_of_nodes,c.number_of_nodes) AS number_of_nodes,
             c.external_price,
             c.generic_formula,
             c.vat_code,
@@ -197,7 +203,8 @@ BEGIN
     UNION ALL
     -- charges.valid_from, charges.valid_to:  |---------------------------|
     -- Resource present:                                       |-----------------|
-    SELECT  br.valid_from,
+    SELECT  br.source,
+            br.valid_from,
             c.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -210,9 +217,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)), -- time_in_seconds
-            br.storage_in_mb,
-            br.memory_in_mb,
-            br.number_of_nodes,
+            COALESCE(br.storage_in_mb,c.storage_in_mb) AS storage_in_mb,
+            COALESCE(br.memory_in_mb,c.memory_in_mb) AS memory_in_mb,
+            COALESCE(br.number_of_nodes,c.number_of_nodes) AS number_of_nodes,
             c.external_price,
             c.generic_formula,
             c.vat_code,
@@ -222,13 +229,14 @@ BEGIN
     FROM billable_resources br,
          charges_formulae c
     WHERE br.plan_guid = c.plan_guid
-    AND br.valid_from > c.valid_from
+    AND br.valid_from >= c.valid_from
     AND br.valid_from < c.valid_to
     AND br.valid_to > c.valid_to
     UNION ALL
     -- charges.valid_from, charges.valid_to:  |---------------------------|
     -- Resource present:            |---------------------------------------------|
-    SELECT  c.valid_from,
+    SELECT  br.source,
+            c.valid_from,
             c.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -241,9 +249,9 @@ BEGIN
             br.plan_guid,
             c.component_name,
             EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)), -- time_in_seconds
-            br.storage_in_mb,
-            br.memory_in_mb,
-            br.number_of_nodes,
+            COALESCE(br.storage_in_mb,c.storage_in_mb) AS storage_in_mb,
+            COALESCE(br.memory_in_mb,c.memory_in_mb) AS memory_in_mb,
+            COALESCE(br.number_of_nodes,c.number_of_nodes) AS number_of_nodes,
             c.external_price,
             c.generic_formula,
             c.vat_code,
@@ -263,43 +271,61 @@ BEGIN
     UPDATE billable_by_component
     SET charge_usd_exc_vat = (number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (0.01 / 3600)) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = '(number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)) * external_price'
+    WHERE generic_formula = '($number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (0.01 / 3600)) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
     SET charge_usd_exc_vat = ceil(time_in_seconds::DECIMAL/3600) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = 'ceil(time_in_seconds/3600) * external_price'
+    WHERE generic_formula = 'ceil($time_in_seconds/3600) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
     SET charge_usd_exc_vat = number_of_nodes * ceil(time_in_seconds::DECIMAL/3600) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = 'number_of_nodes * ceil(time_in_seconds/3600) * external_price'
+    WHERE generic_formula = '$number_of_nodes * ceil($time_in_seconds/3600) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
     SET charge_usd_exc_vat = (number_of_nodes * ceil(time_in_seconds::DECIMAL / 3600) * (memory_in_mb/1024.0) * 0.01) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = '(number_of_nodes * ceil(time_in_seconds / 3600) * (memory_in_mb/1024.0) * 0.01) * external_price'
+    WHERE generic_formula = '($number_of_nodes * ceil($time_in_seconds / 3600) * ($memory_in_mb/1024.0) * 0.01) * external_price'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
     SET charge_usd_exc_vat = number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (0.01 / 3600),
         is_processed = TRUE
-    WHERE generic_formula = 'number_of_nodes * time_in_seconds * (memory_in_mb/1024.0) * (0.01 / 3600)'
+    WHERE generic_formula = '$number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (0.01 / 3600)'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
     SET charge_usd_exc_vat = number_of_nodes * ceil(time_in_seconds::DECIMAL / 3600) * (memory_in_mb/1024.0) * 0.01,
         is_processed = TRUE
-    WHERE generic_formula = 'number_of_nodes * ceil(time_in_seconds / 3600) * (memory_in_mb/1024.0) * 0.01'
+    WHERE generic_formula = '$number_of_nodes * ceil($time_in_seconds / 3600) * ($memory_in_mb/1024.0) * 0.01'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     UPDATE billable_by_component
-    SET charge_usd_exc_vat = (storage_in_mb/1024) * ceil(time_in_seconds::DECIMAL/2678401) * external_price,
+    SET charge_usd_exc_vat = (storage_in_mb/1024) * (time_in_seconds::DECIMAL/2678401) * external_price,
         is_processed = TRUE
-    WHERE generic_formula = '(storage_in_mb/1024) * ceil(time_in_seconds/2678401) * external_price'
+    WHERE generic_formula = '($storage_in_mb/1024) * ($time_in_seconds/2678401) * external_price'
+    AND billable_by_component.charge_usd_exc_vat = 0;
+
+    UPDATE billable_by_component
+    SET charge_usd_exc_vat = (number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (external_price / 3600)),
+        is_processed = TRUE
+    WHERE generic_formula = '($number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (external_price / 3600))'
+    AND billable_by_component.charge_usd_exc_vat = 0;
+
+    UPDATE billable_by_component
+    SET charge_usd_exc_vat = (number_of_nodes * ceil(time_in_seconds::DECIMAL / 3600) * (memory_in_mb/1024.0) * 0.01) * external_price,
+        is_processed = TRUE
+    WHERE generic_formula = '$number_of_nodes * ceil($time_in_seconds / 3600) * ($memory_in_mb/1024.0) * external_price'
+    AND billable_by_component.charge_usd_exc_vat = 0;
+
+    UPDATE billable_by_component
+    SET charge_usd_exc_vat = (number_of_nodes * time_in_seconds * (memory_in_mb::DECIMAL/1024.0) * (external_price / 3600)),
+        is_processed = TRUE
+    WHERE generic_formula = '$number_of_nodes * $time_in_seconds * ($memory_in_mb/1024.0) * (external_price / 3600)'
     AND billable_by_component.charge_usd_exc_vat = 0;
 
     -- Check that all formulae have been processed by the above updates.
@@ -325,6 +351,7 @@ BEGIN
 
     INSERT INTO billable_by_component_fx
     (
+        source,
         valid_from,
         valid_to,
         resource_guid,
@@ -351,7 +378,8 @@ BEGIN
     )
     -- currency_exchange_rates.valid_from, currency_exchange_rates.valid_to:  |---------------------------|
     -- Resource present:                                            |-----------------|
-    SELECT  c.valid_from,
+    SELECT  br.source,
+            c.valid_from,
             br.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -363,7 +391,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -372,7 +400,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)))::NUMERIC/time_in_seconds),
             -- Following line assumes the charges accrue evenly through the whole billing interval. The formulae that are used also assume this.
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
@@ -380,14 +408,15 @@ BEGIN
          currency_exchange_rates c
     WHERE br.valid_from < c.valid_from
     AND   br.valid_to > c.valid_from
-    AND   br.valid_to < c.valid_to
+    AND   br.valid_to <= c.valid_to
     AND   br.currency_code = c.from_ccy
     AND   c.to_ccy = 'GBP'
     UNION ALL
     -- currency_exchange_rates.valid_from, currency_exchange_rates.valid_to:  |---------------------------|
     -- Resource present:                                                         |-----------------|
     -- Resource present:                                                      |---------------------------|
-    SELECT  br.valid_from,
+    SELECT  br.source,
+            br.valid_from,
             br.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -399,7 +428,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -408,7 +437,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
@@ -422,7 +451,8 @@ BEGIN
     UNION ALL
     -- currency_exchange_rates.valid_from, currency_exchange_rates.valid_to:  |---------------------------|
     -- Resource present:                                                                       |-----------------|
-    SELECT  br.valid_from,
+    SELECT  br.source,
+            br.valid_from,
             c.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -434,7 +464,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -443,12 +473,12 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - br.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
          currency_exchange_rates c
-    WHERE br.valid_from > c.valid_from
+    WHERE br.valid_from >= c.valid_from
     AND   br.valid_from < c.valid_to
     AND   br.valid_to > c.valid_to
     AND   br.currency_code = c.from_ccy
@@ -456,7 +486,8 @@ BEGIN
     UNION ALL
     -- currency_exchange_rates.valid_from, currency_exchange_rates.valid_to:  |---------------------------|
     -- Resource present:                                            |---------------------------------------------|
-    SELECT  c.valid_from,
+    SELECT  br.source,
+            c.valid_from,
             c.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -468,7 +499,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -477,7 +508,7 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: amount in USD * USD/GBP exchange rate * (time this USD/GBP exchange rate is active / time interval we're billing for)
             br.charge_usd_exc_vat * c.rate * ((EXTRACT(EPOCH FROM (c.valid_to - c.valid_from)))::NUMERIC/time_in_seconds)
     FROM billable_by_component br,
@@ -495,6 +526,7 @@ BEGIN
 
     INSERT INTO billable_by_component
     (
+        source,
         valid_from,
         valid_to,
         resource_guid,
@@ -522,7 +554,8 @@ BEGIN
     )
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                        |-----------------|
-    SELECT  v.valid_from,
+    SELECT  br.source,
+            v.valid_from,
             br.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -534,7 +567,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -543,8 +576,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
@@ -552,13 +585,14 @@ BEGIN
          vat_rates_new v
     WHERE br.valid_from < v.valid_from
     AND   br.valid_to > v.valid_from
-    AND   br.valid_to < v.valid_to
+    AND   br.valid_to <= v.valid_to
     AND   v.vat_code = br.vat_code
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                                     |-----------------|
     -- Resource present:                                  |---------------------------|
-    SELECT  br.valid_from,
+    SELECT  br.source,
+            br.valid_from,
             br.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -570,7 +604,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -579,8 +613,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (br.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
@@ -594,7 +628,8 @@ BEGIN
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                                                   |-----------------|
-    SELECT  br.valid_from,
+    SELECT  br.source,
+            br.valid_from,
             v.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -606,7 +641,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -615,21 +650,22 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - br.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
     FROM billable_by_component_fx br,
          vat_rates_new v
-    WHERE br.valid_from > v.valid_from
+    WHERE br.valid_from >= v.valid_from
     AND   br.valid_from < v.valid_to
     AND   br.valid_to > v.valid_to
     AND   v.vat_code = br.vat_code
     UNION ALL
     -- vat_rates_new.valid_from, vat_rates_new.valid_to:  |---------------------------|
     -- Resource present:                        |---------------------------------------------|
-    SELECT  v.valid_from,
+    SELECT  br.source,
+            v.valid_from,
             v.valid_to,
             br.resource_guid,
             br.resource_type,
@@ -641,7 +677,7 @@ BEGIN
             br.plan_name,
             br.plan_guid,
             br.component_name,
-            br.time_in_seconds,
+            EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)),
             br.storage_in_mb,
             br.memory_in_mb,
             br.number_of_nodes,
@@ -650,8 +686,8 @@ BEGIN
             br.is_processed,
             br.vat_code,
             br.currency_code,
-            br.charge_usd_exc_vat,
-            br.charge_gbp_exc_vat,
+            br.charge_usd_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
+            br.charge_gbp_exc_vat * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds),
             -- The calculation in the following line is: charge including VAT * (proportion of time this VAT rate is active versus time we're billing for)
             (br.charge_gbp_exc_vat + (br.charge_gbp_exc_vat * v.vat_rate)) * ((EXTRACT(EPOCH FROM (v.valid_to - v.valid_from)))::NUMERIC/time_in_seconds) -- charge_inc_vat
             -- The charge including VAT is: charge_gbp_exc_vat (charge excluding VAT) + VAT charge
@@ -662,7 +698,8 @@ BEGIN
     AND   v.vat_code = br.vat_code;
 
     RETURN QUERY
-    SELECT bac.org_name,
+    SELECT -- bac.source,
+           bac.org_name,
            bac.org_guid,
            bac.plan_guid,
            bac.plan_name,
@@ -674,7 +711,8 @@ BEGIN
            SUM(bac.charge_gbp_exc_vat) AS charge_gbp_exc_vat,
            SUM(bac.charge_gbp_inc_vat) AS charge_gbp_inc_vat
     FROM billable_by_component bac
-    GROUP BY bac.org_name, 
+    GROUP BY -- bac.source,
+             bac.org_name, 
              bac.org_guid, 
              bac.plan_guid,
              bac.plan_name,
