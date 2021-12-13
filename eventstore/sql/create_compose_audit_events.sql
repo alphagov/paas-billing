@@ -3,9 +3,11 @@ CREATE TABLE IF NOT EXISTS compose_audit_events (
 	id SERIAL,
 	event_id CHAR(24) UNIQUE,
 	created_at TIMESTAMPTZ,
-	raw_message JSONB
+	raw_message JSONB,
+	processed BOOLEAN DEFAULT FALSE
 );
 CREATE INDEX IF NOT EXISTS compose_audit_events_id ON compose_audit_events (id);
+CREATE INDEX IF NOT EXISTS compose_audit_events_i2 ON compose_audit_events (created_at, processed);
 
 ALTER TABLE compose_audit_events ALTER COLUMN event_id SET NOT NULL;
 ALTER TABLE compose_audit_events ALTER COLUMN created_at SET NOT NULL;
