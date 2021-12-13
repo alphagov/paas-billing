@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS currency_exchange_rates
+DROP TABLE IF EXISTS currency_exchange_rates;
+
+CREATE TABLE currency_exchange_rates
 (
     from_ccy CHAR(3) NOT NULL, -- ISO currency code we're converting from
     to_ccy CHAR(3) NOT NULL, -- ISO currency code we're converting to
