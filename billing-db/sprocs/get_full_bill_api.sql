@@ -1,63 +1,7 @@
--- These temporary tables need to be created when creating the database connection.
 
--- What needs to be billed. This can be used for any resources, past or future, so can be used by the billing calculator.
-CREATE TEMPORARY TABLE IF NOT EXISTS billable_resources
+-- Calculate bill for a given month, or any date/time range, for all tenants
+CREATE OR REPLACE FUNCTION get_full_bill_api
 (
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP NOT NULL,
-    resource_guid UUID NULL,
-    resource_type TEXT NULL,
-    resource_name TEXT NULL,
-    org_guid UUID NULL,
-    org_name TEXT NULL,
-    space_guid UUID NULL,
-    space_name TEXT NULL,
-    plan_name TEXT NULL,
-    plan_guid UUID NULL,
-    storage_in_mb NUMERIC NULL,
-    memory_in_mb NUMERIC NULL,
-    number_of_nodes INT NULL
-);
-
--- The billable_by_component table needs creating before running this stored function. This is so we can preserve the contents of this table for audit/debug purposes.
-CREATE TEMPORARY TABLE IF NOT EXISTS billable_by_component
-(
-    valid_from TIMESTAMP NOT NULL,
-    valid_to TIMESTAMP NOT NULL,
-    -- valid_from_month - useful if we're calculating bills for more than one month
-    -- valid_to_month - useful if we're calculating bills for more than one month
-    resource_guid UUID NULL,
-    resource_type TEXT NULL,
-    resource_name TEXT NULL,
-    org_guid UUID NULL,
-    org_name TEXT NULL,
-    space_guid UUID NULL,
-    space_name TEXT NULL,
-    plan_name TEXT NULL,
-    plan_guid UUID NULL,
-    component_name TEXT NULL,
-
-    storage_in_mb NUMERIC NULL,
-    memory_in_mb NUMERIC NULL,
-    number_of_nodes INT NULL,
-    external_price DECIMAL NULL,
-    generic_formula TEXT NULL,
-    vat_code VARCHAR NULL,
-    currency_code CHAR(3) NULL, -- ISO currency code. Original currency code
-    time_in_seconds INT NULL,
-    charge_usd_exc_vat DECIMAL NULL,
-    charge_gbp_exc_vat DECIMAL NULL,
-    charge_gbp_inc_vat DECIMAL NULL,
-    is_processed BOOLEAN NULL
-);
-
-CREATE INDEX billable_by_component_i1 ON billable_by_component (generic_formula, storage_in_mb, memory_in_mb, number_of_nodes, external_price);
-CREATE INDEX billable_by_component_i2 ON billable_by_component (generic_formula);
-
--- Calculate bill for a given month, or any date/time range, for a tenant.
-CREATE OR REPLACE FUNCTION get_tenant_bill
-(
-    _org_name TEXT,
     _from_date TIMESTAMP,
     _to_date TIMESTAMP
 )
@@ -114,8 +58,7 @@ BEGIN
             r.memory_in_mb,
             r.number_of_nodes
     FROM  resources r
-    WHERE r.org_name = _org_name
-    AND   r.valid_from < _from_date
+    WHERE r.valid_from < _from_date
     AND   r.valid_to > _from_date
     AND   r.valid_to <= _to_date
     UNION ALL
@@ -138,8 +81,7 @@ BEGIN
             r.memory_in_mb,
             r.number_of_nodes
     FROM  resources r
-    WHERE r.org_name = _org_name
-    AND   r.valid_from >= _from_date
+    WHERE r.valid_from >= _from_date
     AND   r.valid_from < _to_date
     AND   r.valid_to > _from_date
     AND   r.valid_to <= _to_date
@@ -162,8 +104,7 @@ BEGIN
             r.memory_in_mb,
             r.number_of_nodes
     FROM  resources r
-    WHERE r.org_name = _org_name
-    AND   r.valid_from >= _from_date
+    WHERE r.valid_from >= _from_date
     AND   r.valid_from < _to_date
     AND   r.valid_to > _to_date
     UNION ALL
@@ -185,8 +126,7 @@ BEGIN
             r.memory_in_mb,
             r.number_of_nodes
     FROM  resources r
-    WHERE r.org_name = _org_name
-    AND   r.valid_from < _from_date
+    WHERE r.valid_from < _from_date
     AND   r.valid_to > _to_date;
 
     RETURN QUERY

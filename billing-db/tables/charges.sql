@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS charges
 
   PRIMARY KEY (plan_guid, component_name, valid_to)
 );
-CREATE INDEX CONCURRENTLY charges_i1 ON charges (plan_guid, valid_from, valid_to);
-CREATE INDEX CONCURRENTLY charges_i2 ON charges (valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS charges_i1 ON charges (plan_guid, valid_from, valid_to);
+CREATE INDEX IF NOT EXISTS charges_i2 ON charges (valid_from, valid_to);
