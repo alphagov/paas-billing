@@ -23,27 +23,27 @@ func (s *EventStore) GetCurrencyRates(filter eventio.TimeRangeFilter) ([]eventio
 	startTime := time.Now()
 	rows, err := queryJSON(tx, `
         with
-        valid_currency_rates as (
+        valid_currency_exchange_rates as (
             select
                 *,
-                tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-                    partition by code order by valid_from rows between current row and 1 following
-                )) as valid_for
+                tstzrange(valid_from, valid_to) as valid_for
             from
-                currency_rates
+                currency_exchange_rates
         )
         select
-            vcr.code,
-            vcr.valid_from,
-            vcr.rate
+	    vcer.from_ccy as code,
+            vcer.valid_from,
+	    vcer.valid_to,
+            vcer.rate
         from
-            valid_currency_rates vcr
+            valid_currency_exchange_rates vcer
         where
-            vcr.valid_for && tstzrange($1, $2)
+            vcer.valid_for && tstzrange($1, $2)
         group by
-            vcr.code,
-            vcr.valid_from,
-            vcr.rate
+            vcer.from_ccy,
+            vcer.valid_from,
+	    vcer.valid_to,
+            vcer.rate
         order by
             valid_from
     `, filter.RangeStart, filter.RangeStop)

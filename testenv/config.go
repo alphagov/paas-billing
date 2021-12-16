@@ -11,6 +11,7 @@ var BasicConfig = eventstore.Config{
 			Code:      "Standard",
 			Rate:      0.2,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31T23:59:59Z",
 		},
 	},
 	CurrencyRates: []eventio.CurrencyRate{
@@ -18,6 +19,7 @@ var BasicConfig = eventstore.Config{
 			Code:      "GBP",
 			Rate:      1,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31T23:59:59Z",
 		},
 	},
 	PricingPlans: []eventio.PricingPlan{},

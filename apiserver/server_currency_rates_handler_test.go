@@ -50,11 +50,13 @@ var _ = Describe("CurrencyRatesHandler", func() {
 			{
 				Code:      "GBP",
 				ValidFrom: "2001-01-01",
+				ValidTo:   "9999-12-31",
 				Rate:      1.0,
 			},
 			{
 				Code:      "USD",
 				ValidFrom: "2002-01-01",
+				ValidTo:   "9999-12-31",
 				Rate:      0.8,
 			},
 		}, nil)
@@ -85,11 +87,13 @@ var _ = Describe("CurrencyRatesHandler", func() {
             {
                 "code": "GBP",
                 "valid_from": "2001-01-01",
+                "valid_to": "9999-12-31",
                 "rate": 1.0
             },
             {
                 "code": "USD",
                 "valid_from": "2002-01-01",
+                "valid_to": "9999-12-31",
                 "rate": 0.8
             }
         ]`))
