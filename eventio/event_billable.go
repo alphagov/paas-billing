@@ -8,6 +8,7 @@ import (
 
 type BillableEventReader interface {
 	GetBillableEventRows(ctx context.Context, filter EventFilter) (BillableEventRows, error)
+	GetBillableEventRowsV2(ctx context.Context, filter EventFilter) (BillableEventRows, error)
 	GetBillableEvents(filter EventFilter) ([]BillableEvent, error)
 }
 
