@@ -94,7 +94,7 @@ Here is an example plan configuration file including VAT rates and currency rate
       "code": "Standard",
       "valid_from": "epoch",
       "rate": 0.2
-    },
+    }
   ],
   "pricing_plans": [
     {
@@ -117,18 +117,19 @@ Here is an example plan configuration file including VAT rates and currency rate
       "components": [
         {
           "name": "instance",
-          "formula": "$number_of_nodes * ceil($time_in_seconds / 3600) * ($memory_in_mb/1024.0) * 0.01",
+          "formula": "number_of_nodes * ceil(time_in_seconds / 3600) * (memory_in_mb/1024.0) * 0.01",
           "currency_code": "USD",
           "vat_code": "Standard"
         },
         {
           "name": "storage",
-          "formula": "($storage_in_mb/1024) * ceil($time_in_seconds / 3600) * 0.0001",
+          "external_price": 0.0001,
+          "formula": "(storage_in_mb/1024) * ceil(time_in_seconds / 3600) * external_price",
           "currency_code": "USD",
           "vat_code": "Standard"
         }
       ]
-    },
+    }
   ]
 }
 ```
