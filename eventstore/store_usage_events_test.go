@@ -38,6 +38,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -51,6 +52,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.StagingPlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "STAGING_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -64,6 +66,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -247,6 +250,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -260,6 +264,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.StagingPlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "STAGING_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -347,10 +352,12 @@ var _ = Describe("GetUsageEvents", func() {
 			Code:      "Zero",
 			Rate:      0,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31",
 		})
 		plan := eventio.PricingPlan{
 			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
+			ValidTo:       "9999-12-31",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
@@ -529,10 +536,12 @@ var _ = Describe("GetUsageEvents", func() {
 			Code:      "Zero",
 			Rate:      0,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31",
 		})
 		plan1 := eventio.PricingPlan{
 			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
+			ValidTo:       "9999-12-31",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
@@ -549,6 +558,7 @@ var _ = Describe("GetUsageEvents", func() {
 		plan2 := eventio.PricingPlan{
 			PlanGUID:      "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
 			ValidFrom:     "2001-01-01",
+			ValidTo:       "9999-12-31",
 			Name:          "PLAN2",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
@@ -695,10 +705,12 @@ var _ = Describe("GetUsageEvents", func() {
 			Code:      "Zero",
 			Rate:      0,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31",
 		})
 		plan := eventio.PricingPlan{
 			PlanGUID:      "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom:     "2001-01-01",
+			ValidTo:       "9999-12-31",
 			Name:          "PLAN1",
 			NumberOfNodes: 1,
 			MemoryInMB:    1024,
@@ -833,6 +845,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "c6221308-b7bb-46d2-9d79-a357f5a3837b",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -966,11 +979,13 @@ var _ = Describe("GetUsageEvents", func() {
 			Code:      "Zero",
 			Rate:      0,
 			ValidFrom: "epoch",
+			ValidTo:   "9999-12-31",
 		})
 
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "d5091c33-2f9d-4b15-82dc-4ad69717fc03",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "Unknown Plan",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -1074,6 +1089,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -1182,6 +1198,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{

@@ -128,7 +128,7 @@ END; $$ LANGUAGE plpgsql IMMUTABLE;
 
 -------------------------------------- SCHEMA
 
-CREATE TABLE pricing_plans (
+CREATE TABLE IF NOT EXISTS pricing_plans (
 	plan_guid uuid NOT NULL,
 	valid_from timestamptz NOT NULL,
 	name text NOT NULL,
@@ -146,6 +146,16 @@ CREATE TABLE pricing_plans (
 	)
 );
 
+DO $$
+  BEGIN
+    BEGIN
+      ALTER TABLE pricing_plans ADD COLUMN valid_to timestamptz NOT NULL;
+    EXCEPTION
+      WHEN duplicate_column THEN RAISE NOTICE 'column valid_to already exists in pricing_plans.';
+    END;
+  END;
+$$;
+
 
 CREATE TABLE IF NOT EXISTS currency_rates(
 	code currency_code NOT NULL,
@@ -160,8 +170,8 @@ DO $$
 BEGIN
   BEGIN
     ALTER TABLE currency_rates ADD CONSTRAINT valid_from_start_of_day CHECK (
-      (extract (hour from valid_from)) = 0 AND
-      (extract (minute from valid_from)) = 0 AND
+      ((extract (hour from valid_from)) - (extract (timezone_hour from valid_from))) = 0 AND
+      ((extract (minute from valid_from)) - (extract (timezone_minute from valid_from))) = 0 AND
       (extract (second from valid_from)) = 0
     );
   EXCEPTION
@@ -180,8 +190,8 @@ CREATE TABLE IF NOT EXISTS vat_rates (
 	CONSTRAINT rate_must_be_greater_than_zero CHECK (rate >= 0),
 	CONSTRAINT valid_from_start_of_month CHECK (
 	  (extract (day from valid_from)) = 1 AND
-	  (extract (hour from valid_from)) = 0 AND
-	  (extract (minute from valid_from)) = 0 AND
+	  ((extract (hour from valid_from)) - (extract (timezone_hour from valid_from))) = 0 AND
+	  ((extract (minute from valid_from)) - (extract (timezone_minute from valid_from))) = 0 AND
 	  (extract (second from valid_from)) = 0
 	)
 );

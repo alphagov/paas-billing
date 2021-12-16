@@ -165,6 +165,7 @@ func (t *TestScenario) AddComputePlan() {
 	t.plans[k] = &eventio.PricingPlan{
 		PlanGUID:  eventstore.ComputePlanGUID,
 		ValidFrom: t.baseTime.Format("2006-01-02"),
+		ValidTo:   "9999-12-31",
 		Name:      "ComputePlan1",
 		Components: []eventio.PricingPlanComponent{
 			{

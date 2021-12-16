@@ -38,6 +38,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP-PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -52,6 +53,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  dummyServicePlan,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "SRV-PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -187,6 +189,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP-PLAN1",
 			Components: []eventio.PricingPlanComponent{
 				{
