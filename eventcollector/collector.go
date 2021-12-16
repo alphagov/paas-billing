@@ -62,6 +62,7 @@ func (c *EventCollector) Run(ctx context.Context) error {
 				c.logger.Error("collect-error", err)
 				continue
 			}
+
 			c.eventsCollected += len(collectedEvents)
 			elapsed := time.Since(startTime)
 			c.logger.Info("collected", lager.Data{
