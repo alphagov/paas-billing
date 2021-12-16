@@ -190,12 +190,12 @@ func aCleanBillingDatabase() error {
 
 	for _, pp := range planConfig.PricingPlans {
 		_, err := tx.Exec(`insert into pricing_plans (
-			plan_guid, valid_from, name,
+			plan_guid, valid_from, valid_to, name,
 			memory_in_mb, storage_in_mb, number_of_nodes
 		) values (
-			$1, $2, $3,
-			$4, $5, $6
-		)`, pp.PlanGUID, pp.ValidFrom, pp.Name,
+			$1, $2, $3, $4,
+			$5, $6, $7
+		)`, pp.PlanGUID, pp.ValidFrom, pp.ValidTo, pp.Name,
 			pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
 		)
 		if err != nil {

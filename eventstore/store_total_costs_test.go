@@ -21,6 +21,7 @@ var _ = Describe("TotalCostEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "APP_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
@@ -34,6 +35,7 @@ var _ = Describe("TotalCostEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
+			ValidTo:   "9999-12-31",
 			Name:      "DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{

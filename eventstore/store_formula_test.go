@@ -18,6 +18,7 @@ var _ = Describe("Pricing Formulae", func() {
 			Name:      "FormulaTestPlan",
 			PlanGUID:  uuid.NewV4().String(),
 			ValidFrom: "2000-01-01",
+			ValidTo:   "9999-12-31",
 			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "FormulaTestPlanComponent",

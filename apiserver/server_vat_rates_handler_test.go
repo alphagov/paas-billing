@@ -50,16 +50,19 @@ var _ = Describe("VATRatesHandler", func() {
 			{
 				Code:      "Standard",
 				ValidFrom: "2001-01-01",
+				ValidTo:   "9999-12-31",
 				Rate:      0.2,
 			},
 			{
 				Code:      "Reduced",
 				ValidFrom: "2001-07-01",
+				ValidTo:   "9999-12-31",
 				Rate:      0.05,
 			},
 			{
 				Code:      "Zero",
 				ValidFrom: "2002-01-01",
+				ValidTo:   "9999-12-31",
 				Rate:      0.0,
 			},
 		}, nil)
@@ -90,16 +93,19 @@ var _ = Describe("VATRatesHandler", func() {
             {
                 "code": "Standard",
                 "valid_from": "2001-01-01",
+                "valid_to": "9999-12-31",
                 "rate": 0.2
             },
             {
                 "code": "Reduced",
                 "valid_from": "2001-07-01",
+                "valid_to": "9999-12-31",
                 "rate": 0.05
             },
             {
                 "code": "Zero",
                 "valid_from": "2002-01-01",
+                "valid_to": "9999-12-31",
                 "rate": 0.0
             }
         ]`))
