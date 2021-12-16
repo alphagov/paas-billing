@@ -22,6 +22,8 @@ type Config struct {
 	Logger lager.Logger
 	// EnablePanic will cause the server to crash on panic if set to true
 	EnablePanic bool
+	// Version - 1 or 2. 1 will calculate bills in the app, 2 will call the database functions to do so.
+	Version int
 }
 
 // New creates a new server. Use ListenAndServe to start accepting connections.
@@ -44,10 +46,10 @@ func New(cfg Config) *echo.Echo {
 	e.GET("/vat_rates", VATRatesHandler(cfg.Store))
 	e.GET("/currency_rates", CurrencyRatesHandler(cfg.Store))
 	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
-	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
+	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store)) // TODO: can we handle this in new billing?
 	e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
-	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
-	e.GET("/totals", TotalCostHandler(cfg.Store))
+	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator, cfg.Version))
+	e.GET("/totals", TotalCostHandler(cfg.Store)) // TODO - version difference
 
 	e.GET("/", status)
 
