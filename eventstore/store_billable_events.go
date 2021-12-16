@@ -62,6 +62,63 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 	return &BillableEventRows{rows}, nil
 }
 
+// GetBillableEventRows returns a handle to a resultset of BillableEvents. Use
+// this to iterate over rows without buffering all into memory. You must call
+// rows.Close when you are done to release the connection. Use GetBillableEvents
+// if you intend on buffering everything into memory.
+func (s *EventStore) GetBillableEventRowsV2(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.getBillableEventRowsV2(tx, filter)
+	if err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+	return rows, nil
+}
+
+func (s *EventStore) getBillableEventRowsV2(tx *sql.Tx, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	if err := filter.Validate(); err != nil {
+		return nil, err
+	}
+
+	var query string
+	var args []interface{}
+	if len(filter.OrgGUIDs) > 0 {
+		var queries []string
+		i := 1
+		for _, guid := range filter.OrgGUIDs {
+			thisQuery := fmt.Sprintf(`select * from get_tenant_bill_api(cast ($%d as uuid), $%d, $%d)`, i, i+1, i+2)
+			queries = append(queries, thisQuery)
+			args = append(args, guid, filter.RangeStart, filter.RangeStop)
+			i = i + 3
+		}
+		query = strings.Join(queries, " union all ")
+	} else {
+		query = `select * from get_full_bill_api($1, $2)`
+		args = []interface{}{filter.RangeStart, filter.RangeStop}
+	}
+
+	startTime := time.Now()
+	rows, err := queryJSON(tx, query, args...)
+	elapsed := time.Since(startTime)
+	if err != nil {
+		s.logger.Error("get-billable-event-v2-rows-query", err, lager.Data{
+			"filter":  filter,
+			"elapsed": int64(elapsed),
+		})
+		return nil, err
+	}
+	s.logger.Info("get-billable-event-v2-rows-query", lager.Data{
+		"filter":  filter,
+		"elapsed": int64(elapsed),
+	})
+
+	return &BillableEventRows{rows}, nil
+}
+
 // GetBillableEvents returns a slice of billable events for the given filter.
 // Due to the large number of results that can be returned it is recormended
 // you use the GetBillableEventRows version to avoid buffering everything into
