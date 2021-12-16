@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	"errors"
 	"code.cloudfoundry.org/lager"
 
 	"github.com/alphagov/paas-billing/eventio"
@@ -76,6 +76,14 @@ func (s *EventStore) Init() error {
 		"create_orgs.sql",
 		"create_spaces.sql",
 		"2021-05-06-alter_orgs.sql",
+    "../../billing-db/tables/resources.sql",
+    "../../billing-db/tables/vat_rates_new.sql",
+    "../../billing-db/tables/currency_exchange_rates.sql",
+    "../../billing-db/tables/charges.sql",
+    "../../billing-db/tables/billing_formulae.sql",
+    "../../billing-db/sprocs/calculate_bill.sql",
+    "../../billing-db/sprocs/get_tenant_bill.sql",
+    "../../billing-db/sprocs/update_resources.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.runSQLFile(tx, sqlFile)
@@ -87,11 +95,20 @@ func (s *EventStore) Init() error {
 	if err := s.initVATRates(tx); err != nil {
 		return fmt.Errorf("failed to init VAT rates: %s", err)
 	}
+	if err := s.initVATRatesNew(tx); err != nil {
+		return fmt.Errorf("failed to init VAT rates new: %s", err)
+	}
 	if err := s.initCurrencyRates(tx); err != nil {
 		return fmt.Errorf("failed to init currency rates: %s", err)
 	}
+	if err := s.initCurrencyExchangeRates(tx); err != nil {
+		return fmt.Errorf("failed to init currency rates new: %s", err)
+	}
 	if err := s.initPlans(tx); err != nil {
 		return fmt.Errorf("failed to init plans: %s", err)
+	}
+	if err := s.initCharges(tx); err != nil {
+		return fmt.Errorf("failed to init charges: %s", err)
 	}
 	if err := tx.Commit(); err != nil {
 		return err
@@ -126,7 +143,8 @@ func (s *EventStore) regenerateEvents() error {
 
 	if err := s.runSQLFilesInTransaction(
 		ctx,
-		"create_events.sql",
+    "create_events.sql",
+    "update_resources.sql",
 	); err != nil {
 		return err
 	}
@@ -189,6 +207,28 @@ func (s *EventStore) initVATRates(tx *sql.Tx) error {
 	return nil
 }
 
+func (s *EventStore) initVATRatesNew(tx *sql.Tx) error {
+	for _, vr := range s.cfg.VATRates {
+		s.logger.Info("configuring-vat-rate-new", lager.Data{
+			"vat_code":   vr.Code,
+			"valid_from": vr.ValidFrom,
+			"valid_to":   vr.ValidTo,
+			"vat_rate":   vr.Rate,
+		})
+		_, err := tx.Exec(`
+			insert into vat_rates_new (
+				vat_code, valid_from, valid_to, vat_rate
+			) values (
+				$1, $2, $3, $4
+			)
+		`, vr.Code, vr.ValidFrom, vr.ValidTo, vr.Rate)
+		if err != nil {
+			return wrapPqError(err, "invalid vat rate")
+		}
+	}
+	return nil
+}
+
 func (s *EventStore) initCurrencyRates(tx *sql.Tx) error {
 	for _, cr := range s.cfg.CurrencyRates {
 		s.logger.Info("configuring-currency-rate", lager.Data{
@@ -210,6 +250,29 @@ func (s *EventStore) initCurrencyRates(tx *sql.Tx) error {
 	return nil
 }
 
+func (s *EventStore) initCurrencyExchangeRates(tx *sql.Tx) error {
+	for _, cr := range s.cfg.CurrencyRates {
+		s.logger.Info("configuring-currency-rate", lager.Data{
+			"from_ccy":       cr.Code,
+      "to_ccy": "GBP",
+			"valid_from": cr.ValidFrom,
+			"valid_to": cr.ValidTo,
+			"rate":       cr.Rate,
+		})
+		_, err := tx.Exec(`
+			insert into currency_exchange_rates (
+				from_ccy, to_ccy, valid_from, valid_to, rate
+			) values (
+				$1, $2, $3, $4, $5
+			)
+		`, cr.Code, "GBP", cr.ValidFrom, cr.ValidTo, cr.Rate)
+		if err != nil {
+			return wrapPqError(err, "invalid currency rate")
+		}
+	}
+	return nil
+}
+
 // InitPlans destroys all existing plans and replaces them with those specified
 // by pricingPlans if the new set of plans does not satisfy the existing data
 // (for example if you are missing plans for services found in the events then
@@ -222,12 +285,12 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 			"valid_from": pp.ValidFrom,
 		})
 		_, err := tx.Exec(`insert into pricing_plans (
-			plan_guid, valid_from, name,
+			plan_guid, valid_from, valid_to, name,
 			memory_in_mb, storage_in_mb, number_of_nodes
 		) values (
 			$1, $2, $3,
-			$4, $5, $6
-		)`, pp.PlanGUID, pp.ValidFrom, pp.Name,
+			$4, $5, $6, $7
+		)`, pp.PlanGUID, pp.ValidFrom, pp.ValidTo, pp.Name,
 			pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
 		)
 		if err != nil {
@@ -248,6 +311,81 @@ func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
 			)`, pp.PlanGUID, pp.ValidFrom, ppc.Name, ppc.Formula, ppc.CurrencyCode, ppc.VATCode)
 			if err != nil {
 				return wrapPqError(err, "invalid pricing plan component")
+			}
+		}
+	}
+
+	if err := checkPricingComponents(tx); err != nil {
+		return err
+	}
+
+	if err := checkVATRates(tx); err != nil {
+		return err
+	}
+
+	if err := checkCurrencyRates(tx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *EventStore) initCharges(tx *sql.Tx) (err error) {
+	s.logger.Info("truncating-charges")
+	_, err = tx.Exec("truncate table charges")
+	if err != nil {
+		return wrapPqError(err, "invalid pricing plan component")
+	}
+
+	s.logger.Info("truncating-billing_formulae")
+	_, err = tx.Exec("truncate table billing_formulae")
+	if err != nil {
+		return wrapPqError(err, "invalid pricing plan component")
+	}
+
+	for _, pp := range s.cfg.PricingPlans {
+		s.logger.Info("configuring-charges", lager.Data{
+			"plan_guid":  pp.PlanGUID,
+			"name":       pp.Name,
+			"valid_from": pp.ValidFrom,
+		})
+		for _, ppc := range pp.Components {
+			s.logger.Info("configuring-pricing-plan-component", lager.Data{
+				"plan_guid":  pp.PlanGUID,
+				"name":       ppc.Name,
+				"valid_from": pp.ValidFrom,
+			})
+			_, err := tx.Exec(
+				`insert into charges (
+					plan_guid, plan_name,
+					valid_from, valid_to,
+					memory_in_mb, storage_in_mb, number_of_nodes,
+					external_price, component_name, formula_name,
+					currency_code, vat_code
+					) values (
+					$1, $2,
+					$3, $4,
+					$5, $6, $7,
+					$8, $9, $10,
+					$11, $12
+				)`,
+				pp.PlanGUID, pp.Name,
+				pp.ValidFrom, pp.ValidTo,
+				pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
+				ppc.ExternalPrice, ppc.Name, pp.Name + "-" + ppc.Name + "-" + pp.PlanGUID + "-" + pp.ValidFrom,
+				ppc.CurrencyCode, ppc.VATCode,
+			)
+			if err != nil {
+				return wrapPqError(err, "invalid pricing plan component")
+			}
+      _, err = tx.Exec(`insert into billing_formulae (
+        formula_name, generic_formula, formula_source
+      ) values (
+        $1, $2, NULL
+      )`, pp.Name + "-" + ppc.Name + "-" + pp.PlanGUID + "-" + pp.ValidFrom, ppc.FormulaNew,
+      )
+			if err != nil {
+				return wrapPqError(err, "invalid pricing plan component formula")
 			}
 		}
 	}
@@ -523,11 +661,12 @@ func checkCurrencyRates(tx *sql.Tx) error {
 func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 	rows, err := tx.Query(`
 		insert into pricing_plans (
-			plan_guid, valid_from, name
+			plan_guid, valid_from, valid_to, name
 		) (
 			select
 				distinct plan_guid,
 				'epoch'::timestamptz,
+				'9999-12-31T23:59:59Z'::timestamptz,
 				first_value(resource_type || ' ' || plan_name)
 				over (
 					partition by plan_guid
@@ -762,4 +901,35 @@ func LoadConfig(filename string) (Config, error) {
 		return Config{}, err
 	}
 	return cfg, nil
+}
+
+func (s* EventStore) UpdateResources(ctx context.Context, date time.Time) (int, error) {
+	tx, err := s.db.BeginTx(ctx, &sql.TxOptions{})
+	if err != nil {
+		return -1, err
+	}
+
+	rows, err := tx.Query(`
+		SELECT update_resources ($1);
+		`, date)
+
+	if err != nil {
+		return -1, wrapPqError(err, "Failed to call update_resources db function")
+	}
+
+	defer rows.Close()
+	var num_updated int
+	if rows.Next() {
+		if err := rows.Scan(&num_updated); err != nil {
+			tx.Rollback();
+			return -1, err
+		}
+	} else {
+		tx.Rollback();
+		return -1, errors.New("No number returned from update resources, has the function changed?")
+	}
+	if err := tx.Commit(); err != nil {
+		return -1, err
+	}
+	return num_updated, nil
 }

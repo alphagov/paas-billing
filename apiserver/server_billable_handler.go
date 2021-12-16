@@ -14,7 +14,12 @@ import (
 	"github.com/labstack/echo"
 )
 
-func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore eventio.ConsolidatedBillableEventReader, uaa auth.Authenticator) echo.HandlerFunc {
+func BillableEventsHandler(
+	store eventio.BillableEventReader,
+	consolidatedStore eventio.ConsolidatedBillableEventReader,
+	uaa auth.Authenticator,
+	version int,
+) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		requestedOrgs := c.Request().URL.Query()["org_guid"]
 		if ok, err := authorize(c, uaa, requestedOrgs); err != nil {
@@ -44,20 +49,28 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 			return err
 		}
 		for _, monthFilter := range months {
-			isConsolidated, err := consolidatedStore.IsRangeConsolidated(monthFilter)
-			if err != nil {
-				return err
-			}
-			var rows eventio.BillableEventRows
-			if isConsolidated {
-				rows, err = consolidatedStore.GetConsolidatedBillableEventRows(storeCtx, monthFilter)
+			if version == 2 {
+				rows, err := store.GetBillableEventRowsV2(storeCtx, monthFilter)
+				if err != nil {
+					return err
+				}
+				rowOfRows.RowsCollection = append(rowOfRows.RowsCollection, rows)
 			} else {
-				rows, err = store.GetBillableEventRows(storeCtx, monthFilter)
+				isConsolidated, err := consolidatedStore.IsRangeConsolidated(monthFilter)
+				if err != nil {
+					return err
+				}
+				var rows eventio.BillableEventRows
+				if isConsolidated {
+					rows, err = consolidatedStore.GetConsolidatedBillableEventRows(storeCtx, monthFilter)
+				} else {
+					rows, err = store.GetBillableEventRows(storeCtx, monthFilter)
+				}
+				if err != nil {
+					return err
+				}
+				rowOfRows.RowsCollection = append(rowOfRows.RowsCollection, rows)
 			}
-			if err != nil {
-				return err
-			}
-			rowOfRows.RowsCollection = append(rowOfRows.RowsCollection, rows)
 		}
 
 		// stream response to client
