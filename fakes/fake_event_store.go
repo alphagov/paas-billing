@@ -4,6 +4,7 @@ package fakes
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/alphagov/paas-billing/eventio"
 )
@@ -82,6 +83,20 @@ type FakeEventStore struct {
 		result2 error
 	}
 	getBillableEventRowsReturnsOnCall map[int]struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}
+	GetBillableEventRowsV2Stub        func(context.Context, eventio.EventFilter) (eventio.BillableEventRows, error)
+	getBillableEventRowsV2Mutex       sync.RWMutex
+	getBillableEventRowsV2ArgsForCall []struct {
+		arg1 context.Context
+		arg2 eventio.EventFilter
+	}
+	getBillableEventRowsV2Returns struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}
+	getBillableEventRowsV2ReturnsOnCall map[int]struct {
 		result1 eventio.BillableEventRows
 		result2 error
 	}
@@ -258,6 +273,20 @@ type FakeEventStore struct {
 	}
 	storeEventsReturnsOnCall map[int]struct {
 		result1 error
+	}
+	UpdateResourcesStub        func(context.Context, time.Time) (int, error)
+	updateResourcesMutex       sync.RWMutex
+	updateResourcesArgsForCall []struct {
+		arg1 context.Context
+		arg2 time.Time
+	}
+	updateResourcesReturns struct {
+		result1 int
+		result2 error
+	}
+	updateResourcesReturnsOnCall map[int]struct {
+		result1 int
+		result2 error
 	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
@@ -634,6 +663,70 @@ func (fake *FakeEventStore) GetBillableEventRowsReturnsOnCall(i int, result1 eve
 		})
 	}
 	fake.getBillableEventRowsReturnsOnCall[i] = struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) GetBillableEventRowsV2(arg1 context.Context, arg2 eventio.EventFilter) (eventio.BillableEventRows, error) {
+	fake.getBillableEventRowsV2Mutex.Lock()
+	ret, specificReturn := fake.getBillableEventRowsV2ReturnsOnCall[len(fake.getBillableEventRowsV2ArgsForCall)]
+	fake.getBillableEventRowsV2ArgsForCall = append(fake.getBillableEventRowsV2ArgsForCall, struct {
+		arg1 context.Context
+		arg2 eventio.EventFilter
+	}{arg1, arg2})
+	fake.recordInvocation("GetBillableEventRowsV2", []interface{}{arg1, arg2})
+	fake.getBillableEventRowsV2Mutex.Unlock()
+	if fake.GetBillableEventRowsV2Stub != nil {
+		return fake.GetBillableEventRowsV2Stub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.getBillableEventRowsV2Returns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeEventStore) GetBillableEventRowsV2CallCount() int {
+	fake.getBillableEventRowsV2Mutex.RLock()
+	defer fake.getBillableEventRowsV2Mutex.RUnlock()
+	return len(fake.getBillableEventRowsV2ArgsForCall)
+}
+
+func (fake *FakeEventStore) GetBillableEventRowsV2Calls(stub func(context.Context, eventio.EventFilter) (eventio.BillableEventRows, error)) {
+	fake.getBillableEventRowsV2Mutex.Lock()
+	defer fake.getBillableEventRowsV2Mutex.Unlock()
+	fake.GetBillableEventRowsV2Stub = stub
+}
+
+func (fake *FakeEventStore) GetBillableEventRowsV2ArgsForCall(i int) (context.Context, eventio.EventFilter) {
+	fake.getBillableEventRowsV2Mutex.RLock()
+	defer fake.getBillableEventRowsV2Mutex.RUnlock()
+	argsForCall := fake.getBillableEventRowsV2ArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeEventStore) GetBillableEventRowsV2Returns(result1 eventio.BillableEventRows, result2 error) {
+	fake.getBillableEventRowsV2Mutex.Lock()
+	defer fake.getBillableEventRowsV2Mutex.Unlock()
+	fake.GetBillableEventRowsV2Stub = nil
+	fake.getBillableEventRowsV2Returns = struct {
+		result1 eventio.BillableEventRows
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) GetBillableEventRowsV2ReturnsOnCall(i int, result1 eventio.BillableEventRows, result2 error) {
+	fake.getBillableEventRowsV2Mutex.Lock()
+	defer fake.getBillableEventRowsV2Mutex.Unlock()
+	fake.GetBillableEventRowsV2Stub = nil
+	if fake.getBillableEventRowsV2ReturnsOnCall == nil {
+		fake.getBillableEventRowsV2ReturnsOnCall = make(map[int]struct {
+			result1 eventio.BillableEventRows
+			result2 error
+		})
+	}
+	fake.getBillableEventRowsV2ReturnsOnCall[i] = struct {
 		result1 eventio.BillableEventRows
 		result2 error
 	}{result1, result2}
@@ -1494,6 +1587,70 @@ func (fake *FakeEventStore) StoreEventsReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeEventStore) UpdateResources(arg1 context.Context, arg2 time.Time) (int, error) {
+	fake.updateResourcesMutex.Lock()
+	ret, specificReturn := fake.updateResourcesReturnsOnCall[len(fake.updateResourcesArgsForCall)]
+	fake.updateResourcesArgsForCall = append(fake.updateResourcesArgsForCall, struct {
+		arg1 context.Context
+		arg2 time.Time
+	}{arg1, arg2})
+	fake.recordInvocation("UpdateResources", []interface{}{arg1, arg2})
+	fake.updateResourcesMutex.Unlock()
+	if fake.UpdateResourcesStub != nil {
+		return fake.UpdateResourcesStub(arg1, arg2)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.updateResourcesReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeEventStore) UpdateResourcesCallCount() int {
+	fake.updateResourcesMutex.RLock()
+	defer fake.updateResourcesMutex.RUnlock()
+	return len(fake.updateResourcesArgsForCall)
+}
+
+func (fake *FakeEventStore) UpdateResourcesCalls(stub func(context.Context, time.Time) (int, error)) {
+	fake.updateResourcesMutex.Lock()
+	defer fake.updateResourcesMutex.Unlock()
+	fake.UpdateResourcesStub = stub
+}
+
+func (fake *FakeEventStore) UpdateResourcesArgsForCall(i int) (context.Context, time.Time) {
+	fake.updateResourcesMutex.RLock()
+	defer fake.updateResourcesMutex.RUnlock()
+	argsForCall := fake.updateResourcesArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2
+}
+
+func (fake *FakeEventStore) UpdateResourcesReturns(result1 int, result2 error) {
+	fake.updateResourcesMutex.Lock()
+	defer fake.updateResourcesMutex.Unlock()
+	fake.UpdateResourcesStub = nil
+	fake.updateResourcesReturns = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeEventStore) UpdateResourcesReturnsOnCall(i int, result1 int, result2 error) {
+	fake.updateResourcesMutex.Lock()
+	defer fake.updateResourcesMutex.Unlock()
+	fake.UpdateResourcesStub = nil
+	if fake.updateResourcesReturnsOnCall == nil {
+		fake.updateResourcesReturnsOnCall = make(map[int]struct {
+			result1 int
+			result2 error
+		})
+	}
+	fake.updateResourcesReturnsOnCall[i] = struct {
+		result1 int
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -1509,6 +1666,8 @@ func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	defer fake.forecastBillableEventsMutex.RUnlock()
 	fake.getBillableEventRowsMutex.RLock()
 	defer fake.getBillableEventRowsMutex.RUnlock()
+	fake.getBillableEventRowsV2Mutex.RLock()
+	defer fake.getBillableEventRowsV2Mutex.RUnlock()
 	fake.getBillableEventsMutex.RLock()
 	defer fake.getBillableEventsMutex.RUnlock()
 	fake.getConsolidatedBillableEventRowsMutex.RLock()
@@ -1537,6 +1696,8 @@ func (fake *FakeEventStore) Invocations() map[string][][]interface{} {
 	defer fake.refreshMutex.RUnlock()
 	fake.storeEventsMutex.RLock()
 	defer fake.storeEventsMutex.RUnlock()
+	fake.updateResourcesMutex.RLock()
+	defer fake.updateResourcesMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value
