@@ -14,3 +14,6 @@ DO $$ BEGIN
 EXCEPTION
 	WHEN duplicate_object THEN RAISE NOTICE 'constraint already exists';
 END; $$;
+
+
+ALTER TABLE app_usage_events ADD COLUMN IF NOT EXISTS processed boolean DEFAULT false;
