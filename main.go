@@ -31,7 +31,9 @@ func Main(ctx context.Context, logger lager.Logger) error {
 	case "collector":
 		return startCollector(app, cfg)
 	case "api":
-		return startAPI(app, cfg)
+		return startAPI(app, cfg, 1)
+	case "api2":
+		return startAPI(app, cfg, 2)
 	default:
 		return fmt.Errorf("Subcommand %s not recognised", command)
 	}
@@ -60,8 +62,8 @@ func startCollector(app *App, cfg Config) error {
 	return app.Wait()
 }
 
-func startAPI(app *App, cfg Config) error {
-	if err := app.StartAPIServer(); err != nil {
+func startAPI(app *App, cfg Config, version int) error {
+	if err := app.StartAPIServer(version); err != nil {
 		return err
 	}
 	cfg.Logger.Info("started API")
