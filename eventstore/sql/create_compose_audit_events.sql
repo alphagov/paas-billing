@@ -11,6 +11,7 @@ ALTER TABLE compose_audit_events ALTER COLUMN event_id SET NOT NULL;
 ALTER TABLE compose_audit_events ALTER COLUMN created_at SET NOT NULL;
 ALTER TABLE compose_audit_events ALTER COLUMN raw_message SET NOT NULL;
 ALTER TABLE compose_audit_events ALTER COLUMN event_id TYPE text USING trim(event_id);
+ALTER TABLE compose_audit_events ADD COLUMN IF NOT EXISTS processed boolean DEFAULT false;
 
 DO $$ BEGIN
 	ALTER TABLE compose_audit_events ADD CONSTRAINT event_id_not_blank CHECK (length(event_id) > 0);
