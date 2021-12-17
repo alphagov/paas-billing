@@ -1,0 +1,1 @@
+SELECT update_resources();
