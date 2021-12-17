@@ -86,6 +86,12 @@ func (s *EventStore) getBillableEventRowsV2(tx *sql.Tx, filter eventio.EventFilt
 
 	var query string
 	var args []interface{}
+	err := s.runSQLFile(tx, "../../billing-db/tables/temporary_billable_tables.sql")
+	if err != nil {
+		s.logger.Error("Failed to initialise temporary tables", err)
+		return nil, err
+	}
+
 	if len(filter.OrgGUIDs) > 0 {
 		var queries []string
 		i := 1
