@@ -87,6 +87,7 @@ func (s *EventStore) Init() error {
     "../../billing-db/sprocs/get_full_bill_api.sql",
     "../../billing-db/sprocs/update_resources.sql",
     "../../billing-db/tables/process_lock.sql",
+    "../../billing-db/tables/temporary_billable_tables.sql",
 	}
 	for _, sqlFile := range sqlFiles {
 		err := s.runSQLFile(tx, sqlFile)
