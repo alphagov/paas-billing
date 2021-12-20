@@ -329,7 +329,7 @@ BEGIN
     CREATE TEMPORARY TABLE event_ranges AS
     SELECT *,
            tstzrange(created_at,
-                     lead(created_at, 1, CASE WHEN event_type = 'staging' THEN created_at ELSE NOW() END) OVER resource_states
+                     lead(created_at, 1, CASE WHEN event_type = 'staging' THEN created_at ELSE '9999-12-31T23:59:59Z' END) OVER resource_states
            ) AS duration
     FROM raw_events_with_injected_values
     WINDOW resource_states AS (
@@ -459,8 +459,7 @@ BEGIN
         event_guid AS "cf_event_guid", -- Is this the event that gave rise to the last change in the resources row? Need to check this. If so, may be useful to keep this, otherwise remove this field
         NOW()
     FROM events_temp
-    WHERE LOWER(duration) >= _from_date
-    AND   UPPER(duration) <= _run_date; -- Probably not needed
+    WHERE LOWER(duration) >= _from_date;
 
     -- Delete any records in resources with a valid_from after from_date.
     DELETE FROM resources
