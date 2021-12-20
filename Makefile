@@ -61,6 +61,7 @@ smoke:
 .PHONY: acceptance
 acceptance:
 	$(eval export BILLING_API_URL ?= http://127.0.0.1:8881)
+	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
 	ginkgo -r acceptance_tests
 

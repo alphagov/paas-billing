@@ -66,8 +66,10 @@ func Open(cfg eventstore.Config) (*TempDB, error) {
 		return nil, err
 	}
 	tdb.Schema = s
+
 	return tdb, nil
 }
+
 
 func New() (*TempDB, error) {
 	masterConnectionString := os.Getenv("TEST_DATABASE_URL")
