@@ -53,17 +53,10 @@ gherkin_test_ie:
 .PHONY: smoke
 smoke:
 	## Runs the app/blackbox tests against a dev environment as a smoke test to check
-	$(eval export CF_API_ADDRESS=${CF_API_ADDRESS})
-	$(eval export CF_CLIENT_ID=paas-billing)
-#	$(eval export CF_CLIENT_SECRET=$(shell aws s3 cp s3://gds-paas-${DEPLOY_ENV}-state/cf-vars-store.yml - | awk '/uaa_clients_paas_billing_secret/ { print $$2 }')) # TODO: this can't work anymore since 4f513c2c121a4b29daf1b64d67e12512ec55b7b8 in paas-cf
-	$(eval export CF_CLIENT_REDIRECT_URL=http://localhost:8881/oauth/callback)
-	$(eval export CF_SKIP_SSL_VALIDATION=true)
-	$(eval export APP_ROOT=${APP_ROOT})
-	$(eval export ENABLE_SMOKE_TESTS=true)
-	$(eval export TEST_AUTH_TOKEN=$(shell cf oauth-token))
-	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
-	echo "smoke test enabled against ${CF_API_ADDRESS}"
-	ginkgo -nodes=2 -v -progress .
+	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
+	$(eval export BILLING_API_URL ?= http://127.0.0.1:8881)
+	echo "smoke test enabled against ${BILLING_API_ADDRESS}"
+	ginkgo  -focus=".*from api" -r acceptance_tests
 
 .PHONY: acceptance
 acceptance:
