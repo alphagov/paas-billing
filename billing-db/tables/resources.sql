@@ -1,13 +1,13 @@
 CREATE TABLE IF NOT EXISTS resources
 (
-    valid_from TIMESTAMPTZ NOT NULL,
-    valid_to TIMESTAMPTZ NOT NULL,
+  valid_from TIMESTAMPTZ NOT NULL,
+  valid_to TIMESTAMPTZ NOT NULL,
 	resource_guid UUID NOT NULL,
 	resource_name TEXT NOT NULL,
 	resource_type TEXT NOT NULL,
 	org_guid UUID NOT NULL,
 	org_name TEXT NOT NULL,
-	org_quota_defition_guid UUID NOT NULL,
+	org_quota_definition_guid UUID NOT NULL,
 	space_guid UUID NOT NULL,
 	space_name TEXT NOT NULL,
 	plan_name TEXT NOT NULL,
