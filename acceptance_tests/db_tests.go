@@ -75,36 +75,38 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("resources",
 			testenv.Row{
-				"valid_from":      "2021-07-01T00:00:00Z",
-				"valid_to":        "2021-08-01T00:00:00Z",
-				"resource_guid":   "09582243-ee5a-4d0d-840b-5fde3dd453a8",
-				"resource_name":   "alex-test-1",
-				"resource_type":   "service",
-				"org_guid":        "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"org_name":        "test-org",
-				"space_guid":      "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
-				"space_name":      "test-space",
-				"plan_name":       "Cheap",
-				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"storage_in_mb":   1,
-				"memory_in_mb":    1024,
-				"number_of_nodes": 10,
-				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
-				"last_updated":    "2021-08-03T13:04:00Z",
+				"valid_from":                "2021-07-01T00:00:00Z",
+				"valid_to":                  "2021-08-01T00:00:00Z",
+				"resource_guid":             "09582243-ee5a-4d0d-840b-5fde3dd453a8",
+				"resource_name":             "alex-test-1",
+				"resource_type":             "service",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_name":                  "test-org",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"space_guid":                "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
+				"space_name":                "test-space",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"storage_in_mb":             1,
+				"memory_in_mb":              1024,
+				"number_of_nodes":           10,
+				"cf_event_guid":             "2312590b-14c9-47e6-bd34-a04305739c55",
+				"last_updated":              "2021-08-03T13:04:00Z",
 			})).To(Succeed())
 
 		Expect(
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-31T23:59:59Z')`), // 31 days minus 1 second duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":       "test-org",
-				"org_guid":       "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":      "Cheap",
-				"plan_guid":      "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":     "test-space",
-				"resource_type":  "service",
-				"resource_name":  "alex-test-1",
-				"component_name": "test",
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
 				// Formula from above for this plan: number_of_nodes * time_in_seconds * memory_in_mb / 1024 * 0.01 / 3600 * external_price
 				"charge_gbp_exc_vat": 5.354892557191411, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.1*0.719743892 = 5.354892557
 				"charge_gbp_inc_vat": 6.425871068629693, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.1*0.719743892*1.2 = 6.425871069
@@ -117,17 +119,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-08-01T00:00:00Z')`), // 30 days duration with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.1821560224,  // 30*24*60*60*0.01/3600*0.719743892 = 5.182156022
-				"charge_gbp_inc_vat": 6.21858722688, // 30*24*60*60*0.01/3600*0.719743892*1.2 = 6.218587227
-				"charge_usd_exc_vat": 7.2,           // 30*24*60*60*0.01/3600 = 7.2
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.1821560224,  // 30*24*60*60*0.01/3600*0.719743892 = 5.182156022
+				"charge_gbp_inc_vat":        6.21858722688, // 30*24*60*60*0.01/3600*0.719743892*1.2 = 6.218587227
+				"charge_usd_exc_vat":        7.2,           // 30*24*60*60*0.01/3600 = 7.2
 			},
 		}))
 
@@ -135,17 +138,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 31 days duration with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
-				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
-				"charge_usd_exc_vat": 7.44,           // 31*24*60*60*0.01/3600 = 7.44
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat":        6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat":        7.44,           // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
@@ -153,17 +157,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-01T00:00:00Z')`), // 31 days duration with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
-				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
-				"charge_usd_exc_vat": 7.44,           // 31*24*60*60*0.01/3600 = 7.44
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat":        6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat":        7.44,           // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
@@ -171,17 +176,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-15T00:00:00Z')`), // 31 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
-				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
-				"charge_usd_exc_vat": 7.44,           // 31*24*60*60*0.01/3600 = 7.44
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat":        6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat":        7.44,           // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
@@ -189,17 +195,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-08-15T00:00:00Z')`), // 31 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
-				"charge_gbp_inc_vat": 6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
-				"charge_usd_exc_vat": 7.44,           // 31*24*60*60*0.01/3600 = 7.44
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.35489455648,  // 31*24*60*60*0.01/3600*0.719743892 = 5.354894556
+				"charge_gbp_inc_vat":        6.425873467776, // 31*24*60*60*0.01/3600*0.719743892*1.2 = 6.425873468
+				"charge_usd_exc_vat":        7.44,           // 31*24*60*60*0.01/3600 = 7.44
 			},
 		}))
 
@@ -207,17 +214,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-06-15T00:00:00Z', '2021-07-15T00:00:00Z')`), // 14 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.41833947712,  // 14*24*60*60*0.01/3600*0.719743892 = 2.418339477
-				"charge_gbp_inc_vat": 2.902007372544, // 14*24*60*60*0.01/3600*0.719743892*1.2 = 2.902007373
-				"charge_usd_exc_vat": 3.36,           // 14*24*60*60*0.01/3600 = 3.36
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.41833947712,  // 14*24*60*60*0.01/3600*0.719743892 = 2.418339477
+				"charge_gbp_inc_vat":        2.902007372544, // 14*24*60*60*0.01/3600*0.719743892*1.2 = 2.902007373
+				"charge_usd_exc_vat":        3.36,           // 14*24*60*60*0.01/3600 = 3.36
 			},
 		}))
 
@@ -225,17 +233,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-08-15T00:00:00Z')`), // 17 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.93655507936,  // 17*24*60*60*0.01/3600*0.719743892 = 2.936555079
-				"charge_gbp_inc_vat": 3.523866095232, // 17*24*60*60*0.01/3600*0.719743892*1.2 = 3.523866095
-				"charge_usd_exc_vat": 4.08,           // 17*24*60*60*0.01/3600 = 4.08
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.93655507936,  // 17*24*60*60*0.01/3600*0.719743892 = 2.936555079
+				"charge_gbp_inc_vat":        3.523866095232, // 17*24*60*60*0.01/3600*0.719743892*1.2 = 3.523866095
+				"charge_usd_exc_vat":        4.08,           // 17*24*60*60*0.01/3600 = 4.08
 			},
 		}))
 
@@ -243,17 +252,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-11T00:00:00Z', '2021-07-28T00:00:00Z')`), // 17 days duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.93655507936,  // 17*24*60*60*0.01/3600*0.719743892 = 2.936555079
-				"charge_gbp_inc_vat": 3.523866095232, // 17*24*60*60*0.01/3600*0.719743892*1.2 = 3.523866095
-				"charge_usd_exc_vat": 4.08,           // 17*24*60*60*0.01/3600 = 4.08
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.93655507936,  // 17*24*60*60*0.01/3600*0.719743892 = 2.936555079
+				"charge_gbp_inc_vat":        3.523866095232, // 17*24*60*60*0.01/3600*0.719743892*1.2 = 3.523866095
+				"charge_usd_exc_vat":        4.08,           // 17*24*60*60*0.01/3600 = 4.08
 			},
 		}))
 	})
@@ -329,38 +339,40 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("resources",
 			testenv.Row{
-				"valid_from":      "2021-07-01T00:00:00Z",
-				"valid_to":        "2021-08-01T00:00:00Z",
-				"resource_guid":   "09582243-ee5a-4d0d-840b-5fde3dd453a8",
-				"resource_name":   "alex-test-1",
-				"resource_type":   "service",
-				"org_guid":        "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"org_name":        "test-org",
-				"space_guid":      "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
-				"space_name":      "test-space",
-				"plan_name":       "Cheap",
-				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"storage_in_mb":   1,
-				"memory_in_mb":    1024,
-				"number_of_nodes": 10,
-				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
-				"last_updated":    "2021-08-03T13:04:00Z",
+				"valid_from":                "2021-07-01T00:00:00Z",
+				"valid_to":                  "2021-08-01T00:00:00Z",
+				"resource_guid":             "09582243-ee5a-4d0d-840b-5fde3dd453a8",
+				"resource_name":             "alex-test-1",
+				"resource_type":             "service",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_name":                  "test-org",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"space_guid":                "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
+				"space_name":                "test-space",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"storage_in_mb":             1,
+				"memory_in_mb":              1024,
+				"number_of_nodes":           10,
+				"cf_event_guid":             "2312590b-14c9-47e6-bd34-a04305739c55",
+				"last_updated":              "2021-08-03T13:04:00Z",
 			})).To(Succeed())
 		Expect(
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 14 days duration overlap with first plan, 17 days overlap with second plan
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.648550064416,  // (14×0.1 + 17×0.11)×24×60×60÷36000*0.719743892 = 5.648550064
-				"charge_gbp_inc_vat": 6.7782600772992, // (14×0.1 + 17×0.11)×24×60×60÷36000*0.719743892*1.2 = 6.778260077
-				"charge_usd_exc_vat": 7.848,           // (14×0.1 + 17×0.11)×24×60×60÷36000 = 7.848
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.648550064416,  // (14×0.1 + 17×0.11)×24×60×60÷36000*0.719743892 = 5.648550064
+				"charge_gbp_inc_vat":        6.7782600772992, // (14×0.1 + 17×0.11)×24×60×60÷36000*0.719743892*1.2 = 6.778260077
+				"charge_usd_exc_vat":        7.848,           // (14×0.1 + 17×0.11)×24×60×60÷36000 = 7.848
 			},
 		}))
 
@@ -368,17 +380,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`), // 13 days duration overlap with first plan
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,  // 13×0.1×24×60×60÷36000*0.719743892 = 2.245600943
-				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000*0.719743892*1.2 = 2.694721132
-				"charge_usd_exc_vat": 3.12,           // 13×0.1×24×60×60÷36000 = 3.12
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.24560094304,  // 13×0.1×24×60×60÷36000*0.719743892 = 2.245600943
+				"charge_gbp_inc_vat":        2.694721131648, // 13×0.1×24×60×60÷36000*0.719743892*1.2 = 2.694721132
+				"charge_usd_exc_vat":        3.12,           // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
@@ -386,17 +399,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`), // 16 days duration overlap with second plan
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 3.040198199808,  // 16×0.11×24×60×60÷36000*0.719743892 = 3.0401982
-				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.11×24×60×60÷36000*0.719743892*1.2 = 3.64823784
-				"charge_usd_exc_vat": 4.224,           // 16×0.11×24×60×60÷36000 = 4.224
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        3.040198199808,  // 16×0.11×24×60×60÷36000*0.719743892 = 3.0401982
+				"charge_gbp_inc_vat":        3.6482378397696, // 16×0.11×24×60×60÷36000*0.719743892*1.2 = 3.64823784
+				"charge_usd_exc_vat":        4.224,           // 16×0.11×24×60×60÷36000 = 4.224
 			},
 		}))
 
@@ -404,17 +418,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`), // 13 days duration overlap with first plan
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,  // 13×0.1×24×60×60÷36000*0.719743892 = 2.245600943
-				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000*0.719743892*1.2 = 2.694721132
-				"charge_usd_exc_vat": 3.12,           // 13×0.1×24×60×60÷36000 = 3.12
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.24560094304,  // 13×0.1×24×60×60÷36000*0.719743892 = 2.245600943
+				"charge_gbp_inc_vat":        2.694721131648, // 13×0.1×24×60×60÷36000*0.719743892*1.2 = 2.694721132
+				"charge_usd_exc_vat":        3.12,           // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
@@ -422,17 +437,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`), // 16 days duration overlap with second plan
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 3.040198199808,  // 16×0.11×24×60×60÷36000*0.719743892 = 3.0401982
-				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.11×24×60×60÷36000*0.719743892*1.2 = 3.64823784
-				"charge_usd_exc_vat": 4.224,           // 16×0.11×24×60×60÷36000 = 4.224
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        3.040198199808,  // 16×0.11×24×60×60÷36000*0.719743892 = 3.0401982
+				"charge_gbp_inc_vat":        3.6482378397696, // 16×0.11×24×60×60÷36000*0.719743892*1.2 = 3.64823784
+				"charge_usd_exc_vat":        4.224,           // 16×0.11×24×60×60÷36000 = 4.224
 			},
 		}))
 	})
@@ -500,39 +516,41 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("resources",
 			testenv.Row{
-				"valid_from":      "2021-07-01T00:00:00Z",
-				"valid_to":        "2021-08-01T00:00:00Z",
-				"resource_guid":   "09582243-ee5a-4d0d-840b-5fde3dd453a8",
-				"resource_name":   "alex-test-1",
-				"resource_type":   "service",
-				"org_guid":        "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"org_name":        "test-org",
-				"space_guid":      "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
-				"space_name":      "test-space",
-				"plan_name":       "Cheap",
-				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"storage_in_mb":   1,
-				"memory_in_mb":    1024,
-				"number_of_nodes": 10,
-				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
-				"last_updated":    "2021-08-03T13:04:00Z",
+				"valid_from":                "2021-07-01T00:00:00Z",
+				"valid_to":                  "2021-08-01T00:00:00Z",
+				"resource_guid":             "09582243-ee5a-4d0d-840b-5fde3dd453a8",
+				"resource_name":             "alex-test-1",
+				"resource_type":             "service",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"org_name":                  "test-org",
+				"space_guid":                "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
+				"space_name":                "test-space",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"storage_in_mb":             1,
+				"memory_in_mb":              1024,
+				"number_of_nodes":           10,
+				"cf_event_guid":             "2312590b-14c9-47e6-bd34-a04305739c55",
+				"last_updated":              "2021-08-03T13:04:00Z",
 			})).To(Succeed())
 
 		Expect(
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 14 days duration overlap with first VAT rate, 17 days overlap with second VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.35489455648,   // 31×0.1×24×60×60÷36000×0.719743892 = 5.354894556
-				"charge_gbp_inc_vat": 6.7782600772992, // 14×0.1×24×60×60÷36000×1.2×0.719743892 + 17×0.1×24×60×60÷36000×1.32×0.719743892 = 6.778260077
-				"charge_usd_exc_vat": 7.44,            // 31×0.1×24×60×60÷36000 = 7.44
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.35489455648,   // 31×0.1×24×60×60÷36000×0.719743892 = 5.354894556
+				"charge_gbp_inc_vat":        6.7782600772992, // 14×0.1×24×60×60÷36000×1.2×0.719743892 + 17×0.1×24×60×60÷36000×1.32×0.719743892 = 6.778260077
+				"charge_usd_exc_vat":        7.44,            // 31×0.1×24×60×60÷36000 = 7.44
 			},
 		}))
 
@@ -540,17 +558,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`), // 13 days duration overlap with first VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,  // 13×0.1×24×60×60÷36000×0.719743892 = 2.245600943
-				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000×0.719743892×1.2 = 2.694721132
-				"charge_usd_exc_vat": 3.12,           // 13×0.1×24×60×60÷36000 = 3.12
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.24560094304,  // 13×0.1×24×60×60÷36000×0.719743892 = 2.245600943
+				"charge_gbp_inc_vat":        2.694721131648, // 13×0.1×24×60×60÷36000×0.719743892×1.2 = 2.694721132
+				"charge_usd_exc_vat":        3.12,           // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
@@ -558,17 +577,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`), // 16 days duration overlap with second VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.76381654528,   // 16×0.1×24×60×60÷36000×0.719743892 = 2.763816545
-				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.1×24×60×60÷36000×0.719743892×1.32 = 3.64823784
-				"charge_usd_exc_vat": 3.84,            // 16×0.1×24×60×60÷36000 = 3.84
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.76381654528,   // 16×0.1×24×60×60÷36000×0.719743892 = 2.763816545
+				"charge_gbp_inc_vat":        3.6482378397696, // 16×0.1×24×60×60÷36000×0.719743892×1.32 = 3.64823784
+				"charge_usd_exc_vat":        3.84,            // 16×0.1×24×60×60÷36000 = 3.84
 			},
 		}))
 
@@ -576,17 +596,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`), // 13 days duration overlap with first VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,  // 13×0.1×24×60×60÷36000×0.719743892 = 2.245600943
-				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60÷36000×0.719743892×1.2 = 2.694721132
-				"charge_usd_exc_vat": 3.12,           // 13×0.1×24×60×60÷36000 = 3.12
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.24560094304,  // 13×0.1×24×60×60÷36000×0.719743892 = 2.245600943
+				"charge_gbp_inc_vat":        2.694721131648, // 13×0.1×24×60×60÷36000×0.719743892×1.2 = 2.694721132
+				"charge_usd_exc_vat":        3.12,           // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
@@ -594,17 +615,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`), // 16 days duration overlap with second VAT rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.76381654528,   // 16×0.1×24×60×60×0.719743892÷36000 = 2.763816545
-				"charge_gbp_inc_vat": 3.6482378397696, // 16×0.1×24×60×60÷36000×0.719743892×1.32 = 3.64823784
-				"charge_usd_exc_vat": 3.84,            // 16×0.1×24×60×60÷36000 = 3.84
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.76381654528,   // 16×0.1×24×60×60×0.719743892÷36000 = 2.763816545
+				"charge_gbp_inc_vat":        3.6482378397696, // 16×0.1×24×60×60÷36000×0.719743892×1.32 = 3.64823784
+				"charge_usd_exc_vat":        3.84,            // 16×0.1×24×60×60÷36000 = 3.84
 			},
 		}))
 	})
@@ -673,39 +695,41 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("resources",
 			testenv.Row{
-				"valid_from":      "2021-07-01T00:00:00Z",
-				"valid_to":        "2021-08-01T00:00:00Z",
-				"resource_guid":   "09582243-ee5a-4d0d-840b-5fde3dd453a8",
-				"resource_name":   "alex-test-1",
-				"resource_type":   "service",
-				"org_guid":        "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"org_name":        "test-org",
-				"space_guid":      "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
-				"space_name":      "test-space",
-				"plan_name":       "Cheap",
-				"plan_guid":       "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"storage_in_mb":   1,
-				"memory_in_mb":    1024,
-				"number_of_nodes": 10,
-				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
-				"last_updated":    "2021-08-03T13:04:00Z",
+				"valid_from":                "2021-07-01T00:00:00Z",
+				"valid_to":                  "2021-08-01T00:00:00Z",
+				"resource_guid":             "09582243-ee5a-4d0d-840b-5fde3dd453a8",
+				"resource_name":             "alex-test-1",
+				"resource_type":             "service",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"org_name":                  "test-org",
+				"space_guid":                "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
+				"space_name":                "test-space",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"storage_in_mb":             1,
+				"memory_in_mb":              1024,
+				"number_of_nodes":           10,
+				"cf_event_guid":             "2312590b-14c9-47e6-bd34-a04305739c55",
+				"last_updated":              "2021-08-03T13:04:00Z",
 			})).To(Succeed())
 
 		Expect(
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-08-01T00:00:00Z')`), // 14 days overlap with first currency exchange rate, 17 days overlap with second currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 5.68233947712,  // 14×0.1×24×60×60÷36000×0.719743892 + 17×0.1×24×60×60÷36000×0.8 = 5.68233947712
-				"charge_gbp_inc_vat": 6.818807372544, // 14×0.1×24×60×60÷36000×1.2×0.719743892 + 17×0.1×24×60×60÷36000×1.2×0.8 = 6.818807373
-				"charge_usd_exc_vat": 7.44,           // 31×0.1×24×60×60÷36000 = 7.44
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        5.68233947712,  // 14×0.1×24×60×60÷36000×0.719743892 + 17×0.1×24×60×60÷36000×0.8 = 5.68233947712
+				"charge_gbp_inc_vat":        6.818807372544, // 14×0.1×24×60×60÷36000×1.2×0.719743892 + 17×0.1×24×60×60÷36000×1.2×0.8 = 6.818807373
+				"charge_usd_exc_vat":        7.44,           // 31×0.1×24×60×60÷36000 = 7.44
 			},
 		}))
 
@@ -713,17 +737,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-14T00:00:00Z')`), // 13 days overlap with first currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,  // 13×0.1×24×60×60×0.719743892÷36000 = 2.24560094304
-				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60×1.2×0.719743892÷36000 = 2.694721131648
-				"charge_usd_exc_vat": 3.12,           // 13×0.1×24×60×60÷36000 = 3.12
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.24560094304,  // 13×0.1×24×60×60×0.719743892÷36000 = 2.24560094304
+				"charge_gbp_inc_vat":        2.694721131648, // 13×0.1×24×60×60×1.2×0.719743892÷36000 = 2.694721131648
+				"charge_usd_exc_vat":        3.12,           // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
@@ -731,17 +756,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-16T00:00:00Z', '2021-08-01T00:00:00Z')`), // 16 days overlap with second currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 3.072,  // 16×0.1×24×60×60×0.8÷36000 = 3.072
-				"charge_gbp_inc_vat": 3.6864, // 16×0.1×24×60×60×0.8×1.2÷36000 = 3.6864
-				"charge_usd_exc_vat": 3.84,   // 16×0.1×24×60×60÷36000 = 3.84
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        3.072,  // 16×0.1×24×60×60×0.8÷36000 = 3.072
+				"charge_gbp_inc_vat":        3.6864, // 16×0.1×24×60×60×0.8×1.2÷36000 = 3.6864
+				"charge_usd_exc_vat":        3.84,   // 16×0.1×24×60×60÷36000 = 3.84
 			},
 		}))
 
@@ -749,17 +775,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-02T00:00:00Z', '2021-07-15T00:00:00Z')`), // 13 days overlap with first currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 2.24560094304,  // 13×0.1×24×60×60×0.719743892÷36000 = 2.24560094304
-				"charge_gbp_inc_vat": 2.694721131648, // 13×0.1×24×60×60×1.2×0.719743892÷36000 = 2.694721131648
-				"charge_usd_exc_vat": 3.12,           // 13×0.1×24×60×60÷36000 = 3.12
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        2.24560094304,  // 13×0.1×24×60×60×0.719743892÷36000 = 2.24560094304
+				"charge_gbp_inc_vat":        2.694721131648, // 13×0.1×24×60×60×1.2×0.719743892÷36000 = 2.694721131648
+				"charge_usd_exc_vat":        3.12,           // 13×0.1×24×60×60÷36000 = 3.12
 			},
 		}))
 
@@ -767,17 +794,18 @@ var _ = Describe("BillingSQLFunctions", func() {
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-15T00:00:00Z', '2021-07-31T00:00:00Z')`), // 16 days overlap with second currency exchange rate
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "Cheap",
-				"plan_guid":          "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
-				"space_name":         "test-space",
-				"resource_type":      "service",
-				"resource_name":      "alex-test-1",
-				"component_name":     "test",
-				"charge_gbp_exc_vat": 3.072,  // 16×0.1×24×60×60×0.8÷36000 = 3.072
-				"charge_gbp_inc_vat": 3.6864, // 16×0.1×24×60×60×0.8×1.2÷36000 = 3.6864
-				"charge_usd_exc_vat": 3.84,   // 16×0.1×24×60×60÷36000 = 3.84
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "Cheap",
+				"plan_guid":                 "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5",
+				"space_name":                "test-space",
+				"resource_type":             "service",
+				"resource_name":             "alex-test-1",
+				"component_name":            "test",
+				"charge_gbp_exc_vat":        3.072,  // 16×0.1×24×60×60×0.8÷36000 = 3.072
+				"charge_gbp_inc_vat":        3.6864, // 16×0.1×24×60×60×0.8×1.2÷36000 = 3.6864
+				"charge_usd_exc_vat":        3.84,   // 16×0.1×24×60×60÷36000 = 3.84
 			},
 		}))
 	})
@@ -853,52 +881,55 @@ var _ = Describe("BillingSQLFunctions", func() {
 
 		Expect(db.Insert("resources",
 			testenv.Row{
-				"valid_from":      "2021-07-01T00:00:00Z",
-				"valid_to":        "2021-08-01T00:00:00Z",
-				"resource_guid":   "09582243-ee5a-4d0d-840b-5fde3dd453a8",
-				"resource_name":   "alex-test-1",
-				"resource_type":   "app",
-				"org_guid":        "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"org_name":        "test-org",
-				"space_guid":      "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
-				"space_name":      "test-space",
-				"plan_name":       "app",
-				"plan_guid":       "f4d4b95a-f55e-4593-8d54-3364c25798c4",
-				"storage_in_mb":   1,
-				"memory_in_mb":    1024,
-				"number_of_nodes": 10,
-				"cf_event_guid":   "2312590b-14c9-47e6-bd34-a04305739c55",
-				"last_updated":    "2021-08-03T13:04:00Z",
+				"valid_from":                "2021-07-01T00:00:00Z",
+				"valid_to":                  "2021-08-01T00:00:00Z",
+				"resource_guid":             "09582243-ee5a-4d0d-840b-5fde3dd453a8",
+				"resource_name":             "alex-test-1",
+				"resource_type":             "app",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"org_name":                  "test-org",
+				"space_guid":                "8c8afc3b-deb3-4dd0-be91-c2276a56c12f",
+				"space_name":                "test-space",
+				"plan_name":                 "app",
+				"plan_guid":                 "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"storage_in_mb":             1,
+				"memory_in_mb":              1024,
+				"number_of_nodes":           10,
+				"cf_event_guid":             "2312590b-14c9-47e6-bd34-a04305739c55",
+				"last_updated":              "2021-08-03T13:04:00Z",
 			})).To(Succeed())
 
 		Expect(
 			db.Query(`select * from get_tenant_bill('test-org', '2021-07-01T00:00:00Z', '2021-07-31T23:59:59Z')`), // 31 days minus 1 second duration overlap with resource
 		).To(MatchJSON(testenv.Rows{
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "app",
-				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
-				"space_name":         "test-space",
-				"resource_type":      "app",
-				"resource_name":      "alex-test-1",
-				"component_name":     "platform",
-				"charge_gbp_exc_vat": 21.419570228765643, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600*0.719743892 = 21.419570229
-				"charge_gbp_inc_vat": 25.70348427451877,  // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600*0.719743892*1.2 = 25.703484275
-				"charge_usd_exc_vat": 29.759988888888888, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600 = 29.759988889
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "app",
+				"plan_guid":                 "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"space_name":                "test-space",
+				"resource_type":             "app",
+				"resource_name":             "alex-test-1",
+				"component_name":            "platform",
+				"charge_gbp_exc_vat":        21.419570228765643, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600*0.719743892 = 21.419570229
+				"charge_gbp_inc_vat":        25.70348427451877,  // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600*0.719743892*1.2 = 25.703484275
+				"charge_usd_exc_vat":        29.759988888888888, // (31*24*60*60−1)*10*1024/1024*0.01*0.4/3600 = 29.759988889
 			},
 			{
-				"org_name":           "test-org",
-				"org_guid":           "c87bd66d-11db-49f7-9b1c-c10a75c71537",
-				"plan_name":          "app",
-				"plan_guid":          "f4d4b95a-f55e-4593-8d54-3364c25798c4",
-				"space_name":         "test-space",
-				"resource_type":      "app",
-				"resource_name":      "alex-test-1",
-				"component_name":     "instance",
-				"charge_gbp_exc_vat": 53.54892557191411, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.719743892 = 53.548925572
-				"charge_gbp_inc_vat": 64.25871068629693, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.719743892*1.2 = 64.258710686
-				"charge_usd_exc_vat": 74.39997222222222, // (31*24*60*60−1)*10*1024/1024*0.01/3600 = 74.399972222
+				"org_name":                  "test-org",
+				"org_guid":                  "c87bd66d-11db-49f7-9b1c-c10a75c71537",
+				"org_quota_definition_guid": "0e6b5630-34d9-4b28-94e5-f33ed1ac36f7",
+				"plan_name":                 "app",
+				"plan_guid":                 "f4d4b95a-f55e-4593-8d54-3364c25798c4",
+				"space_name":                "test-space",
+				"resource_type":             "app",
+				"resource_name":             "alex-test-1",
+				"component_name":            "instance",
+				"charge_gbp_exc_vat":        53.54892557191411, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.719743892 = 53.548925572
+				"charge_gbp_inc_vat":        64.25871068629693, // (31*24*60*60−1)*10*1024/1024*0.01/3600*0.719743892*1.2 = 64.258710686
+				"charge_usd_exc_vat":        74.39997222222222, // (31*24*60*60−1)*10*1024/1024*0.01/3600 = 74.399972222
 			},
 		}))
 	})
@@ -1537,7 +1568,6 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"created_at":  "2021-07-15T00:00:00Z",
 				"raw_message": eventRawMessage,
 			})).To(Succeed())
-
 
 		Expect(db.Query(`select * from update_resources()`)).To(MatchJSON(testenv.Rows{
 			{
