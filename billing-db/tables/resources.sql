@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS resources
 	resource_type TEXT NOT NULL,
 	org_guid UUID NOT NULL,
 	org_name TEXT NOT NULL,
+	org_quota_defition_guid UUID NOT NULL,
 	space_guid UUID NOT NULL,
 	space_name TEXT NOT NULL,
 	plan_name TEXT NOT NULL,
