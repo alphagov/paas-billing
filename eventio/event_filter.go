@@ -11,14 +11,36 @@ type EventFilter struct {
 	OrgGUIDs   []string
 }
 
-func (filter *EventFilter) SplitByMonth() ([]EventFilter, error) {
-	dateFormat := "2006-01-02"
+func ParseDate (dateString string) (time.Time, error){
+	var dateFormats [6]string
+	dateFormats = [6]string {
+		"2006-01-02T15:04:05Z",
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04",
+		"2006-01-02"}
+	var date time.Time
+	for _, dateFormat := range dateFormats{
+		date , _ = time.Parse(dateFormat, dateString)
+		if ! date.IsZero() {
+			break
+		}
+	}
 
-	start, err := time.Parse(dateFormat, filter.RangeStart)
+	if date.IsZero() {
+		return date , fmt.Errorf("Could not parse date %s", dateString )
+	} else {
+		return date, nil
+	}
+}
+
+
+func (filter *EventFilter) SplitByMonth() ([]EventFilter, error) {
+
+	start, err := ParseDate(filter.RangeStart)
 	if err != nil {
 		return nil, err
 	}
-	end, err := time.Parse(dateFormat, filter.RangeStop)
+	end, err := ParseDate(filter.RangeStop)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +49,7 @@ func (filter *EventFilter) SplitByMonth() ([]EventFilter, error) {
 }
 
 func (filter *EventFilter) recursiveSplitByMonth(t1, t2 time.Time) []EventFilter {
-	dateFormat := "2006-01-02"
+	dateFormat := "2006-01-02T15:04:05Z"
 
 	if !t1.Before(t2) {
 		return []EventFilter{}
@@ -59,18 +81,18 @@ func minDate(t1 time.Time, t2 time.Time) time.Time {
 }
 
 func (filter *EventFilter) TruncateMonth() (EventFilter, error) {
-	start, err := time.Parse("2006-01-02", filter.RangeStart)
+	start, err := ParseDate(filter.RangeStart)
 	if err != nil {
 		return *filter, err
 	}
-	stop, err := time.Parse("2006-01-02", filter.RangeStop)
+	stop, err := ParseDate(filter.RangeStop)
 	if err != nil {
 		return *filter, err
 	}
 
 	return EventFilter{
-		RangeStart: truncateMonth(start).Format("2006-01-02"),
-		RangeStop:  truncateMonth(stop).Format("2006-01-02"),
+		RangeStart: truncateMonth(start).Format("2006-01-02T15:04:05Z"),
+		RangeStop:  truncateMonth(stop).Format("2006-01-02T15:04:05Z"),
 		OrgGUIDs:   filter.OrgGUIDs,
 	}, nil
 }
@@ -101,9 +123,8 @@ func (filter *TimeRangeFilter) Validate() error {
 }
 
 func validateDateString(name string, value string) error {
-	if _, err := time.Parse("2006-01-02", value); err != nil {
-		return fmt.Errorf(
-			`a valid range %s filter value is required - expected format 2006-01-02 - got %s`,
+	if _, err := ParseDate(value); err != nil {
+		return fmt.Errorf(`a valid range %s filter value is required - expected format 2006-01-02 [15:04] [:05] [Z] - got %s`,
 			name, value,
 		)
 	}
