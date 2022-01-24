@@ -1636,7 +1636,7 @@ var _ = Describe("BillingSQLFunctions", func() {
 				"org_guid":        "53d03a41-16a7-40a3-b1a9-83298e65f8f5",
 				"org_name":        "53d03a41-16a7-40a3-b1a9-83298e65f8f5", // This cannot be consistently looked up for deleted test orgs
 				"plan_guid":       "d5091c33-2f9d-4b15-82dc-4ad69717fc03",
-				"plan_name":       "tiny-unencrypted-12",
+				"plan_name":       "postgres tiny-unencrypted-12",
 				"resource_guid":   "c64e2c78-db40-44ae-987c-f2171fe5e42d",
 				"resource_name":   "BACC-4-test-db-74b2529697d9ed58",
 				"resource_type":   "service",
