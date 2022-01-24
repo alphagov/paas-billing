@@ -162,7 +162,7 @@ BEGIN
                 (raw_message->>'org_guid')::uuid as org_guid,
                 (raw_message->>'space_guid')::uuid as space_guid,
                 (raw_message->>'service_plan_guid')::uuid as plan_guid,
-                (raw_message->>'service_plan_name') as plan_name,
+                CONCAT((raw_message->>'service_label'), ' ', (raw_message->>'service_plan_name')) as plan_name,
                 (raw_message->>'service_guid')::uuid as service_guid,
                 (raw_message->>'service_label') as service_name,
                 NULL::numeric as number_of_nodes,
@@ -253,7 +253,7 @@ BEGIN
                 (s.raw_message->>'org_guid')::uuid as org_guid,
                 (s.raw_message->>'space_guid')::uuid as space_guid,
                 (s.raw_message->>'service_plan_guid')::uuid as plan_guid,
-                (s.raw_message->>'service_plan_name') as plan_name,
+                CONCAT((s.raw_message->>'service_label'), ' ', (s.raw_message->>'service_plan_name')) as plan_name,
                 (s.raw_message->>'service_guid')::uuid as service_guid,
                 (s.raw_message->>'service_label') as service_name,
                 NULL::numeric as number_of_nodes,
@@ -392,7 +392,7 @@ BEGIN
             then coalesce(uuid_or_placeholder(vsp.unique_id), 'd5091c33-2f9d-4b15-82dc-4ad69717fc03')::uuid
             else plan_guid
         end) as plan_guid,
-        coalesce(vsp.name, plan_name) as plan_name,
+        coalesce(plan_name, vsp.name) as plan_name,
         coalesce(vs.guid, ev.service_guid) as service_guid,
         coalesce(vs.label, ev.service_name) as service_name,
         number_of_nodes,
