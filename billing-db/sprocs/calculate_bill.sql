@@ -33,7 +33,7 @@ BEGIN
     -- ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
     -- Get a unique copy of some of the charges table before running the UNION ALL query below.
-    CREATE TABLE charges_formulae
+    CREATE TEMPORARY TABLE charges_formulae
     AS
     SELECT DISTINCT c.plan_guid,
         c.plan_name,
