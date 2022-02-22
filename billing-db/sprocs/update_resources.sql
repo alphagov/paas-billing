@@ -89,6 +89,32 @@ BEGIN
     SELECT MAX(id) INTO _max_app_event_processed
     FROM   app_usage_events;
 
+    UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'STARTED' OR raw_message->>'state' = 'STOPPED')
+    AND (raw_message->>'app_guid')::uuid
+    IN (SELECT (a.raw_message->>'app_guid')::uuid  FROM app_usage_events a WHERE (a.raw_message->>'state' = 'STARTED' OR a.raw_message->>'state' = 'STOPPED')
+	AND a.processed = FALSE
+        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' );
+
+    UPDATE service_usage_events SET processed = FALSE WHERE raw_message->>'service_instance_type' = 'managed_service_instance'
+    AND (raw_message->>'service_instance_guid')::uuid
+    IN (SELECT (s.raw_message->>'service_instance_guid')::uuid  FROM service_usage_events s WHERE s.raw_message->>'service_instance_type' = 'managed_service_instance'
+	AND s.processed = FALSE
+        AND s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' );
+
+
+    UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'TASK_STARTED' OR raw_message->>'state' = 'TASK_STOPPED')
+    AND (raw_message->>'app_guid')::uuid
+    IN (SELECT (a.raw_message->>'app_guid')::uuid  FROM app_usage_events a WHERE (a.raw_message->>'state' = 'TASK_STARTED' OR a.raw_message->>'state' = 'TASK_STOPPED')
+	AND a.processed = FALSE
+        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-');
+
+
+    UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'STAGING_STARTED' OR raw_message->>'state' = 'STAGING_STOPPED')
+    AND (raw_message->>'parent_app_guid')::uuid
+    IN (SELECT (a.raw_message->>'parent_app_guid')::uuid  FROM app_usage_events a WHERE  (a.raw_message->>'state' = 'STAGING_STARTED' OR a.raw_message->>'state' = 'STAGING_STOPPED')
+	AND a.processed = FALSE
+        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' );
+
     -- ****************************
     -- IMPORTANT NOTE: the created_at is the date that is used in old/new billing to provide the valid_from and valid_to fields in the resources table. Therefore, we are using this as
     --                 the cut-off date for processing here. This date does not necessarily match the date/time in which events arrive from Cloud Foundry. If we need to process events
@@ -278,6 +304,8 @@ BEGIN
     CREATE INDEX raw_events_event_row1 ON raw_events (event_row);
 
     CREATE INDEX raw_events_event_row2 ON raw_events (resource_guid, event_type, event_row);
+
+    
 
     -- The ordering in the identity column in raw_events should follow the same ordering as on created_at, event_sequence
 
