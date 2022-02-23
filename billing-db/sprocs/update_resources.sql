@@ -103,8 +103,8 @@ BEGIN
 
 
     UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'TASK_STARTED' OR raw_message->>'state' = 'TASK_STOPPED')
-    AND (raw_message->>'app_guid')::uuid
-    IN (SELECT (a.raw_message->>'app_guid')::uuid  FROM app_usage_events a WHERE (a.raw_message->>'state' = 'TASK_STARTED' OR a.raw_message->>'state' = 'TASK_STOPPED')
+    AND (raw_message->>'task_guid')::uuid
+    IN (SELECT (a.raw_message->>'task_guid')::uuid  FROM app_usage_events a WHERE (a.raw_message->>'state' = 'TASK_STARTED' OR a.raw_message->>'state' = 'TASK_STOPPED')
 	AND a.processed = FALSE
         AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-');
 
