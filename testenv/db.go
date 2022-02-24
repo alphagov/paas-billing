@@ -176,6 +176,17 @@ func (db *TempDB) Insert(tableName string, rows ...Row) error {
 	return tx.Commit()
 }
 
+func (db *TempDB) Truncate(tableName string) error {
+	tx, err := db.Conn.Begin()
+	if err != nil {
+		return err
+	}
+	if _, err := tx.Exec("truncate table " + tableName ); err !=nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 const ISO8601 = "2006-01-02T15:04:05-07:00"
 
 // T parses an ISO8601 or RFC3339 or YYYY-MM-DD formated string and returns a time.Time or panics

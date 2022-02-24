@@ -986,6 +986,211 @@ var _ = Describe("BillingSQLFunctions", func() {
 		}))
 	})
 
+	It("One run of update_resources is the same a two runs", func() {
+		db, err := testenv.Open(eventstore.Config{})
+		Expect(err).ToNot(HaveOccurred())
+		defer db.Close()
+		eventRawMessage, err := json.Marshal(map[string]interface{}{
+			"state":                              "STARTED",
+			"app_guid":                           "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"app_name":                           "unit-test-APP-c83c773e9daf5af3",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          nil,
+			"task_name":                          nil,
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       "web",
+			"package_state":                      "STAGED",
+			"buildpack_guid":                     "60b5ec15-3db4-4554-8cb0-4be2bcb64526",
+			"buildpack_name":                     "binary_buildpack",
+			"instance_count":                     1,
+			"previous_state":                     "STOPPED",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "UNKNOWN",
+			"previous_instance_count":            1,
+			"memory_in_mb_per_instance":          30,
+			"previous_memory_in_mb_per_instance": 30,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "1",
+				"guid":        "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+				"created_at":  "2021-07-01T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+
+		eventRawMessage, err = json.Marshal(map[string]interface{}{
+			"state":                              "STARTED",
+			"app_guid":                           "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"app_name":                           "unit-test-APP-c83c773e9daf5af3",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          nil,
+			"task_name":                          nil,
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       "web",
+			"package_state":                      "STAGED",
+			"buildpack_guid":                     "60b5ec15-3db4-4554-8cb0-4be2bcb64526",
+			"buildpack_name":                     "binary_buildpack",
+			"instance_count":                     2,
+			"previous_state":                     "STARTED",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "UNKNOWN",
+			"previous_instance_count":            1,
+			"memory_in_mb_per_instance":          30,
+			"previous_memory_in_mb_per_instance": 30,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "2",
+				"guid":        "b84b96e3-ea99-46d0-9520-76c2f40efff7",
+				"created_at":  "2021-07-15T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+
+		eventRawMessage, err = json.Marshal(map[string]interface{}{
+			"state":                              "STOPPED",
+			"app_guid":                           "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"app_name":                           "unit-test-APP-c83c773e9daf5af3",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          nil,
+			"task_name":                          nil,
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       "web",
+			"package_state":                      "PENDING",
+			"buildpack_guid":                     nil,
+			"buildpack_name":                     nil,
+			"instance_count":                     2,
+			"previous_state":                     "STARTED",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "UNKNOWN",
+			"previous_instance_count":            2,
+			"memory_in_mb_per_instance":          30,
+			"previous_memory_in_mb_per_instance": 30,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "3",
+				"guid":        "14066ea1-38af-4d0e-af70-ba6cb6b44866",
+				"created_at":  "2021-08-01T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+		Expect(db.Query(`select * from update_resources()`)).To(MatchJSON(testenv.Rows{
+			{
+				"num_rows_added": 2,
+			},
+		}))
+		one_run_results := db.Query(`select valid_from,valid_to,resource_guid,resource_name,resource_type,org_guid,org_name,space_guid,space_name,plan_name,plan_guid,storage_in_mb,memory_in_mb,number_of_nodes,cf_event_guid from resources order by valid_from, valid_to`)
+
+		db.Truncate(`app_usage_events`)
+		db.Truncate(`resources`)
+		eventRawMessage, err = json.Marshal(map[string]interface{}{
+			"state":                              "STARTED",
+			"app_guid":                           "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"app_name":                           "unit-test-APP-c83c773e9daf5af3",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          nil,
+			"task_name":                          nil,
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       "web",
+			"package_state":                      "STAGED",
+			"buildpack_guid":                     "60b5ec15-3db4-4554-8cb0-4be2bcb64526",
+			"buildpack_name":                     "binary_buildpack",
+			"instance_count":                     1,
+			"previous_state":                     "STOPPED",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "UNKNOWN",
+			"previous_instance_count":            1,
+			"memory_in_mb_per_instance":          30,
+			"previous_memory_in_mb_per_instance": 30,
+		})
+		Expect(err).ToNot(HaveOccurred())
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "1",
+				"guid":        "b6253aa7-ce44-4a2a-a9c2-f26a8c3b2c91",
+				"created_at":  "2021-07-01T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+
+		eventRawMessage, err = json.Marshal(map[string]interface{}{
+			"state":                              "STARTED",
+			"app_guid":                           "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"app_name":                           "unit-test-APP-c83c773e9daf5af3",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          nil,
+			"task_name":                          nil,
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       "web",
+			"package_state":                      "STAGED",
+			"buildpack_guid":                     "60b5ec15-3db4-4554-8cb0-4be2bcb64526",
+			"buildpack_name":                     "binary_buildpack",
+			"instance_count":                     2,
+			"previous_state":                     "STARTED",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "UNKNOWN",
+			"previous_instance_count":            1,
+			"memory_in_mb_per_instance":          30,
+			"previous_memory_in_mb_per_instance": 30,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "2",
+				"guid":        "b84b96e3-ea99-46d0-9520-76c2f40efff7",
+				"created_at":  "2021-07-15T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+		db.Query(`select * from update_resources()`)
+
+		eventRawMessage, err = json.Marshal(map[string]interface{}{
+			"state":                              "STOPPED",
+			"app_guid":                           "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"app_name":                           "unit-test-APP-c83c773e9daf5af3",
+			"org_guid":                           "428d5022-3ea5-46e9-8220-fc1e80b58de5",
+			"task_guid":                          nil,
+			"task_name":                          nil,
+			"space_guid":                         "c9bbfb98-9429-4c58-a57f-4304ef7f30a2",
+			"space_name":                         "unit-test-SPACE-1c5968cee02f3899",
+			"process_type":                       "web",
+			"package_state":                      "PENDING",
+			"buildpack_guid":                     nil,
+			"buildpack_name":                     nil,
+			"instance_count":                     2,
+			"previous_state":                     "STARTED",
+			"parent_app_guid":                    "12a71e81-8cbf-4d46-bfa5-a5d446735f73",
+			"parent_app_name":                    "unit-test-APP-c83c773e9daf5af3",
+			"previous_package_state":             "UNKNOWN",
+			"previous_instance_count":            2,
+			"memory_in_mb_per_instance":          30,
+			"previous_memory_in_mb_per_instance": 30,
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(db.Insert("app_usage_events",
+			testenv.Row{
+				"id":          "3",
+				"guid":        "14066ea1-38af-4d0e-af70-ba6cb6b44866",
+				"created_at":  "2021-08-01T00:00:00Z",
+				"raw_message": eventRawMessage,
+			})).To(Succeed())
+		db.Query(`select * from update_resources()`)
+		Expect(db.Query(`select valid_from,valid_to,resource_guid,resource_name,resource_type,org_guid,org_name,space_guid,space_name,plan_name,plan_guid,storage_in_mb,memory_in_mb,number_of_nodes,cf_event_guid from resources order by valid_from, valid_to`)).To(MatchJSON(one_run_results))
+	})
+
 	It("Correctly updates resources based on app usage events", func() {
 		db, err := testenv.Open(eventstore.Config{})
 		Expect(err).ToNot(HaveOccurred())
