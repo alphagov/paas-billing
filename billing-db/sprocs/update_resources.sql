@@ -193,7 +193,7 @@ BEGIN
                 app_usage_events
             where (raw_message->>'state' = 'STARTED' or raw_message->>'state' = 'STOPPED')
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND guid::uuid in (select * FROM app_guid_to_process)
+            AND (raw_message->>'app_guid')::uuid in (select * FROM app_guid_to_process)
             AND id <= _max_app_event_processed
     union all (
             select
@@ -222,7 +222,7 @@ BEGIN
                 service_usage_events
             where raw_message->>'service_instance_type' = 'managed_service_instance'
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND guid::uuid in (select * FROM service_guid_to_process)
+            AND (raw_message->>'service_instance_guid')::uuid in (select * FROM service_guid_to_process)
             AND id <= _max_service_event_processed
     ) union all (
             select
@@ -250,7 +250,7 @@ BEGIN
                 app_usage_events
             where (raw_message->>'state' = 'TASK_STARTED' or raw_message->>'state' = 'TASK_STOPPED')
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND guid::uuid in (SELECT * FROM task_guid_to_process)
+            AND (raw_message->>'task_guid')::uuid in (SELECT * FROM task_guid_to_process)
             AND id <= _max_app_event_processed
     ) union all (
             select
@@ -278,7 +278,7 @@ BEGIN
                 app_usage_events
             where (raw_message->>'state' = 'STAGING_STARTED' or raw_message->>'state' = 'STAGING_STOPPED')
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND guid::uuid in (SELECT * FROM staging_guid_to_process)
+            AND (raw_message->>'parent_app_guid')::uuid in (SELECT * FROM staging_guid_to_process)
             AND id <= _max_app_event_processed
     ) union all (
             select
@@ -509,23 +509,20 @@ BEGIN
         storage_in_mb,
         event_guid AS "cf_event_guid", -- Is this the event that gave rise to the last change in the resources row? Need to check this. If so, may be useful to keep this, otherwise remove this field
         NOW()
-    FROM events_temp
-    WHERE LOWER(duration) >= _from_date;
+    FROM events_temp;
 
     -- Delete any records for resources that are being updated.
     DELETE FROM resources
-    WHERE  (resources.resource_type = 'app' AND resource_guid in (SELECT * FROM app_guid_to_process))
+    WHERE  (resources.resource_type = 'app' AND resources.plan_name='app' AND resource_guid in (SELECT * FROM app_guid_to_process))
     OR (resources.resource_type = 'service' AND resource_guid in (SELECT * FROM service_guid_to_process))
     OR (resources.resource_type = 'task' AND resource_guid in (SELECT * FROM task_guid_to_process))
-    OR (resources.resource_type = 'staging' AND resource_guid in (SELECT * FROM staging_guid_to_process));
+    OR (resources.resource_type = 'app' AND resources.plan_name='staging' AND resource_guid in (SELECT * FROM staging_guid_to_process));
     -- Close off any records with valid_to >= _from_date in resources
     UPDATE resources SET valid_to = t.valid_to
     FROM   resources_new t
     WHERE  resources.resource_guid = t.resource_guid
-    AND    resources.valid_from = t.valid_from -- The valid_from dates will align if the history in resources is correct and noone has manually changed the app_usage_events/service_usage_events tables. If someone has manually changed resources then it is difficult to detect and we would need to run this stored function from before the times in resources that have been changed to refresh the whole history in resources.
+    AND    resources.valid_from = t.valid_from; -- The valid_from dates will align if the history in resources is correct and noone has manually changed the app_usage_events/service_usage_events tables. If someone has manually changed resources then it is difficult to detect and we would need to run this stored function from before the times in resources that have been changed to refresh the whole history in resources.
     -- The following are not needed for functionality, but may be helpful to Postgres depending on indices.
-    AND    resources.valid_to >= _from_date
-    AND    t.valid_to >= _from_date;
 
     WITH inserted_entries AS (
         INSERT INTO resources
@@ -566,7 +563,6 @@ BEGIN
                 cf_event_guid,
                 _run_date
         FROM   resources_new
-        WHERE  valid_from >= _from_date
         RETURNING *
     )
     SELECT COUNT(*) INTO _num_rows_added FROM inserted_entries;
