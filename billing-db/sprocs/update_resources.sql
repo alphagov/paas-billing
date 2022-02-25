@@ -89,31 +89,59 @@ BEGIN
     SELECT MAX(id) INTO _max_app_event_processed
     FROM   app_usage_events;
 
-    UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'STARTED' OR raw_message->>'state' = 'STOPPED')
-    AND (raw_message->>'app_guid')::uuid
-    IN (SELECT (a.raw_message->>'app_guid')::uuid  FROM app_usage_events a WHERE (a.raw_message->>'state' = 'STARTED' OR a.raw_message->>'state' = 'STOPPED')
-	AND a.processed = FALSE
-        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' );
+    DROP TABLE IF EXISTS app_guid_to_process;
+    DROP TABLE IF EXISTS service_guid_to_process;
+    DROP TABLE IF EXISTS task_guid_to_process;
+    DROP TABLE IF EXISTS staging_guid_to_process;
 
-    UPDATE service_usage_events SET processed = FALSE WHERE raw_message->>'service_instance_type' = 'managed_service_instance'
-    AND (raw_message->>'service_instance_guid')::uuid
-    IN (SELECT (s.raw_message->>'service_instance_guid')::uuid  FROM service_usage_events s WHERE s.raw_message->>'service_instance_type' = 'managed_service_instance'
-	AND s.processed = FALSE
-        AND s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' );
+    CREATE TEMP TABLE app_guid_to_process (
+       guid UUID PRIMARY KEY
+    );
+
+    CREATE TEMP TABLE service_guid_to_process (
+       guid UUID PRIMARY KEY
+    );
+
+    CREATE TEMP TABLE task_guid_to_process (
+       guid UUID PRIMARY KEY
+    );
+
+    CREATE TEMP TABLE staging_guid_to_process (
+	guid UUID PRIMARY KEY
+    );
+
+    INSERT INTO app_guid_to_process (
+	guid
+    )
+    SELECT DISTINCT(a.raw_message->>'app_guid')::uuid as guid FROM app_usage_events a WHERE a.processed = FALSE
+ 	AND (a.raw_message->>'state' = 'STARTED' OR a.raw_message->>'state' = 'STOPPED')
+        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-';
+    
 
 
-    UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'TASK_STARTED' OR raw_message->>'state' = 'TASK_STOPPED')
-    AND (raw_message->>'task_guid')::uuid
-    IN (SELECT (a.raw_message->>'task_guid')::uuid  FROM app_usage_events a WHERE (a.raw_message->>'state' = 'TASK_STARTED' OR a.raw_message->>'state' = 'TASK_STOPPED')
-	AND a.processed = FALSE
-        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-');
+    INSERT INTO service_guid_to_process (
+	guid
+    )
+    SELECT DISTINCT (s.raw_message->>'service_instance_guid')::uuid as guid  FROM service_usage_events s WHERE s.processed = FALSE
+	AND s.raw_message->>'service_instance_type' = 'managed_service_instance'
+        AND s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-';
+
+    INSERT INTO task_guid_to_process (
+       guid
+    )
+    SELECT DISTINCT (a.raw_message->>'task_guid')::uuid as guid  FROM app_usage_events a WHERE a.processed = FALSE
+	AND (a.raw_message->>'state' = 'TASK_STARTED' OR a.raw_message->>'state' = 'TASK_STOPPED')
+        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-';
+
+    INSERT INTO staging_guid_to_process (
+	guid
+    )
+    SELECT DISTINCT (a.raw_message->>'parent_app_guid')::uuid  FROM app_usage_events a WHERE a.processed = FALSE
+        AND (a.raw_message->>'state' = 'STAGING_STARTED' OR a.raw_message->>'state' = 'STAGING_STOPPED')
+	AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' ;
 
 
-    UPDATE app_usage_events SET processed = FALSE WHERE (raw_message->>'state' = 'STAGING_STARTED' OR raw_message->>'state' = 'STAGING_STOPPED')
-    AND (raw_message->>'parent_app_guid')::uuid
-    IN (SELECT (a.raw_message->>'parent_app_guid')::uuid  FROM app_usage_events a WHERE  (a.raw_message->>'state' = 'STAGING_STARTED' OR a.raw_message->>'state' = 'STAGING_STOPPED')
-	AND a.processed = FALSE
-        AND a.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' );
+
 
     -- ****************************
     -- IMPORTANT NOTE: the created_at is the date that is used in old/new billing to provide the valid_from and valid_to fields in the resources table. Therefore, we are using this as
@@ -123,15 +151,6 @@ BEGIN
     -- ****************************
 
     -- Get the earliest created_at
-
-    SELECT COALESCE(MIN(created_at), NOW()) INTO _from_date
-    FROM  app_usage_events
-    WHERE processed IS FALSE;
-
-    SELECT COALESCE(MIN(created_at), _from_date) INTO _from_date
-    FROM  service_usage_events
-    WHERE processed IS FALSE
-    AND   created_at < _from_date;
 
     INSERT INTO raw_events
     (
@@ -174,7 +193,7 @@ BEGIN
                 app_usage_events
             where (raw_message->>'state' = 'STARTED' or raw_message->>'state' = 'STOPPED')
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND created_at >= _from_date
+            AND guid::uuid in (select * FROM app_guid_to_process)
             AND id <= _max_app_event_processed
     union all (
             select
@@ -203,7 +222,7 @@ BEGIN
                 service_usage_events
             where raw_message->>'service_instance_type' = 'managed_service_instance'
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND created_at >= _from_date
+            AND guid::uuid in (select * FROM service_guid_to_process)
             AND id <= _max_service_event_processed
     ) union all (
             select
@@ -231,7 +250,7 @@ BEGIN
                 app_usage_events
             where (raw_message->>'state' = 'TASK_STARTED' or raw_message->>'state' = 'TASK_STOPPED')
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND created_at >= _from_date
+            AND guid::uuid in (SELECT * FROM task_guid_to_process)
             AND id <= _max_app_event_processed
     ) union all (
             select
@@ -259,7 +278,7 @@ BEGIN
                 app_usage_events
             where (raw_message->>'state' = 'STAGING_STARTED' or raw_message->>'state' = 'STAGING_STOPPED')
             AND raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF|BACC|AIVENBACC|ASATS)-' -- FIXME: this is open to abuse
-            AND created_at >= _from_date
+            AND guid::uuid in (SELECT * FROM staging_guid_to_process)
             AND id <= _max_app_event_processed
     ) union all (
             select
@@ -493,10 +512,12 @@ BEGIN
     FROM events_temp
     WHERE LOWER(duration) >= _from_date;
 
-    -- Delete any records in resources with a valid_from after from_date.
+    -- Delete any records for resources that are being updated.
     DELETE FROM resources
-    WHERE  valid_from >= _from_date;
-
+    WHERE  (resources.resource_type = 'app' AND resource_guid in (SELECT * FROM app_guid_to_process))
+    OR (resources.resource_type = 'service' AND resource_guid in (SELECT * FROM service_guid_to_process))
+    OR (resources.resource_type = 'task' AND resource_guid in (SELECT * FROM task_guid_to_process))
+    OR (resources.resource_type = 'staging' AND resource_guid in (SELECT * FROM staging_guid_to_process));
     -- Close off any records with valid_to >= _from_date in resources
     UPDATE resources SET valid_to = t.valid_to
     FROM   resources_new t
