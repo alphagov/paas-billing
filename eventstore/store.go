@@ -681,7 +681,7 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 				select distinct plan_guid
 				from pricing_plans pp
 				where pp.plan_guid = events.plan_guid
-				and valid_from = 'epoch'::timestamptz
+				and valid_from < lower(events.duration)
 			)
 		)
 		returning plan_guid, name
