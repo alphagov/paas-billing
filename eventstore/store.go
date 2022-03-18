@@ -720,7 +720,7 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 				select distinct plan_guid
 				from pricing_plan_components ppc
 				where ppc.plan_guid = events.plan_guid
-				and valid_from = 'epoch'::timestamptz
+				and valid_from < lower(events.duration)
 			)
 		)`,
 	); err != nil {
