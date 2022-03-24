@@ -34,7 +34,7 @@ test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fe
 
 # .PHONY: gherkin_test
 gherkin_test: gherkin_test_lon gherkin_test_ie
-	
+
 # .PHONY: gherkin_test_lon
 gherkin_test_lon:
 	mkdir -p gherkin/features
