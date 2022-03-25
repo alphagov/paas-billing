@@ -33,17 +33,19 @@ jobs:
 
             - name: Install Ginkgo CLI
               run: |
-                  go get -u github.com/onsi/ginkgo/ginkgo
+                  GO111MODULE=off go get github.com/onsi/ginkgo/ginkgo
 
-            ## Tests
+            - name: Install counterfeiter
+              run: |
+                  GO111MODULE=off go get github.com/maxbrunsfeld/counterfeiter
+
+          ## Tests
             - name: "make test"
               env:
                   TMPDIR: "${{runner.temp}}"
                   GOPATH: "/home/runner/go"
                   GOBIN: "/home/runner/go/bin"
               run: |
-                GO111MODULE=off go get github.com/onsi/ginkgo/ginkgo  &&\
-                GO111MODULE=off go get github.com/maxbrunsfeld/counterfeiter  &&\
                 make test
 
 
