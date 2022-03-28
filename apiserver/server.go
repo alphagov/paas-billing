@@ -41,6 +41,7 @@ func New(cfg Config) *echo.Echo {
 		}))
 	}
 
+	e.GET("/orgs", OrgsHandler(cfg.Store))
 	e.GET("/vat_rates", VATRatesHandler(cfg.Store))
 	e.GET("/currency_rates", CurrencyRatesHandler(cfg.Store))
 	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))

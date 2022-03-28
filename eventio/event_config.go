@@ -28,3 +28,12 @@ type CurrencyRate struct {
 	ValidFrom string  `json:"valid_from"`
 	Rate      float64 `json:"rate"`
 }
+
+type Org struct {
+	GUID                string    `json:"guid"`
+	Name                string    `json:"name"`
+	ValidFrom           time.Time `json:"valid_from"`
+	CreatedAt           time.Time `json:"created_at"`
+	UpdatedAt           time.Time `json:"updated_at"`
+	QuotaDefinitionGUID string    `json:"quota_definition_guid"`
+}
