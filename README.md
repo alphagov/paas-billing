@@ -143,7 +143,7 @@ The following variables are available for use in formulas:
 | `$time_in_seconds` | the time period in seconds that the resource was active | `$time_in_seconds * 0.01` |
 | `$memory_in_mb` | amount of memory used by resource in MB | `$memory_in_mb * 0.01` |
 
-**Note**: variables may be `0` if they are not relevent to the resource.
+**Note**: variables may be `0` if they are not relevant to the resource.
 
 The following functions are available for use in formulas:
 
@@ -254,7 +254,7 @@ curl -s -G -H "Authorization: $(cf oauth-token)" 'http://localhost:8881/usage_ev
 
 ### `GET /billable_events`
 
-BillableEvents have all the same details as UsageEvents but they also contain a `price` field shows the cost calculated for the event.
+BillableEvents have all the same details as UsageEvents, but they also contain a `price` field shows the cost calculated for the event.
 
 **Authorization:**
 
@@ -412,7 +412,7 @@ curl -s -G 'http://localhost:8881/forecast_events' \
 
 ### `GET /pricing_plans`
 
-PricingPlans define how the costs for resources are applied. The PricingPlans are setup in the configuration json file. Each UsageEvent's PlanGUID should have a matching PricingPlan for a given point in time.
+PricingPlans define how the costs for resources are applied. The PricingPlans are set up in the configuration json file. Each UsageEvent's PlanGUID should have a matching PricingPlan for a given point in time.
 
 Each PricingPlan may be made up of multiple PricingComponents (for example a database service may have components for the CPU/VM instance and also for the storage used).
 
@@ -498,7 +498,7 @@ If you want to use a different database you should set the `DATABASE_URL` enviro
 
 You will need:
 
-* The aws cli tools and relevent keys
+* The aws cli tools and relevant keys
 * A paas-cf dev environment
 
 Use the provided `run-dev` make target to run all application components and connect it to a development instance of paas-cf:
