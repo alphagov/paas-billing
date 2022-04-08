@@ -703,11 +703,16 @@ var _ = Describe("Store", func() {
 					Kind: kind,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(storedEvents).To(Equal([]eventio.RawEvent{
+				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				Expect(err).ToNot(HaveOccurred())
+				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event3,
 					event2,
 					event1,
-				}))
+				})
+				
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(marshalledStoredEvents)).To(Equal(string(marshalledInputEvents)))
 			})
 		},
 		Entry("app usage event", "app"),
@@ -848,11 +853,15 @@ var _ = Describe("Store", func() {
 					Kind: kind,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(storedEvents).To(Equal([]eventio.RawEvent{
+				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				Expect(err).ToNot(HaveOccurred())
+				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event3,
 					event2,
 					event1,
-				}))
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(marshalledStoredEvents)).To(Equal(string(marshalledInputEvents)))
 			})
 		},
 		Entry("app event", "app"),
@@ -897,9 +906,13 @@ var _ = Describe("Store", func() {
 					Limit: 1,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(storedEvents).To(Equal([]eventio.RawEvent{
+				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				Expect(err).ToNot(HaveOccurred())
+				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event3,
-				}))
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(marshalledStoredEvents)).To(Equal(string(marshalledInputEvents)))
 			})
 		},
 		Entry("app event", "app"),
@@ -945,9 +958,13 @@ var _ = Describe("Store", func() {
 					Limit:   1,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				Expect(storedEvents).To(Equal([]eventio.RawEvent{
+				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				Expect(err).ToNot(HaveOccurred())
+				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event1,
-				}))
+				})
+				Expect(err).ToNot(HaveOccurred())
+				Expect(string(marshalledStoredEvents)).To(Equal(string(marshalledInputEvents)))
 			})
 		},
 		Entry("app event", "app"),
