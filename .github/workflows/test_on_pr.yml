@@ -1,0 +1,50 @@
+on:
+  - pull_request
+
+env:
+  GO_VERSION: "1.16"
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    name: Tests
+
+    ## Setup
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_PASSWORD: secret
+          POSTGRES_DB: test
+          POSTGRES_USER: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v2
+
+      - name: "Install Go ${{env.GO_VERSION}}"
+        uses: actions/setup-go@v2
+        with:
+          go-version: "${{env.GO_VERSION}}"
+
+      - name: Install Ginkgo CLI
+        run: |
+          go get github.com/onsi/ginkgo/ginkgo@v1.6
+      - name: Install counterfeiter
+        run: |
+          GO111MODULE=off go get github.com/maxbrunsfeld/counterfeiter
+      ## Tests
+      - name: "make test"
+        env:
+          TMPDIR: "${{runner.temp}}"
+          GOPATH: "/home/runner/go"
+          GOBIN: "/home/runner/go/bin"
+          TEST_DATABASE_URL: postgresql://postgres:secret@localhost:5432/test?sslmode=disable
+        run: |
+          make test
