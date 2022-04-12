@@ -2,16 +2,19 @@
 ## explicit
 code.cloudfoundry.org/lager
 # github.com/Masterminds/semver v1.4.2
+## explicit
 github.com/Masterminds/semver
 # github.com/cloudfoundry-community/go-cfclient v0.0.0-20180727221732-7900c3c65270
 ## explicit
 github.com/cloudfoundry-community/go-cfclient
 # github.com/cloudfoundry/gofileutils v0.0.0-20170111115228-4d0c80011a0f
+## explicit
 github.com/cloudfoundry/gofileutils/fileutils
 # github.com/cucumber/gherkin-go/v19 v19.0.3
+## explicit; go 1.13
 github.com/cucumber/gherkin-go/v19
 # github.com/cucumber/godog v0.12.2
-## explicit
+## explicit; go 1.13
 github.com/cucumber/godog
 github.com/cucumber/godog/colors
 github.com/cucumber/godog/formatters
@@ -24,6 +27,7 @@ github.com/cucumber/godog/internal/storage
 github.com/cucumber/godog/internal/tags
 github.com/cucumber/godog/internal/utils
 # github.com/cucumber/messages-go/v16 v16.0.1
+## explicit; go 1.13
 github.com/cucumber/messages-go/v16
 # github.com/dgrijalva/jwt-go v3.2.0+incompatible
 ## explicit
@@ -32,14 +36,19 @@ github.com/dgrijalva/jwt-go
 ## explicit
 github.com/gofrs/uuid
 # github.com/golang/protobuf v1.3.2
+## explicit
 github.com/golang/protobuf/proto
 # github.com/hashicorp/go-immutable-radix v1.3.0
+## explicit
 github.com/hashicorp/go-immutable-radix
 # github.com/hashicorp/go-memdb v1.3.0
+## explicit; go 1.12
 github.com/hashicorp/go-memdb
 # github.com/hashicorp/golang-lru v0.5.4
+## explicit; go 1.12
 github.com/hashicorp/golang-lru/simplelru
 # github.com/hpcloud/tail v1.0.0
+## explicit
 github.com/hpcloud/tail
 github.com/hpcloud/tail/ratelimiter
 github.com/hpcloud/tail/util
@@ -52,7 +61,7 @@ github.com/hpcloud/tail/winfile
 github.com/labstack/echo
 github.com/labstack/echo/middleware
 # github.com/labstack/gommon v0.2.9
-## explicit
+## explicit; go 1.13
 github.com/labstack/gommon/bytes
 github.com/labstack/gommon/color
 github.com/labstack/gommon/log
@@ -62,8 +71,10 @@ github.com/labstack/gommon/random
 github.com/lib/pq
 github.com/lib/pq/oid
 # github.com/mattn/go-colorable v0.1.2
+## explicit
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.8
+## explicit
 github.com/mattn/go-isatty
 # github.com/onsi/ginkgo v1.6.0
 ## explicit
@@ -109,15 +120,20 @@ github.com/pkg/errors
 ## explicit
 github.com/satori/go.uuid
 # github.com/spf13/pflag v1.0.5
+## explicit; go 1.12
 github.com/spf13/pflag
 # github.com/valyala/bytebufferpool v1.0.0
+## explicit
 github.com/valyala/bytebufferpool
 # github.com/valyala/fasttemplate v1.0.1
+## explicit
 github.com/valyala/fasttemplate
 # golang.org/x/crypto v0.0.0-20190605123033-f99c8df09eb5
+## explicit
 golang.org/x/crypto/acme
 golang.org/x/crypto/acme/autocert
 # golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+## explicit; go 1.11
 golang.org/x/net/context
 golang.org/x/net/context/ctxhttp
 golang.org/x/net/html
@@ -125,13 +141,15 @@ golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 golang.org/x/net/idna
 # golang.org/x/oauth2 v0.0.0-20190604053449-0f29369cfe45
-## explicit
+## explicit; go 1.11
 golang.org/x/oauth2
 golang.org/x/oauth2/clientcredentials
 golang.org/x/oauth2/internal
 # golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0
+## explicit; go 1.12
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
+## explicit
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -153,6 +171,7 @@ golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # google.golang.org/appengine v1.6.1
+## explicit
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore
@@ -161,8 +180,11 @@ google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
 # gopkg.in/fsnotify.v1 v1.4.7
+## explicit
 gopkg.in/fsnotify.v1
 # gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7
+## explicit
 gopkg.in/tomb.v1
 # gopkg.in/yaml.v2 v2.2.8
+## explicit
 gopkg.in/yaml.v2
