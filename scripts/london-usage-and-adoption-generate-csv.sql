@@ -44,6 +44,7 @@ org_bills_by_plan_by_month AS
               WHEN plan_name ~ 'redis.*' THEN 'redis'
               WHEN plan_name ~ 'aws-s3.*' THEN 's3'
               WHEN plan_name ~ 'aws-sqs-queue.*' THEN 'sqs'
+              WHEN plan_name ~ 'opensearch.*' THEN 'opensearch'
               ELSE plan_name::text
           END AS service,
           sum(cost) AS total_cost
@@ -72,6 +73,7 @@ SELECT mon,
        COALESCE(service_costs->>'s3', '0') AS s3,
        COALESCE(service_costs->>'influxdb', '0') AS influxdb,
        COALESCE(service_costs->>'sqs', '0') AS sqs,
+       COALESCE(service_costs->>'opensearch', '0') AS opensearch,
 
        COALESCE(service_costs->>'compute', '0')::numeric
        + COALESCE(service_costs->>'postgres', '0')::numeric
@@ -81,6 +83,7 @@ SELECT mon,
        + COALESCE(service_costs->>'s3', '0')::numeric
        + COALESCE(service_costs->>'influxdb', '0')::numeric
        + COALESCE(service_costs->>'sqs', '0')::numeric
+       + COALESCE(service_costs->>'opensearch', '0')::numeric
        AS total
 FROM aggregated_org_bills_by_plan_by_month JOIN distinct_orgs_first_seen
 ON aggregated_org_bills_by_plan_by_month.org_guid = distinct_orgs_first_seen.org_guid
