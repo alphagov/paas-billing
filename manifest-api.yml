@@ -8,6 +8,6 @@ applications:
    health-check-type: http
    stack: cflinuxfs3
    env:
-     GOVERSION: go1.18
+     GOVERSION: go1.17
      GOPACKAGENAME: github.com/alphagov/paas-billing
    command: ./bin/paas-billing api
