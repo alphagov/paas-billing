@@ -10,7 +10,7 @@ import (
 )
 
 var _ = Describe("Acceptance", func() {
-	It("can get pricing plans", func(){
+	It("can get pricing plans from api", func() {
 		billingAPIURL, err := url.Parse(TestConfig.BillingAPIURL)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -28,7 +28,7 @@ var _ = Describe("Acceptance", func() {
 		Expect(resp.StatusCode).To(Equal(200))
 	})
 
-	It("can get billable events", func(){
+	It("can get billable events from api", func() {
 		billingAPIURL, err := url.Parse(TestConfig.BillingAPIURL)
 		Expect(err).ToNot(HaveOccurred())
 
