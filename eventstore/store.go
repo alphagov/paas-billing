@@ -25,7 +25,7 @@ const (
 	TaskPlanGUID          = "ebfa9453-ef66-450c-8c37-d53dfd931038"
 	StagingPlanGUID       = "9d071c77-7a68-4346-9981-e8dafac95b6f"
 	DefaultInitTimeout    = 25 * time.Minute
-	DefaultRefreshTimeout = 180 * time.Minute
+	DefaultRefreshTimeout = 220 * time.Minute
 	DefaultStoreTimeout   = 45 * time.Second
 	DefaultQueryTimeout   = 45 * time.Second
 )
