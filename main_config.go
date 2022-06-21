@@ -98,7 +98,7 @@ func NewConfigFromEnv() (cfg Config, err error) {
 			FetchLimit:   getEnvWithDefaultInt("CF_FETCH_LIMIT", 50),
 		},
 		Processor: ProcessorConfig{
-			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 240*time.Minute),
+			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 480*time.Minute),
 		},
 		ServerPort: getEnvWithDefaultInt("PORT", 8881),
 	}
