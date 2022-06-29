@@ -16,7 +16,7 @@ import (
 
 	. "github.com/alphagov/paas-billing/apiserver"
 	"github.com/alphagov/paas-billing/eventio"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

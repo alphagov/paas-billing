@@ -7,7 +7,7 @@ import (
 	"github.com/alphagov/paas-billing/testenv"
 	uuid "github.com/satori/go.uuid"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

@@ -2,13 +2,12 @@ package eventio_test
 
 import (
 	. "github.com/alphagov/paas-billing/eventio"
-	. "github.com/onsi/ginkgo"
-	"github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("EventFilter", func() {
-	table.DescribeTable(
+	DescribeTable(
 		"SplitByMonth should return a list of filters split by month",
 		func(filter EventFilter, expected []EventFilter) {
 			result, err := filter.SplitByMonth()
@@ -16,22 +15,22 @@ var _ = Describe("EventFilter", func() {
 			Expect(result).To(Equal(expected))
 
 		},
-		table.Entry(
+		Entry(
 			"Empty range should return empty slice",
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-01-01"},
 			[]EventFilter{},
 		),
-		table.Entry(
+		Entry(
 			"Reverse range should return empty slice",
 			EventFilter{RangeStart: "9001-01-01", RangeStop: "2018-01-01"},
 			[]EventFilter{},
 		),
-		table.Entry(
+		Entry(
 			"Less than one month should return the same filter",
 			EventFilter{RangeStart: "2018-01-02", RangeStop: "2018-01-05"},
 			[]EventFilter{{RangeStart: "2018-01-02", RangeStop: "2018-01-05"}},
 		),
-		table.Entry(
+		Entry(
 			"Range spanning the tail of one month and the whole next month should return both",
 			EventFilter{RangeStart: "2018-01-15", RangeStop: "2018-03-01"},
 			[]EventFilter{
@@ -39,7 +38,7 @@ var _ = Describe("EventFilter", func() {
 				{RangeStart: "2018-02-01", RangeStop: "2018-03-01"},
 			},
 		),
-		table.Entry(
+		Entry(
 			"Range spanning the whole of one month and the head of the next month should return both",
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-15"},
 			[]EventFilter{
@@ -47,12 +46,12 @@ var _ = Describe("EventFilter", func() {
 				{RangeStart: "2018-02-01", RangeStop: "2018-02-15"},
 			},
 		),
-		table.Entry(
+		Entry(
 			"Exactly one month should return the same month",
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 			[]EventFilter{{RangeStart: "2018-01-01", RangeStop: "2018-02-01"}},
 		),
-		table.Entry(
+		Entry(
 			"Exactly one month across two months should return the tail of the first and the head of the second ",
 			EventFilter{RangeStart: "2018-01-05", RangeStop: "2018-02-05"},
 			[]EventFilter{
@@ -60,7 +59,7 @@ var _ = Describe("EventFilter", func() {
 				{RangeStart: "2018-02-01", RangeStop: "2018-02-05"},
 			},
 		),
-		table.Entry(
+		Entry(
 			"Two month range should return two months",
 			EventFilter{RangeStart: "2017-12-01", RangeStop: "2018-02-01"},
 			[]EventFilter{
@@ -68,7 +67,7 @@ var _ = Describe("EventFilter", func() {
 				{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 			},
 		),
-		table.Entry(
+		Entry(
 			"Should maintain org guids",
 			EventFilter{
 				RangeStart: "2017-01-15",
@@ -93,7 +92,7 @@ var _ = Describe("EventFilter", func() {
 				},
 			},
 		),
-		table.Entry(
+		Entry(
 			"Multi-year range should return all months",
 			EventFilter{RangeStart: "2016-11-12", RangeStop: "2018-01-05"},
 			[]EventFilter{
@@ -116,7 +115,7 @@ var _ = Describe("EventFilter", func() {
 		),
 	)
 
-	table.DescribeTable(
+	DescribeTable(
 		"TruncateMonth truncate to one month both start and end",
 		func(filter EventFilter, expected EventFilter) {
 			result, err := filter.TruncateMonth()
@@ -124,27 +123,27 @@ var _ = Describe("EventFilter", func() {
 			Expect(result).To(Equal(expected))
 
 		},
-		table.Entry(
+		Entry(
 			"1st-1st",
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 		),
-		table.Entry(
+		Entry(
 			"1st-Xth",
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-15"},
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 		),
-		table.Entry(
+		Entry(
 			"Xth-1st",
 			EventFilter{RangeStart: "2018-01-15", RangeStop: "2018-02-01"},
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 		),
-		table.Entry(
+		Entry(
 			"Xth-Xth",
 			EventFilter{RangeStart: "2018-01-15", RangeStop: "2018-02-15"},
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01"},
 		),
-		table.Entry(
+		Entry(
 			"Perserves orgs",
 			EventFilter{RangeStart: "2018-01-15", RangeStop: "2018-02-15", OrgGUIDs: []string{"org-guid"}},
 			EventFilter{RangeStart: "2018-01-01", RangeStop: "2018-02-01", OrgGUIDs: []string{"org-guid"}},

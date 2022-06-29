@@ -10,7 +10,7 @@ import (
 	"github.com/alphagov/paas-billing/fakes"
 
 	. "github.com/alphagov/paas-billing/eventcollector"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -52,15 +52,15 @@ var _ = Describe("Collector", func() {
 		Eventually(fakeEventFetcher.FetchEventsCallCount, 5*time.Second).Should(BeNumerically(">", 3))
 		Eventually(fakeEventStore.StoreEventsCallCount, 5*time.Second).Should(BeNumerically(">", 3))
 		Eventually(fakeEventStore.GetEventsCallCount, 5*time.Second).Should(BeNumerically(">", 3))
-	}, 5)
+	})
 
 	It("should handle errors and retry again", func() {
 		fakeEventFetcher.FetchEventsReturnsOnCall(0, []eventio.RawEvent{}, errors.New("some error"))
 
 		go New(cfg).Run(ctx)
 
-		Eventually(fakeEventFetcher.FetchEventsCallCount, 5).Should(BeNumerically(">", 1))
-	}, 5)
+		Eventually(fakeEventFetcher.FetchEventsCallCount, 5*time.Second).Should(BeNumerically(">", 1))
+	})
 
 	It("should wait only the MinWaitTime if we have not already seen the last fetched event", func() {
 		cfg.Schedule = 999 * time.Minute
@@ -74,8 +74,8 @@ var _ = Describe("Collector", func() {
 
 		time.Sleep(900 * time.Millisecond)
 
-		Expect(fakeEventFetcher.FetchEventsCallCount()).To(Equal(4))
-	}, 5)
+		Eventually(fakeEventFetcher.FetchEventsCallCount(), 5*time.Second).Should(Equal(4))
+	})
 
 	It("should wait the full ScheduleWaitTime if no new events have been seen", func() {
 		cfg.Schedule = 300 * time.Millisecond
@@ -89,8 +89,8 @@ var _ = Describe("Collector", func() {
 
 		time.Sleep(650 * time.Millisecond)
 
-		Expect(fakeEventFetcher.FetchEventsCallCount()).To(Equal(3))
-	}, 5)
+		Eventually(fakeEventFetcher.FetchEventsCallCount(), 5*time.Second).Should(Equal(3))
+	})
 
 	It("should wait the full ScheduleWaitTime if no new events have been fetched with a lastEvent given", func() {
 		cfg.Schedule = 300 * time.Millisecond
@@ -104,8 +104,8 @@ var _ = Describe("Collector", func() {
 
 		time.Sleep(650 * time.Millisecond)
 
-		Expect(fakeEventFetcher.FetchEventsCallCount()).To(Equal(3))
-	}, 5)
+		Eventually(fakeEventFetcher.FetchEventsCallCount(), 5*time.Second).Should(Equal(3))
+	})
 
 	It("should wait the full ScheduleWaitTime if no new events have been fetched and no lastEvent given", func() {
 		cfg.Schedule = 300 * time.Millisecond
@@ -119,8 +119,8 @@ var _ = Describe("Collector", func() {
 
 		time.Sleep(650 * time.Millisecond)
 
-		Expect(fakeEventFetcher.FetchEventsCallCount()).To(Equal(3))
-	}, 5)
+		Eventually(fakeEventFetcher.FetchEventsCallCount(), 5*time.Second).Should(Equal(3))
+	})
 
 	It("should stop gracefully when context is cancelled", func() {
 		ctx, cancelFunc := context.WithCancel(context.Background())
@@ -133,7 +133,6 @@ var _ = Describe("Collector", func() {
 
 		cancelFunc()
 
-		Expect(<-c).To(BeTrue())
-	}, 5)
-
+		Eventually(<-c, 5*time.Second).Should(BeTrue())
+	})
 })

@@ -35,7 +35,7 @@ jobs:
 
       - name: Install Ginkgo CLI
         run: |
-          go install github.com/onsi/ginkgo/ginkgo@v1.6
+          go install github.com/onsi/ginkgo/v2/ginkgo@latest
       - name: Install counterfeiter
         run: |
           GO111MODULE=off go get github.com/maxbrunsfeld/counterfeiter

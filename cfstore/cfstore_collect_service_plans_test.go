@@ -4,11 +4,10 @@ import (
 	"github.com/alphagov/paas-billing/cfstore"
 	"github.com/alphagov/paas-billing/fakes"
 	"github.com/alphagov/paas-billing/testenv"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	"github.com/cloudfoundry-community/go-cfclient"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	uuid "github.com/satori/go.uuid"
-	"github.com/cloudfoundry-community/go-cfclient"
 )
 
 var _ = Describe("ServicePlans", func() {

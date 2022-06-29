@@ -4,14 +4,15 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var TestConfig AcceptanceTestConfig
+
 type AcceptanceTestConfig struct {
 	BillingAPIURL string
-	BearerToken  string
+	BearerToken   string
 }
 
 func TestAcceptanceTests(t *testing.T) {
@@ -30,6 +31,6 @@ var _ = BeforeSuite(func() {
 
 	TestConfig = AcceptanceTestConfig{
 		BillingAPIURL: billingAPIURL,
-		BearerToken:  cfBearerToken,
+		BearerToken:   cfBearerToken,
 	}
 })
