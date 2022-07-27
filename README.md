@@ -200,7 +200,7 @@ The collectors/fetchers can be configured via the following environment variable
 
 UsageEvents are the normalized, processed events. Each event represents some kind of resource usage over a period of time.
 
-A single event might represent a Cloudfoundry app running for 20mins, with 64MB memory and 3x instances. Another event might represent a medium mysql database that was running for 3hrs.
+A single event might represent a Cloudfoundry app running for 20 minutes, with 64MB memory and 3x instances. Another event might represent a medium mysql database that was running for 3hrs.
 
 The `resource_guid` field references the subject of the event. For a cloudfoundry app event (`resource_type=app`) this would be an app guid. For a cloudfoundry service event (`resource_type=service`) this would be a service instance guid.
 
