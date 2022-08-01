@@ -5,7 +5,7 @@ import (
 	"github.com/alphagov/paas-billing/fakes"
 	"github.com/alphagov/paas-billing/testenv"
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 
 	. "github.com/onsi/gomega"
 	uuid "github.com/satori/go.uuid"

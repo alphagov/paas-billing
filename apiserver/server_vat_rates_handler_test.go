@@ -11,7 +11,7 @@ import (
 	"github.com/labstack/echo"
 
 	. "github.com/alphagov/paas-billing/apiserver"
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 

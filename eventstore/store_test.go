@@ -9,8 +9,7 @@ import (
 	"github.com/alphagov/paas-billing/testenv"
 	uuid "github.com/satori/go.uuid"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -703,14 +702,14 @@ var _ = Describe("Store", func() {
 					Kind: kind,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				marshalledStoredEvents, err := json.Marshal(storedEvents)
 				Expect(err).ToNot(HaveOccurred())
 				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event3,
 					event2,
 					event1,
 				})
-				
+
 				Expect(err).ToNot(HaveOccurred())
 				Expect(string(marshalledStoredEvents)).To(Equal(string(marshalledInputEvents)))
 			})
@@ -853,7 +852,7 @@ var _ = Describe("Store", func() {
 					Kind: kind,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				marshalledStoredEvents, err := json.Marshal(storedEvents)
 				Expect(err).ToNot(HaveOccurred())
 				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event3,
@@ -906,7 +905,7 @@ var _ = Describe("Store", func() {
 					Limit: 1,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				marshalledStoredEvents, err := json.Marshal(storedEvents)
 				Expect(err).ToNot(HaveOccurred())
 				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event3,
@@ -958,7 +957,7 @@ var _ = Describe("Store", func() {
 					Limit:   1,
 				})
 				Expect(err).ToNot(HaveOccurred())
-				marshalledStoredEvents, err :=  json.Marshal(storedEvents)
+				marshalledStoredEvents, err := json.Marshal(storedEvents)
 				Expect(err).ToNot(HaveOccurred())
 				marshalledInputEvents, err := json.Marshal([]eventio.RawEvent{
 					event1,
