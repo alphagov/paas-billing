@@ -38,7 +38,7 @@ jobs:
           go install github.com/onsi/ginkgo/v2/ginkgo@latest
       - name: Install counterfeiter
         run: |
-          GO111MODULE=off go get github.com/maxbrunsfeld/counterfeiter
+          go install github.com/maxbrunsfeld/counterfeiter/v6@latest
       ## Tests
       - name: "make test"
         env:

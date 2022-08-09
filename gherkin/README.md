@@ -13,7 +13,7 @@ Because this is an MVP, a hard-coded username/password is used when running the 
 In this directory run:
 
 ```
-go get github.com/cucumber/godog/cmd/godog@v0.11.0
+go install github.com/cucumber/godog/cmd/godog@v0.11.0
 ```
 
 2. Download and set up a local Postgres database on your laptop.
