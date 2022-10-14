@@ -89,24 +89,22 @@ func (s *suite) runStep(ctx context.Context, pickle *Scenario, step *Step, prevS
 			}
 		}
 
-		defer func() {
-			// run after step handlers
-			rctx, err = s.runAfterStepHooks(ctx, step, sr.Status, err)
-		}()
+		earlyReturn := prevStepErr != nil || err == ErrUndefined
 
-		if prevStepErr != nil {
-			return
+		if !earlyReturn {
+			sr = models.NewStepResult(pickle.Id, step.Id, match)
 		}
 
-		if err == ErrUndefined {
-			return
-		}
-
-		sr = models.NewStepResult(pickle.Id, step.Id, match)
+		// Run after step handlers.
+		rctx, err = s.runAfterStepHooks(ctx, step, sr.Status, err)
 
 		// Trigger after scenario on failing or last step to attach possible hook error to step.
-		if (err == nil && isLast) || err != nil {
+		if sr.Status != StepSkipped && ((err == nil && isLast) || err != nil) {
 			rctx, err = s.runAfterScenarioHooks(rctx, pickle, err)
+		}
+
+		if earlyReturn {
+			return
 		}
 
 		switch err {
@@ -415,16 +413,6 @@ func (s *suite) shouldFail(err error) bool {
 
 	if err == ErrUndefined || err == ErrPending {
 		return s.strict
-	}
-
-	return true
-}
-
-func isEmptyFeature(pickles []*messages.Pickle) bool {
-	for _, pickle := range pickles {
-		if len(pickle.Steps) > 0 {
-			return false
-		}
 	}
 
 	return true
