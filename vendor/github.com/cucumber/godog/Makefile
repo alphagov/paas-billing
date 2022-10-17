@@ -1,15 +1,21 @@
 .PHONY: test gherkin bump cover
 
-VERS := $(shell grep 'const Version' -m 1 godog.go | awk -F\" '{print $$2}')
+VERS ?= $(shell git symbolic-ref -q --short HEAD || git describe --tags --exact-match)
 
-test:
+FOUND_GO_VERSION := $(shell go version)
+EXPECTED_GO_VERSION = 1.17
+.PHONY: check-go-version
+check-go-version:
+	@$(if $(findstring ${EXPECTED_GO_VERSION}, ${FOUND_GO_VERSION}),(exit 0),(echo Wrong go version! Please install ${EXPECTED_GO_VERSION}; exit 1))
+
+test: check-go-version
 	@echo "running all tests"
 	@go install ./...
 	@go fmt ./...
-	@golint github.com/cucumber/godog
-	@golint github.com/cucumber/godog/cmd/godog
+	@go run honnef.co/go/tools/cmd/staticcheck@v0.2.2 github.com/cucumber/godog
+	@go run honnef.co/go/tools/cmd/staticcheck@v0.2.2 github.com/cucumber/godog/cmd/godog
 	go vet ./...
-	go test -race
+	go test -race ./...
 	godog -f progress -c 4
 
 gherkin:
@@ -52,7 +58,7 @@ artifacts:
 
 define _build
 	mkdir $(ARTIFACT_DIR)/godog-$(VERS)-$1-$2
-	env GOOS=$1 GOARCH=$2 go build -o $(ARTIFACT_DIR)/godog-$(VERS)-$1-$2/godog ./cmd/godog
+	env GOOS=$1 GOARCH=$2 go build -ldflags "-X github.com/cucumber/godog.Version=$(VERS)" -o $(ARTIFACT_DIR)/godog-$(VERS)-$1-$2/godog ./cmd/godog
 	cp README.md $(ARTIFACT_DIR)/godog-$(VERS)-$1-$2/README.md
 	cp LICENSE $(ARTIFACT_DIR)/godog-$(VERS)-$1-$2/LICENSE
 	cd $(ARTIFACT_DIR) && tar -c --use-compress-program="pigz --fast" -f godog-$(VERS)-$1-$2.tar.gz godog-$(VERS)-$1-$2 && cd ..

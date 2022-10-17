@@ -30,17 +30,17 @@ run-dev-exports:
 test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go fakes/fake_cf_data_client.go
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
-	ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skip-package=acceptance_tests
+	go run github.com/onsi/ginkgo/v2/ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skip-package=acceptance_tests
 
 # .PHONY: gherkin_test
 gherkin_test: gherkin_test_lon gherkin_test_ie
-	
+
 # .PHONY: gherkin_test_lon
 gherkin_test_lon:
 	mkdir -p gherkin/features
 	cp ../paas-cf/config/billing/tests/eu-west-1_billing_rds_charges.feature gherkin/features/
 	cp ../paas-cf/config/billing/output/eu-west-1.json config.json
-	cd gherkin && godog
+	cd gherkin && go run github.com/cucumber/godog/cmd/godog run
 	rm config.json
 	rm gherkin/features/*
 
@@ -48,7 +48,7 @@ gherkin_test_ie:
 	mkdir -p gherkin/features
 	cp ../paas-cf/config/billing/tests/eu-west-2_billing_rds_charges.feature gherkin/features/
 	cp ../paas-cf/config/billing/output/eu-west-2.json config.json
-	cd gherkin && godog
+	cd gherkin && go run github.com/cucumber/godog/cmd/godog run
 	rm config.json
 	rm gherkin/features/*
 
@@ -60,40 +60,41 @@ smoke:
 	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
 	$(eval export BILLING_API_URL ?= http://127.0.0.1:8881)
 	echo "smoke test enabled against ${BILLING_API_ADDRESS}"
-	ginkgo  -focus=".*from api" -r acceptance_tests
+	go run github.com/onsi/ginkgo/v2/ginkgo  -focus=".*from api" -r acceptance_tests
 
 .PHONY: acceptance
 acceptance:
 	$(eval export BILLING_API_URL ?= http://127.0.0.1:8881)
 	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
-	ginkgo -r acceptance_tests
+	go run github.com/onsi/ginkgo/v2/ginkgo -r acceptance_tests
+	cd gherkin && go run github.com/cucumber/godog/cmd/godog run
 
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
-	counterfeiter -o $@ $< UsageEventsAPI
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventsAPI
 
 fakes/fake_cf_client.go: eventfetchers/cffetcher/cf_client.go
-	counterfeiter -o $@ $< UsageEventsClient
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventsClient
 
 fakes/fake_event_fetcher.go: eventio/event_fetcher.go
-	counterfeiter -o $@ $< EventFetcher
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< EventFetcher
 
 fakes/fake_event_store.go: eventio/*.go
-	counterfeiter -o $@ $< EventStore
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< EventStore
 
 fakes/fake_authorizer.go: apiserver/auth/authorizer.go
-	counterfeiter -o $@ $< Authorizer
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< Authorizer
 
 fakes/fake_authenticator.go: apiserver/auth/authenticator.go
-	counterfeiter -o $@ $< Authenticator
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< Authenticator
 
 fakes/fake_billable_event_rows.go: eventio/event_billable.go
-	counterfeiter -o $@ $< BillableEventRows
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< BillableEventRows
 
 fakes/fake_usage_event_rows.go: eventio/event_usage.go
-	counterfeiter -o $@ $< UsageEventRows
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventRows
 
 fakes/fake_cf_data_client.go: cfstore/cfstore_client.go
-	counterfeiter -o $@ $< CFDataClient
+	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< CFDataClient
 
 clean:
 	rm -f bin/paas-billing
