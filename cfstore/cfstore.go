@@ -62,6 +62,11 @@ func (s *Store) Init() error {
 	return tx.Commit()
 }
 
+func (s *Store) Ping() error {
+	s.logger.Debug("Ping DB")
+	return s.db.Ping()
+}
+
 func (s *Store) CollectServicePlans() error {
 	ctx, cancel := context.WithTimeout(context.Background(), DefaultInitTimeout)
 	defer cancel()

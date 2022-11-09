@@ -22,6 +22,8 @@ type Config struct {
 	Logger lager.Logger
 	// EnablePanic will cause the server to crash on panic if set to true
 	EnablePanic bool
+	// Flag to indicate if only the health check should be exposed
+	StatusOnly bool
 }
 
 // New creates a new server. Use ListenAndServe to start accepting connections.
@@ -41,23 +43,36 @@ func New(cfg Config) *echo.Echo {
 		}))
 	}
 
-	e.GET("/vat_rates", VATRatesHandler(cfg.Store))
-	e.GET("/currency_rates", CurrencyRatesHandler(cfg.Store))
-	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
-	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
-	e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
-	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
-	e.GET("/totals", TotalCostHandler(cfg.Store))
+	if !cfg.StatusOnly {
+		e.GET("/vat_rates", VATRatesHandler(cfg.Store))
+		e.GET("/currency_rates", CurrencyRatesHandler(cfg.Store))
+		e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
+		e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
+		e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
+		e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
+		e.GET("/totals", TotalCostHandler(cfg.Store))
+	}
 
-	e.GET("/", status)
+	e.GET("/", status(cfg.Store))
 
 	return e
 }
 
-func status(c echo.Context) error {
-	return c.JSONPretty(http.StatusOK, map[string]bool{
-		"ok": true,
-	}, "  ")
+func status(store eventio.EventStore) echo.HandlerFunc {
+	return func(c echo.Context) error {
+
+		success := true
+		status := http.StatusOK
+
+		if err := store.Ping(); err != nil {
+			success = false
+			status = http.StatusInternalServerError
+		}
+
+		return c.JSONPretty(status, map[string]bool{
+			"ok": success,
+		}, "  ")
+	}
 }
 
 func ListenAndServe(ctx context.Context, logger lager.Logger, e *echo.Echo, addr string) error {

@@ -15,6 +15,9 @@ var _ = Describe("Config", func() {
 		os.Unsetenv("DATABASE_URL")
 		os.Unsetenv("COLLECTOR_SCHEDULE")
 		os.Unsetenv("COLLECTOR_MIN_WAIT_TIME")
+		os.Unsetenv("DB_CONN_MAX_IDLE_TIME")
+		os.Unsetenv("DB_CONN_MAX_LIFETIME")
+		os.Unsetenv("DB_MAX_IDLE_CONNS")
 		os.Unsetenv("CF_FETCH_LIMIT")
 		os.Unsetenv("CF_RECORD_MIN_AGE")
 		os.Unsetenv("CF_API_ADDRESS")
@@ -41,6 +44,9 @@ var _ = Describe("Config", func() {
 		Expect(cfg.CFFetcher.FetchLimit).To(Equal(50))
 		Expect(cfg.Processor.Schedule).To(Equal(720 * time.Minute))
 		Expect(cfg.ServerPort).To(Equal(8881))
+		Expect(cfg.DBConnMaxIdleTime).To(Equal(10*time.Minute))
+		Expect(cfg.DBConnMaxLifetime).To(Equal(1*time.Hour))
+		Expect(cfg.DBMaxIdleConns).To(Equal(1))
 	})
 
 	DescribeTable("should return error when failing to parse durations",
@@ -53,6 +59,8 @@ var _ = Describe("Config", func() {
 		Entry("bad min wait time", "COLLECTOR_MIN_WAIT_TIME"),
 		Entry("bad record min age", "CF_RECORD_MIN_AGE"),
 		Entry("bad processor schedule", "PROCESSOR_SCHEDULE"),
+		Entry("bad db conn max idle time", "DB_CONN_MAX_IDLE_TIME"),
+		Entry("bad db conn max lifetime", "DB_CONN_MAX_LIFETIME"),
 	)
 
 	DescribeTable("should return error when failing to parse integers",
@@ -62,6 +70,7 @@ var _ = Describe("Config", func() {
 			Expect(err).To(MatchError(ContainSubstring("invalid syntax")))
 		},
 		Entry("bad cf fetch limit", "CF_FETCH_LIMIT"),
+		Entry("bad max idle conns", "DB_MAX_IDLE_CONNS"),
 	)
 
 	It("should set DatabaseURL from DATABASE_URL", func() {
@@ -69,6 +78,27 @@ var _ = Describe("Config", func() {
 		cfg, err := NewConfigFromEnv()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.DatabaseURL).To(Equal("postgres://test.database.local"))
+	})
+
+	It("should set DBConnMaxIdleTime from DB_CONN_MAX_IDLE_TIME", func() {
+		os.Setenv("DB_CONN_MAX_IDLE_TIME", "50m")
+		cfg, err := NewConfigFromEnv()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.DBConnMaxIdleTime).To(Equal(50 * time.Minute))
+	})
+
+	It("should set DBConnMaxLifetime from DB_CONN_MAX_LIFETIME", func() {
+		os.Setenv("DB_CONN_MAX_LIFETIME", "50m")
+		cfg, err := NewConfigFromEnv()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.DBConnMaxLifetime).To(Equal(50 * time.Minute))
+	})
+
+	It("should set DBMaxIdleConns from DB_MAX_IDLE_CONNS", func() {
+		os.Setenv("DB_MAX_IDLE_CONNS", "5")
+		cfg, err := NewConfigFromEnv()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.DBMaxIdleConns).To(Equal(5))
 	})
 
 	It("should set Collector.Schedule from COLLECTOR_SCHEDULE", func() {

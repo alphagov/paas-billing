@@ -6,8 +6,7 @@ applications:
    disk_quota: 100M
    instances: 1
    buildpack: go_buildpack
-   health-check-type: process
-   no-route: true
+   health-check-type: http
    env:
      GOVERSION: go1.18
      GOPACKAGENAME: github.com/alphagov/paas-billing

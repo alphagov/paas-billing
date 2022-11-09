@@ -40,7 +40,7 @@ The repository contains the following packages:
 * `eventcollector` - EventCollector's periodically poll for events via an eventio.EventFetcher
 * `eventfetchers/cffetcher` - an `eventio.EventFetcher` that gets [cf usage events](http://apidocs.cloudfoundry.org/272/app_usage_events/list_all_app_usage_events.html)
 * `eventstore` - implements `eventio.EventWriter` to persist eventio.RawEvents from collectors and implements `eventio.BillableEventReader` to read out the processed events.
-* `apiserver` - an HTTP server that allows reading data from the store
+* `apiserver` - an HTTP server that allows reading data from the store and provides a health check endpoint
 
 ## Installation
 
@@ -160,6 +160,9 @@ The store can be configured via the following environment variables
 |`APP_ROOT`|string|no|`$PWD`|absolute path to the application source to discover assets at runtime|
 |`DATABASE_URL`|string|yes||Postgres connection string|
 |`PROCESSOR_SCHEDULE`|duration|no|15m|how often to process the raw events into queryable BillableEvents|
+|`DB_CONN_MAX_IDLE_TIME`|duration|no|10m|Max Idle Database Connection time|
+|`DB_CONN_MAX_LIFETIME`|duration|no|1h|Max Lifetime Database Connection time|
+|`DB_MAX_IDLE_CONNS`|integer|no|1|Max Idle Database Connections|
 
 ### Configuring the Collectors
 
@@ -167,6 +170,7 @@ The store can be configured via the following environment variables
 |---|---|---|---|---|
 |`COLLECTOR_SCHEDULE`|duration|no|1m|how often to fetch new data from the API|
 |`COLLECTOR_MIN_WAIT_TIME`|duration|no|3s|if we are able to fetch the maximum number of items we only wait this much before the next fetch (this allows us to speed up the the processing if necessary)|
+|`PORT`|integer|no|8881|port that the health check HTTP server will listen on|
 
 ### Configuring Cloudfoundry integration
 
