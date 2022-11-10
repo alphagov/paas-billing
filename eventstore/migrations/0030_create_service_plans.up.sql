@@ -1,3 +1,10 @@
+-- **do not alter - add new migrations instead**
+
+-- "migration" written before we had proper migration handling, hence the
+-- various attempts at mitigating previously existing objects
+
+BEGIN;
+
 create table if not exists service_plans (
 	guid uuid not null,
 	valid_from timestamptz not null,
@@ -18,3 +25,5 @@ create table if not exists service_plans (
 );
 
 alter table service_plans alter column unique_id type text using unique_id::text;
+
+COMMIT;

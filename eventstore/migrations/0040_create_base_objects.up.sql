@@ -1,3 +1,10 @@
+-- **do not alter - add new migrations instead**
+
+-- "migration" written before we had proper migration handling, hence the
+-- various attempts at mitigating previously existing objects
+
+BEGIN;
+
 DROP TABLE IF EXISTS pricing_plan_components;
 DROP TABLE IF EXISTS pricing_plans;
 DROP TABLE IF EXISTS vat_rates;
@@ -209,3 +216,5 @@ EXCEPTION WHEN invalid_text_representation THEN
   RETURN 'd5091c33-2f9d-4b15-82dc-4ad69717fc03'::uuid;
 END;
 $$ LANGUAGE plpgsql;
+
+COMMIT;

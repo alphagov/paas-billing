@@ -1,3 +1,10 @@
+-- **do not alter - add new migrations instead**
+
+-- "migration" written before we had proper migration handling, hence the
+-- various attempts at mitigating previously existing objects
+
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS app_usage_events (
 	id SERIAL, -- this should probably be called "sequence" it's not really an id
 	guid uuid UNIQUE NOT NULL,
@@ -17,3 +24,5 @@ END; $$;
 
 
 ALTER TABLE app_usage_events ADD COLUMN IF NOT EXISTS processed boolean DEFAULT false;
+
+COMMIT;

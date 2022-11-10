@@ -1,3 +1,10 @@
+-- **do not alter - add new migrations instead**
+
+-- "migration" written before we had proper migration handling, hence the
+-- various attempts at mitigating previously existing objects
+
+BEGIN;
+
 DO $$ BEGIN
 CREATE TYPE vat_code AS ENUM ('Standard', 'Reduced', 'Zero');
 EXCEPTION
@@ -16,3 +23,4 @@ EXCEPTION
     WHEN duplicate_object THEN null;
 END $$;
 
+COMMIT;

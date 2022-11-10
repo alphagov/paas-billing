@@ -1,3 +1,10 @@
+-- **do not alter - add new migrations instead**
+
+-- "migration" written before we had proper migration handling, hence the
+-- various attempts at mitigating previously existing objects
+
+BEGIN;
+
 CREATE TABLE IF NOT EXISTS consolidation_history (
   consolidated_range tstzrange NOT NULL,
   created_at timestamptz NOT NULL,
@@ -61,3 +68,5 @@ DO $$
     END;
   END;
 $$;
+
+COMMIT;
