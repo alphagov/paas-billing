@@ -29,9 +29,8 @@ var _ = Describe("Status", func() {
 
 		fakeStore = &fakes.FakeEventStore{}
 		cfg = Config{
-			Logger:     lager.NewLogger("test"),
-			Store:      fakeStore,
-			StatusOnly: true,
+			Logger: lager.NewLogger("test"),
+			Store:  fakeStore,
 		}
 		ctx, cancel = context.WithCancel(context.Background())
 	})
@@ -44,7 +43,7 @@ var _ = Describe("Status", func() {
 		req := httptest.NewRequest(echo.GET, "/", nil)
 		res := httptest.NewRecorder()
 
-		e := New(cfg)
+		e := NewBaseServer(cfg)
 		e.ServeHTTP(res, req)
 
 		defer e.Shutdown(ctx)
@@ -62,7 +61,7 @@ var _ = Describe("Status", func() {
 
 		fakeStore.PingReturns(errors.New("Fake DB Error"))
 
-		e := New(cfg)
+		e := NewBaseServer(cfg)
 		e.ServeHTTP(res, req)
 
 		defer e.Shutdown(ctx)

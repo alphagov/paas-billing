@@ -89,7 +89,6 @@ func (app *App) StartAPIServer() error {
 	apiServer := apiserver.New(apiserver.Config{
 		Store:         app.store,
 		Authenticator: apiAuthenticator,
-		StatusOnly:    false,
 		Logger:        logger,
 	})
 	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
@@ -106,10 +105,9 @@ func (app *App) StartAPIServer() error {
 func (app *App) StartHealthServer() error {
 	name := "health"
 	logger := app.logger.Session(name)
-	healthServer := apiserver.New(apiserver.Config{
-		Store:      app.store,
-		StatusOnly: true,
-		Logger:     logger,
+	healthServer := apiserver.NewBaseServer(apiserver.Config{
+		Store:  app.store,
+		Logger: logger,
 	})
 	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
