@@ -24,6 +24,9 @@ type Config struct {
 	Logger                lager.Logger
 	Store                 eventio.EventStore
 	DatabaseURL           string
+	DBConnMaxIdleTime     time.Duration
+	DBConnMaxLifetime     time.Duration
+	DBMaxIdleConns        int
 	Collector             eventcollector.Config
 	CFFetcher             cffetcher.Config
 	ServerPort            int
@@ -60,6 +63,9 @@ func NewConfigFromEnv() (cfg Config, err error) {
 		AppRootDir:  rootDir,
 		Logger:      lager.NewLogger("default"),
 		DatabaseURL: getEnvWithDefaultString("DATABASE_URL", "postgres://postgres:@localhost:5432/"),
+		DBConnMaxIdleTime: getEnvWithDefaultDuration("DB_CONN_MAX_IDLE_TIME", 10*time.Minute),
+		DBConnMaxLifetime: getEnvWithDefaultDuration("DB_CONN_MAX_LIFETIME", time.Hour),
+		DBMaxIdleConns: getEnvWithDefaultInt("DB_MAX_IDLE_CONNS", 1),
 		HistoricDataCollector: cfstore.Config{
 			ClientConfig: &cfclient.Config{
 				ApiAddress:        os.Getenv("CF_API_ADDRESS"),

@@ -102,6 +102,24 @@ func (app *App) StartAPIServer() error {
 	})
 }
 
+func (app *App) StartHealthServer() error {
+	name := "health"
+	logger := app.logger.Session(name)
+	healthServer := apiserver.NewBaseServer(apiserver.Config{
+		Store:  app.store,
+		Logger: logger,
+	})
+	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
+	return app.start(name, logger, func() error {
+		return apiserver.ListenAndServe(
+			app.ctx,
+			logger,
+			healthServer,
+			addr,
+		)
+	})
+}
+
 func (app *App) StartEventProcessor() error {
 	name := "processor"
 	logger := app.logger.Session(name)
@@ -191,33 +209,32 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		cfg.Logger = lager.NewLogger("app")
 	}
 
-	if cfg.Store == nil {
-		if cfg.DatabaseURL == "" {
-			return nil, fmt.Errorf("Store or DatabaseURL must be provided in Config")
-		}
-		db, err := sql.Open("postgres", cfg.DatabaseURL)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to connect to database")
-		}
-		planConfigFile, err := cfg.ConfigFile()
-		if err != nil {
-			return nil, err
-		}
-		store, err := eventstore.NewFromConfig(ctx, db, cfg.Logger.Session("store"), planConfigFile)
-		if err != nil {
-			return nil, err
-		}
-		cfg.Store = store
+	if cfg.DatabaseURL == "" {
+		return nil, fmt.Errorf("Store or DatabaseURL must be provided in Config")
 	}
+	db, err := sql.Open("postgres", cfg.DatabaseURL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to connect to database")
+	}
+	db.SetConnMaxIdleTime(cfg.DBConnMaxIdleTime)
+	db.SetConnMaxLifetime(cfg.DBConnMaxLifetime)
+	db.SetMaxIdleConns(cfg.DBMaxIdleConns)
+
+	planConfigFile, err := cfg.ConfigFile()
+	if err != nil {
+		return nil, err
+	}
+	store, err := eventstore.NewFromConfig(ctx, db, cfg.Logger.Session("store"), planConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Store = store
 
 	client, err := cfclient.NewClient(cfg.HistoricDataCollector.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
-	db, err := sql.Open("postgres", cfg.DatabaseURL)
-	if err != nil {
-		return nil, err
-	}
+
 	historicDataStore, err := cfstore.New(cfstore.Config{
 		Client: &cfstore.Client{Client: client},
 		DB:     db,

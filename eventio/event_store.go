@@ -23,6 +23,7 @@ type VATRateReader interface {
 type EventStore interface {
 	Init() error
 	Refresh() error
+	Ping() error
 	PricingPlanReader
 	CurrencyRateReader
 	VATRateReader

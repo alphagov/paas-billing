@@ -55,6 +55,9 @@ func startCollector(app *App, cfg Config) error {
 	if err := app.StartHistoricDataCollector(); err != nil {
 		return err
 	}
+	if err := app.StartHealthServer(); err != nil {
+		return err
+	}
 
 	cfg.Logger.Info("started collector")
 	return app.Wait()

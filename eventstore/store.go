@@ -114,6 +114,11 @@ func (s *EventStore) Init() error {
 	return nil
 }
 
+func (s *EventStore) Ping() error {
+	s.logger.Debug("Ping DB")
+	return s.db.Ping()
+}
+
 // Refresh triggers regeneration of the cached normalized view of the event dat and rebuilds the
 // billable components. Ideally you should do this once a day
 func (s *EventStore) Refresh() error {
