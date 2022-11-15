@@ -62,12 +62,15 @@ smoke:
 	echo "smoke test enabled against ${BILLING_API_ADDRESS}"
 	go run github.com/onsi/ginkgo/v2/ginkgo  -focus=".*from api" -r acceptance_tests
 
+.PHONY: integration
+integration:
+	cd gherkin && go run github.com/cucumber/godog/cmd/godog run
+
 .PHONY: acceptance
 acceptance:
 	$(eval export BILLING_API_URL ?= http://127.0.0.1:8881)
 	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
 	go run github.com/onsi/ginkgo/v2/ginkgo -r acceptance_tests
-	cd gherkin && go run github.com/cucumber/godog/cmd/godog run
 
 fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
 	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventsAPI
