@@ -193,7 +193,6 @@ The store can be configured via the following environment variables
 The collectors/fetchers can be configured via the following environment variables
 
 
-
 ## API Usage
 
 ### `GET /usage_events`
