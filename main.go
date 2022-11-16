@@ -38,6 +38,9 @@ func Main(ctx context.Context, logger lager.Logger) error {
 }
 
 func startCollector(app *App, cfg Config) error {
+	if err := app.StartHealthServer(); err != nil {
+		return err
+	}
 	if err := app.Init(); err != nil {
 		return err
 	}
@@ -53,9 +56,6 @@ func startCollector(app *App, cfg Config) error {
 		return err
 	}
 	if err := app.StartHistoricDataCollector(); err != nil {
-		return err
-	}
-	if err := app.StartHealthServer(); err != nil {
 		return err
 	}
 
