@@ -63,36 +63,18 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 			os.Exit(1)
 		}
 
-		tables := []string{"create_custom_types.sql",
-			"create_base_objects.sql",
-			"create_spaces.sql",
-			"create_service_usage_events.sql",
-			"create_app_usage_events.sql",
-			"create_services.sql",
-			"create_service_plans.sql",
-			"create_orgs.sql",
-			"create_compose_audit_events.sql",
-			"create_events.sql",
-			"create_custom_types.sql",
-			"create_consolidated_billable_events.sql",
-			"create_compose_audit_events.sql"}
+		ctx2, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+		defer cancel()
 
-		for _, table := range tables {
-			table = pathToSqlDefinitions + table
-			fmt.Printf("Creating tables and other database objects in the file: %s...\n", table)
-			content, err := ioutil.ReadFile(table)
-			if err != nil {
-				logger.Error("unable to read table from file", err)
-				return
-			}
-			sqlQuery := string(content)
-			_, err = db.Query(sqlQuery)
-			if err != nil {
-				logger.Error("failed to query the database", err, lager.Data{"query": sqlQuery})
-				return
-			}
+		es, err := eventstore.NewFromConfig(ctx2, db, logger, "../config.json")
+		if err != nil {
+			logger.Error("new-eventstore", err)
+			os.Exit(1)
 		}
-
+		if err := es.Init(); err != nil {
+			logger.Error("init-eventstore", err)
+			os.Exit(1)
+		}
 	})
 
 	ctx.AfterSuite(func() { fmt.Println("After running test suite") })
@@ -145,78 +127,16 @@ func aCleanBillingDatabase() error {
 	tableList := "compose_audit_events, consolidated_billable_events, consolidation_history, events, app_usage_events, service_usage_events, currency_rates, vat_rates, pricing_plans, pricing_plan_components"
 	clearDatabaseTables(tableList)
 
-	// Add data to the following tables:
-	// vat_rates, currency_rates, pricing_plans, pricing_plan_components.
-	planConfig, err := eventstore.LoadConfig("../config.json")
-	if err != nil {
-		logger.Error("failed to load configuration", err)
-		return err
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	tx, err := db.BeginTx(ctx, nil)
+	// (re-)populate "static" tables
+	es, err := eventstore.NewFromConfig(ctx, db, logger, "../config.json")
 	if err != nil {
 		return err
 	}
-	defer tx.Rollback()
-
-	for _, vr := range planConfig.VATRates {
-		_, err := tx.Exec(`
-			insert into vat_rates (
-				code, valid_from, rate
-			) values (
-				$1, $2, $3
-			)
-		`, vr.Code, vr.ValidFrom, vr.Rate)
-		if err != nil {
-			return wrapPqError(err, "invalid VAT rate")
-		}
-	}
-
-	for _, cr := range planConfig.CurrencyRates {
-		_, err := tx.Exec(`
-			insert into currency_rates (
-				code, valid_from, rate
-			) values (
-				$1, $2, $3
-			)
-		`, cr.Code, cr.ValidFrom, cr.Rate)
-		if err != nil {
-			return wrapPqError(err, "invalid currency rate")
-		}
-	}
-
-	for _, pp := range planConfig.PricingPlans {
-		_, err := tx.Exec(`insert into pricing_plans (
-			plan_guid, valid_from, name,
-			memory_in_mb, storage_in_mb, number_of_nodes
-		) values (
-			$1, $2, $3,
-			$4, $5, $6
-		)`, pp.PlanGUID, pp.ValidFrom, pp.Name,
-			pp.MemoryInMB, pp.StorageInMB, pp.NumberOfNodes,
-		)
-		if err != nil {
-			return wrapPqError(err, "invalid pricing plan")
-		}
-		for _, ppc := range pp.Components {
-			_, err := tx.Exec(`insert into pricing_plan_components (
-				plan_guid, valid_from, name,
-				formula, currency_code, vat_code
-			) values (
-				$1, $2, $3,
-				$4, $5, $6
-			)`, pp.PlanGUID, pp.ValidFrom, ppc.Name, ppc.Formula, ppc.CurrencyCode, ppc.VATCode)
-			if err != nil {
-				return wrapPqError(err, "invalid pricing plan component")
-			}
-		}
-	}
-
-	if err := tx.Commit(); err != nil {
-		panic(err)
+	if err := es.Init(); err != nil {
+		return err
 	}
 
 	return nil

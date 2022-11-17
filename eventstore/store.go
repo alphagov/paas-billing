@@ -15,6 +15,10 @@ import (
 
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/lib/pq"
+
+	"github.com/golang-migrate/migrate/v4"
+	migrate_postgres "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 const (
@@ -56,11 +60,51 @@ func NewFromConfig(ctx context.Context, db *sql.DB, logger lager.Logger, filenam
 	return New(ctx, db, logger, cfg), nil
 }
 
+type migrateLagerLogger struct {
+	lagerLogger lager.Logger
+}
+
+func newMigrateLagerLogger(lagerLogger lager.Logger) migrateLagerLogger {
+	mll := migrateLagerLogger{}
+	mll.lagerLogger = lagerLogger
+	return mll
+}
+
+func (mll migrateLagerLogger) Printf(format string, v ...interface{}) {
+	mll.lagerLogger.Info(fmt.Sprintf(format, v...), lager.Data{})
+}
+
+func (mll migrateLagerLogger) Verbose() bool {
+	return false
+}
+
 // Init initialises the database tables and functions
 func (s *EventStore) Init() error {
 	s.logger.Info("initializing")
 	ctx, cancel := context.WithTimeout(s.ctx, DefaultInitTimeout)
 	defer cancel()
+
+	migrateDriver, err := migrate_postgres.WithInstance(
+		s.db,
+		&migrate_postgres.Config{},
+	)
+	if err != nil {
+		return err
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		fmt.Sprintf("file://%s", migrationsDir()),
+		"postgres",
+		migrateDriver,
+	)
+	if err != nil {
+		return err
+	}
+	m.Log = newMigrateLagerLogger(s.logger.Session("migrate", lager.Data{}))
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return err
+	}
 
 	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
@@ -68,22 +112,6 @@ func (s *EventStore) Init() error {
 	}
 	defer tx.Rollback()
 
-	sqlFiles := []string{
-		"create_custom_types.sql",
-		"create_services.sql",
-		"create_service_plans.sql",
-		"create_base_objects.sql",
-		"create_orgs.sql",
-		"create_spaces.sql",
-		"2021-05-06-alter_orgs.sql",
-	}
-	for _, sqlFile := range sqlFiles {
-		err := s.runSQLFile(tx, sqlFile)
-		if err != nil {
-			s.logger.Error("init", err)
-			return err
-		}
-	}
 	if err := s.initVATRates(tx); err != nil {
 		return fmt.Errorf("failed to init VAT rates: %s", err)
 	}
@@ -94,16 +122,6 @@ func (s *EventStore) Init() error {
 		return fmt.Errorf("failed to init plans: %s", err)
 	}
 	if err := tx.Commit(); err != nil {
-		return err
-	}
-
-	if err := s.runSQLFilesInTransaction(
-		ctx,
-		"create_app_usage_events.sql",
-		"create_service_usage_events.sql",
-		"create_compose_audit_events.sql",
-		"create_consolidated_billable_events.sql",
-	); err != nil {
 		return err
 	}
 
@@ -174,6 +192,10 @@ func (s *EventStore) regenerateEvents() error {
 }
 
 func (s *EventStore) initVATRates(tx *sql.Tx) error {
+	if _, err := tx.Exec("DELETE FROM vat_rates"); err != nil {
+		return wrapPqError(err, "error deleting existing vat_rates")
+	}
+
 	for _, vr := range s.cfg.VATRates {
 		s.logger.Info("configuring-vat-rate", lager.Data{
 			"code":       vr.Code,
@@ -195,6 +217,10 @@ func (s *EventStore) initVATRates(tx *sql.Tx) error {
 }
 
 func (s *EventStore) initCurrencyRates(tx *sql.Tx) error {
+	if _, err := tx.Exec("DELETE FROM currency_rates"); err != nil {
+		return wrapPqError(err, "error deleting existing currency_rates")
+	}
+
 	for _, cr := range s.cfg.CurrencyRates {
 		s.logger.Info("configuring-currency-rate", lager.Data{
 			"code":       cr.Code,
@@ -218,8 +244,17 @@ func (s *EventStore) initCurrencyRates(tx *sql.Tx) error {
 // InitPlans destroys all existing plans and replaces them with those specified
 // by pricingPlans if the new set of plans does not satisfy the existing data
 // (for example if you are missing plans for services found in the events then
-// it will fail to update plans and rollback the transaction
+// it will fail to update plans and return an error, indicating the transaction
+// should be rolled back
 func (s *EventStore) initPlans(tx *sql.Tx) (err error) {
+	if _, err := tx.Exec("DELETE FROM pricing_plan_components"); err != nil {
+		return wrapPqError(err, "error deleting existing pricing_plan_components")
+	}
+
+	if _, err := tx.Exec("DELETE FROM pricing_plans"); err != nil {
+		return wrapPqError(err, "error deleting existing pricing_plans")
+	}
+
 	for _, pp := range s.cfg.PricingPlans {
 		s.logger.Info("configuring-pricing-plan", lager.Data{
 			"plan_guid":  pp.PlanGUID,
@@ -689,10 +724,10 @@ func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
 	startTime := time.Now()
 	s.logger.Info("run-sql-file", map[string]interface{}{"sqlFile": filename})
 
-	schemaFilename := schemaFile(filename)
-	sql, err := ioutil.ReadFile(schemaFilename)
+	sqlFilename := sqlFile(filename)
+	sql, err := ioutil.ReadFile(sqlFilename)
 	if err != nil {
-		err = fmt.Errorf("failed to execute sql file %s: %s", schemaFilename, err)
+		err = fmt.Errorf("failed to execute sql file %s: %s", sqlFilename, err)
 		s.logger.Error("finish-sql-file", err, lager.Data{
 			"sqlFile": filename,
 			"elapsed": int64(time.Since(startTime)),
@@ -702,7 +737,7 @@ func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
 
 	_, err = tx.Exec(string(sql))
 	if err != nil {
-		err = wrapPqError(err, schemaFilename)
+		err = wrapPqError(err, sqlFilename)
 		s.logger.Error("finish-sql-file", err, lager.Data{
 			"sqlFile": filename,
 			"elapsed": int64(time.Since(startTime)),
@@ -742,7 +777,7 @@ func wrapPqError(err error, prefix string) error {
 	return fmt.Errorf("%s: %s", prefix, msg)
 }
 
-func schemaDir() string {
+func appRoot() string {
 	root := os.Getenv("APP_ROOT")
 	if root == "" {
 		root = os.Getenv("PWD")
@@ -750,11 +785,19 @@ func schemaDir() string {
 	if root == "" {
 		root, _ = os.Getwd()
 	}
-	return filepath.Join(root, "eventstore", "sql")
+	return root
 }
 
-func schemaFile(filename string) string {
-	return filepath.Join(schemaDir(), filename)
+func migrationsDir() string {
+	return filepath.Join(appRoot(), "eventstore", "migrations")
+}
+
+func sqlDir() string {
+	return filepath.Join(appRoot(), "eventstore", "sql")
+}
+
+func sqlFile(filename string) string {
+	return filepath.Join(sqlDir(), filename)
 }
 
 func LoadConfig(filename string) (Config, error) {
