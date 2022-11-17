@@ -42,12 +42,11 @@ INSERT INTO events_temp with
 				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
-				(raw_message->>'state')::resource_state as state
+				app_event_resource_state(raw_message) as state
 			from
 				app_usage_events
 			where
-				(raw_message->>'state' = 'STARTED' or raw_message->>'state' = 'STOPPED')
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				app_event_filter(raw_message)
 		) union all (
 			select
 				id as event_sequence,
@@ -66,16 +65,11 @@ INSERT INTO events_temp with
 				NULL::numeric as number_of_nodes,
 				NULL::numeric as memory_in_mb,
 				NULL::numeric as storage_in_mb,
-				(case
-					when (raw_message->>'state') = 'CREATED' then 'STARTED'
-					when (raw_message->>'state') = 'DELETED' then 'STOPPED'
-					when (raw_message->>'state') = 'UPDATED' then 'STARTED'
-				end)::resource_state as state
+				service_event_resource_state(raw_message) as state
 			from
 				service_usage_events
 			where
-				raw_message->>'service_instance_type' = 'managed_service_instance'
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				service_event_filter(raw_message)
 		) union all (
 			select
 				id as event_sequence,
@@ -94,15 +88,11 @@ INSERT INTO events_temp with
 				coalesce(raw_message->>'instance_count', '1')::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
-				(case
-					when (raw_message->>'state') = 'TASK_STARTED' then 'STARTED'
-					when (raw_message->>'state') = 'TASK_STOPPED' then 'STOPPED'
-				end)::resource_state as state
+				task_event_resource_state(raw_message) as state
 			from
 				app_usage_events
 			where
-				(raw_message->>'state' = 'TASK_STARTED' or raw_message->>'state' = 'TASK_STOPPED')
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				task_event_filter(raw_message)
 		) union all (
 			select
 				id as event_sequence,
@@ -121,25 +111,18 @@ INSERT INTO events_temp with
 				'1'::numeric as number_of_nodes,
 				coalesce(raw_message->>'memory_in_mb_per_instance', '0')::numeric as memory_in_mb,
 				'0'::numeric as storage_in_mb,
-				(case
-					when (raw_message->>'state') = 'STAGING_STARTED' then 'STARTED'
-					when (raw_message->>'state') = 'STAGING_STOPPED' then 'STOPPED'
-				end)::resource_state as state
+				staging_event_resource_state(raw_message) as state
 			from
 				app_usage_events
 			where
-				(raw_message->>'state' = 'STAGING_STARTED' or raw_message->>'state' = 'STAGING_STOPPED')
-				and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				staging_event_filter(raw_message)
 		) union all (
 			select
 				s.id as event_sequence,
 				uuid_generate_v4() as event_guid,
 				'service' as event_type,
 				c.created_at::timestamptz as created_at,
-				substring(
-					c.raw_message->'data'->>'deployment'
-					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
-				)::uuid as resource_guid,
+				uuid_from_data_deployment(c.raw_message) as resource_guid,
 				(case
 					when s.created_at > c.created_at then (s.raw_message->>'service_instance_name')
 					else NULL::text
@@ -160,12 +143,9 @@ INSERT INTO events_temp with
 			left join
 				service_usage_events s
 			on
-				s.raw_message->>'service_instance_guid' = substring(
-					c.raw_message->'data'->>'deployment'
-					from '[a-zA-Z0-9]{8}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{4}-[a-zA-Z0-9]{12}$'
-				) AND s.raw_message->>'state' = 'CREATED'
+				service_instance_guid_if_created(s.raw_message) = uuid_from_data_deployment(c.raw_message)
 			where
-				s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
+				compose_service_event_filter(s.raw_message)
 		)
 	),
 	raw_events_with_injected_values as (
