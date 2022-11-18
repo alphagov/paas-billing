@@ -57,7 +57,7 @@ CREATE VIEW app_event_ranges AS SELECT
 			rows between current row and unbounded following
 		),
 		resource_states as (
-			partition by resource_guid
+			partition by app_event_resource_guid(raw_message)
 			order by created_at desc, id desc
 			rows between 1 preceding and current row
 		);
