@@ -12,7 +12,7 @@ CREATE FUNCTION app_event_filter(raw_message jsonb) returns BOOLEAN AS $$
 		and raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-'; -- FIXME: this is open to abuse;
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
-CREATE FUNCTION app_resource_name(raw_message jsonb) returns text AS $$
+CREATE FUNCTION app_event_resource_name(raw_message jsonb) returns text AS $$
 	SELECT raw_message->>'app_name';
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
@@ -23,9 +23,9 @@ CREATE VIEW app_event_ranges AS SELECT
 		created_at,
 		(raw_message->>'app_guid')::uuid as resource_guid,
 		coalesce(
-			app_resource_name(raw_message),
+			app_event_resource_name(raw_message),
 			(array_remove(
-				array_agg(app_resource_name(raw_message)) over prev_events
+				array_agg(app_event_resource_name(raw_message)) over prev_events
 			, NULL))[1]
 		) as resource_name,
 		'app'::text as resource_type,                              -- resource_type for compute resources
