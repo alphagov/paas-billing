@@ -16,12 +16,16 @@ CREATE FUNCTION app_event_resource_name(raw_message jsonb) returns text AS $$
 	SELECT raw_message->>'app_name';
 $$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
 
+CREATE FUNCTION app_event_resource_guid(raw_message jsonb) returns uuid AS $$
+	SELECT (raw_message->>'app_guid')::uuid;
+$$ LANGUAGE SQL IMMUTABLE PARALLEL SAFE;
+
 CREATE VIEW app_event_ranges AS SELECT
 		id as event_sequence,
 		guid::uuid as event_guid,
 		'app' as event_type,
 		created_at,
-		(raw_message->>'app_guid')::uuid as resource_guid,
+		app_event_resource_guid(raw_message) as resource_guid,
 		coalesce(
 			app_event_resource_name(raw_message),
 			(array_remove(
@@ -48,7 +52,7 @@ CREATE VIEW app_event_ranges AS SELECT
 		app_event_filter(raw_message)
 	WINDOW
 		prev_events as (
-			partition by resource_guid
+			partition by app_event_resource_guid(raw_message)
 			order by created_at desc, id desc
 			rows between current row and unbounded following
 		),
