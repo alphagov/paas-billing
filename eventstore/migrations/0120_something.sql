@@ -40,10 +40,7 @@ CREATE VIEW app_event_ranges AS SELECT
 		'0'::numeric as storage_in_mb,
 		app_event_resource_state(raw_message) as state,
 		tstzrange(created_at,
-			lag(created_at, 1,
-				case when event_type = 'staging' then created_at
-				else now() end
-			) over resource_states
+			lag(created_at, 1, now()) over resource_states
 		) as duration
 	FROM
 		app_usage_events
