@@ -58,7 +58,7 @@ CREATE VIEW app_event_ranges AS SELECT
 		resource_states as (
 			partition by resource_guid
 			order by created_at desc, event_sequence desc
-			rows between current row and 1 preceding
+			rows between 1 preceding and current row
 		);
 
 
