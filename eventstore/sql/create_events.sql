@@ -24,13 +24,13 @@ CREATE TABLE events_temp (
 -- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
 INSERT INTO events_temp with
 	event_ranges as (
-			app_event_ranges
+			(SELECT * FROM app_event_ranges)
 		union all
-			task_event_ranges
+			(SELECT * FROM task_event_ranges)
 		union all
-			staging_event_ranges
+			(SELECT * FROM staging_event_ranges)
 		union all
-			service_event_ranges
+			(SELECT * FROM service_event_ranges)
 	),
 	valid_service_plans as (
 		select
