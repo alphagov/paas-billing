@@ -68,5 +68,7 @@ CREATE VIEW task_event_ranges AS SELECT
 
 CREATE INDEX task_event_ranges_partial_idx ON app_usage_events((task_event_resource_guid(raw_message)), created_at desc, id desc) WHERE task_event_filter(raw_message);
 
+ANALYZE;
+
 
 COMMIT;

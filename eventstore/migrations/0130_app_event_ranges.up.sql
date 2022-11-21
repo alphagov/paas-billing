@@ -64,5 +64,7 @@ CREATE VIEW app_event_ranges AS SELECT
 
 CREATE INDEX app_event_ranges_partial_idx ON app_usage_events((app_event_resource_guid(raw_message)), created_at desc, id desc) WHERE app_event_filter(raw_message);
 
+ANALYZE;
+
 
 COMMIT;

@@ -150,5 +150,7 @@ CREATE INDEX service_usage_events_svc_inst_guid_if_crtd_part_idx ON service_usag
 
 CREATE INDEX compose_audit_events_uuid_frm_data_dpmt_idx ON compose_audit_events ((uuid_from_data_deployment(raw_message)));
 
+ANALYZE;
+
 
 COMMIT;

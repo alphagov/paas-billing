@@ -69,5 +69,7 @@ CREATE VIEW staging_event_ranges AS SELECT
 
 CREATE INDEX staging_event_ranges_partial_idx ON app_usage_events((staging_event_resource_guid(raw_message)), created_at desc, id desc) WHERE staging_event_filter(raw_message);
 
+ANALYZE;
+
 
 COMMIT;
