@@ -9,9 +9,9 @@ BEGIN;
 -- with the order of these to be helpful.
 CREATE INDEX app_usage_events_cluster_idx ON app_usage_events(
 	(CASE
-		WHEN app_event_filter(raw_message) THEN app_event_resource_guid
-		WHEN task_event_filter(raw_message) THEN task_event_resource_guid
-		WHEN staging_event_filter(raw_message) THEN staging_event_resource_guid
+		WHEN app_event_filter(raw_message) THEN app_event_resource_guid(raw_message)
+		WHEN task_event_filter(raw_message) THEN task_event_resource_guid(raw_message)
+		WHEN staging_event_filter(raw_message) THEN staging_event_resource_guid(raw_message)
 	END) ASC NULLS FIRST,  -- rows passing no filter put at beginning of table
 	created_at DESC,
 	id DESC
