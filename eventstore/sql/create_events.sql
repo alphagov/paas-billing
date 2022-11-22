@@ -36,37 +36,73 @@ INSERT INTO events_temp with
 		select
 			*,
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-				partition by guid order by valid_from rows between current row and 1 following
+				partition by guid
+				order by valid_from
+				rows between current row and 1 following
 			)) as valid_for
-		from
-			service_plans
+		from (
+			SELECT DISTINCT ON (guid, service_guid, name, unique_id) -- fields we're interested in
+				-- don't expose other fields other than valid_from
+				valid_from, guid, service_guid, name, unique_id
+			FROM
+				service_plans
+			ORDER BY
+				guid, valid_from
+		) as sq
 	),
 	valid_services as (
 		select
 			*,
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-				partition by guid order by valid_from rows between current row and 1 following
+				partition by guid
+				order by valid_from
+				rows between current row and 1 following
 			)) as valid_for
-		from
-			services
+		from (
+			SELECT DISTINCT ON (guid, label) -- fields we're interested in
+				-- don't expose other fields other than valid_from
+				valid_from, guid, label
+			FROM
+				services
+			ORDER BY
+				guid, valid_from
+		) as sq
 	),
 	valid_orgs as (
 		select
 			*,
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-				partition by guid order by valid_from rows between current row and 1 following
+				partition by guid
+				order by valid_from
+				rows between current row and 1 following
 			)) as valid_for
-		from
-			orgs
+		from (
+			SELECT DISTINCT ON (guid, name) -- fields we're interested in
+				-- don't expose other fields other than valid_from
+				valid_from, guid, name
+			FROM
+				orgs
+			ORDER BY
+				guid, valid_from
+		) as sq
 	),
 	valid_spaces as (
 		select
 			*,
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
-				partition by guid order by valid_from rows between current row and 1 following
+				partition by guid
+				order by valid_from
+				rows between current row and 1 following
 			)) as valid_for
-		from
-			spaces
+		from (
+			SELECT DISTINCT ON (guid, name) -- fields we're interested in
+				-- don't expose other fields other than valid_from
+				valid_from, guid, name
+			FROM
+				spaces
+			ORDER BY
+				guid, valid_from
+		) as sq
 	)
 
 	select
