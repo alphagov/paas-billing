@@ -78,12 +78,12 @@ CREATE VIEW staging_event_ranges AS SELECT
 	WINDOW
 		prev_events as (
 			partition by resource_guid
-			order by created_at desc, id desc
+			order by created_at desc, event_sequence desc
 			rows between current row and unbounded following
 		),
 		resource_states as (
 			partition by resource_guid
-			order by created_at desc, id desc
+			order by created_at desc, event_sequence desc
 			rows between 1 preceding and current row
 		);
 
