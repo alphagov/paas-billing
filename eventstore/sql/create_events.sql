@@ -184,8 +184,8 @@ CREATE TEMPORARY TABLE events_temp AS WITH
 		window
 			prev_events as (
 				partition by resource_guid, event_type
-				order by created_at desc, event_sequence desc
-				rows between current row and unbounded following
+				order by created_at, event_sequence
+				rows between unbounded preceding and current row
 			)
 		order by
 			created_at, event_sequence
