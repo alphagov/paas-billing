@@ -152,12 +152,7 @@ CREATE TEMPORARY TABLE events_temp AS WITH
 			event_type,
 			created_at,
 			resource_guid,
-			coalesce(
-				resource_name,
-				(array_remove(
-					array_agg(resource_name) over prev_events
-				, NULL))[1]
-			) as resource_name,
+			propagate_nonnull_agg(resource_name) over prev_events as resource_name,
 			resource_type,
 			org_guid,
 			space_guid,
@@ -166,18 +161,8 @@ CREATE TEMPORARY TABLE events_temp AS WITH
 			service_guid,
 			service_name,
 			number_of_nodes,
-			coalesce(
-				memory_in_mb,
-				(array_remove(
-					array_agg(memory_in_mb) over prev_events
-				, NULL))[1]
-			) as memory_in_mb,
-			coalesce(
-				storage_in_mb,
-				(array_remove(
-					array_agg(storage_in_mb) over prev_events
-				, NULL))[1]
-			) as storage_in_mb,
+			propagate_nonnull_agg(memory_in_mb) over prev_events as memory_in_mb,
+			propagate_nonnull_agg(storage_in_mb) over prev_events as storage_in_mb,
 			state
 		from
 			raw_events
