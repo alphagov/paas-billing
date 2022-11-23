@@ -189,7 +189,7 @@ CREATE TEMPORARY TABLE events_temp AS WITH
 			)
 		order by
 			created_at, event_sequence
-	),
+	)
 	select
 		*,
 		tstzrange(created_at,
