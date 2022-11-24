@@ -1,28 +1,7 @@
-CREATE TABLE events_temp (
-	event_guid uuid PRIMARY KEY NOT NULL,
-	resource_guid uuid NOT NULL,
-	resource_name text NOT NULL,
-	resource_type text NOT NULL,
-	org_guid uuid NOT NULL,
-	org_name text NOT NULL,
-	space_guid uuid NOT NULL,
-	space_name text NOT NULL,
-	duration tstzrange NOT NULL,
-	plan_guid uuid NOT NULL,
-	plan_name text NOT NULL,
-	service_guid uuid,
-	service_name text,
-	number_of_nodes integer,
-	memory_in_mb integer,
-	storage_in_mb integer,
-
-	CONSTRAINT duration_must_not_be_empty CHECK (not isempty(duration))
-);
-
 -- extract useful stuff from usage events
 -- we treat both apps and services as "resources" so normalize the fields
 -- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
-INSERT INTO events_temp with
+CREATE TABLE events_temp AS WITH
 	raw_events as (
 		(
 			select
@@ -329,9 +308,9 @@ INSERT INTO events_temp with
 		coalesce(vsp.name, plan_name) as plan_name,
 		coalesce(vs.guid, ev.service_guid) as service_guid,
 		coalesce(vs.label, ev.service_name) as service_name,
-		number_of_nodes,
-		memory_in_mb,
-		storage_in_mb
+		number_of_nodes::integer,
+		memory_in_mb::integer,
+		storage_in_mb::integer
 	from
 		event_ranges ev
 	left join
@@ -352,6 +331,20 @@ INSERT INTO events_temp with
 	order by
 		event_sequence, event_guid
 ;
+
+ALTER TABLE events_temp ALTER COLUMN event_guid SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN resource_guid SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN resource_name SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN resource_type SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN org_guid SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN org_name SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN space_guid SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN space_name SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN duration SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN plan_guid SET NOT NULL;
+ALTER TABLE events_temp ALTER COLUMN plan_name SET NOT NULL;
+
+ALTER TABLE events_temp ADD CONSTRAINT events_temp_pkey PRIMARY KEY ( event_guid );
 
 CREATE INDEX events_org_temp_idx ON events_temp (org_guid);
 CREATE INDEX events_space_temp_idx ON events_temp (space_guid);
