@@ -195,8 +195,6 @@ INSERT INTO events_temp with
 				order by created_at, event_sequence
 				rows between unbounded preceding and current row
 			)
-		order by
-			created_at, event_sequence
 	),
 	event_ranges as (
 		select
@@ -363,8 +361,6 @@ INSERT INTO events_temp with
 	where
 		state = 'STARTED'
 		and not isempty(duration)
-	order by
-		event_sequence, event_guid
 ;
 
 CREATE INDEX events_org_temp_idx ON events_temp (org_guid);
