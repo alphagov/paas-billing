@@ -64,8 +64,7 @@ smoke:
 
 .PHONY: integration
 integration:
-	#cd gherkin && go run github.com/cucumber/godog/cmd/godog run
-	echo skip
+	cd gherkin && go run github.com/cucumber/godog/cmd/godog run
 
 .PHONY: acceptance
 acceptance:
