@@ -1,7 +1,7 @@
 -- extract useful stuff from usage events
 -- we treat both apps and services as "resources" so normalize the fields
 -- we normalize states to just STARTED/STOPPED because we treat consecutive STARTED to mean "update"
-CREATE TABLE events_temp AS WITH
+CREATE TEMPORARY VIEW
 	raw_events as (
 		(
 			select
@@ -146,7 +146,9 @@ CREATE TABLE events_temp AS WITH
 			where
 				s.raw_message->>'space_name' !~ '^(SMOKE|ACC|CATS|PERF)-' -- FIXME: this is open to abuse
 		)
-	),
+	);
+
+CREATE TEMPORARY VIEW
 	raw_events_with_injected_values as (
 		select
 			event_sequence,
@@ -174,7 +176,9 @@ CREATE TABLE events_temp AS WITH
 				order by created_at, event_sequence
 				rows between unbounded preceding and current row
 			)
-	),
+	);
+
+CREATE TEMPORARY VIEW
 	event_ranges as (
 		select
 			*,
@@ -192,7 +196,9 @@ CREATE TABLE events_temp AS WITH
 				order by created_at, event_sequence
 				rows between current row and 1 following
 			)
-	),
+	);
+
+CREATE TEMPORARY VIEW
 	valid_service_plans as (
 		select
 			*,
@@ -217,7 +223,9 @@ CREATE TABLE events_temp AS WITH
 		) AS sq
 		where
 			not_redundant
-	),
+	);
+
+CREATE TEMPORARY VIEW
 	valid_services as (
 		select
 			*,
@@ -240,7 +248,9 @@ CREATE TABLE events_temp AS WITH
 		) AS sq
 		where
 			not_redundant
-	),
+	);
+
+CREATE TEMPORARY VIEW
 	valid_orgs as (
 		select
 			*,
@@ -263,7 +273,9 @@ CREATE TABLE events_temp AS WITH
 		) AS sq
 		where
 			not_redundant
-	),
+	);
+
+CREATE TEMPORARY VIEW
 	valid_spaces as (
 		select
 			*,
@@ -286,8 +298,9 @@ CREATE TABLE events_temp AS WITH
 		) AS sq
 		where
 			not_redundant
-	)
+	);
 
+CREATE TABLE events_temp AS
 	select
 		event_guid,
 		resource_guid,
