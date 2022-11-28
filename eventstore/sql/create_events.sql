@@ -222,8 +222,30 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			service_plans
+		from (
+			SELECT
+				*,
+				anydistinct(service_guid) OVER prev_neighb
+				OR anydistinct(name) OVER prev_neighb
+				OR anydistinct(unique_id) OVER prev_neighb
+				OR row_number() OVER full_partition = 1
+				OR row_number() OVER full_partition = count(*) OVER full_partition
+				AS not_redundant
+			FROM service_plans
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				),
+				full_partition AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+				)
+		) AS sq
+		where
+			not_redundant
 	),
 	valid_services as (
 		select
@@ -231,8 +253,28 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			services
+		from (
+			SELECT
+				*,
+				anydistinct(label) OVER prev_neighb
+				OR row_number() OVER full_partition = 1
+				OR row_number() OVER full_partition = count(*) OVER full_partition
+				AS not_redundant
+			FROM services
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				),
+				full_partition AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+				)
+		) AS sq
+		where
+			not_redundant
 	),
 	valid_orgs as (
 		select
@@ -240,8 +282,28 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			orgs
+		from (
+			SELECT
+				*,
+				anydistinct(name) OVER prev_neighb
+				OR row_number() OVER full_partition = 1
+				OR row_number() OVER full_partition = count(*) OVER full_partition
+				AS not_redundant
+			FROM orgs
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				),
+				full_partition AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+				)
+		) AS sq
+		where
+			not_redundant
 	),
 	valid_spaces as (
 		select
@@ -249,8 +311,28 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			spaces
+		from (
+			SELECT
+				*,
+				anydistinct(name) OVER prev_neighb
+				OR row_number() OVER full_partition = 1
+				OR row_number() OVER full_partition = count(*) OVER full_partition
+				AS not_redundant
+			FROM spaces
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				),
+				full_partition AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+				)
+		) AS sq
+		where
+			not_redundant
 	)
 
 	select
