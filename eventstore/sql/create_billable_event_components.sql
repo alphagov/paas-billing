@@ -114,3 +114,5 @@ ALTER INDEX billable_event_components_temp_pkey RENAME TO billable_event_compone
 ALTER INDEX billable_event_components_temp_org_idx RENAME TO billable_event_components_org_idx;
 ALTER INDEX billable_event_components_temp_space_idx RENAME TO billable_event_components_space_idx;
 ALTER INDEX billable_event_components_temp_duration_idx RENAME TO billable_event_components_duration_idx;
+
+ANALYZE billable_event_components;

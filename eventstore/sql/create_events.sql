@@ -377,3 +377,5 @@ ALTER INDEX events_space_temp_idx RENAME TO events_space_idx;
 ALTER INDEX events_resource_temp_idx RENAME TO events_resource_idx;
 ALTER INDEX events_duration_temp_idx RENAME TO events_duration_idx;
 ALTER INDEX events_plan_temp_idx RENAME TO events_plan_idx;
+
+ANALYZE events;

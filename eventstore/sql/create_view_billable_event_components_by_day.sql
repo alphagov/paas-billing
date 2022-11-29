@@ -141,3 +141,4 @@ CREATE INDEX IF NOT EXISTS
 
 REFRESH MATERIALIZED VIEW billable_event_components_by_day;
 
+ANALYZE billable_event_components_by_day;
