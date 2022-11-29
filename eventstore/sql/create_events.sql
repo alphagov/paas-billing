@@ -207,12 +207,17 @@ CREATE TEMPORARY VIEW
 			)) as valid_for
 		from (
 			SELECT
-				*,
+				guid,
+				valid_from,
 				anydistinct(service_guid) OVER prev_neighb
 				OR anydistinct(name) OVER prev_neighb
 				OR anydistinct(unique_id) OVER prev_neighb
 				OR row_number() OVER prev_neighb = 1
-				AS not_redundant
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				service_guid,
+				name,
+				unique_id
 			FROM service_plans
 			WINDOW
 				prev_neighb AS (
@@ -234,10 +239,13 @@ CREATE TEMPORARY VIEW
 			)) as valid_for
 		from (
 			SELECT
-				*,
+				guid,
+				valid_from,
 				anydistinct(label) OVER prev_neighb
 				OR row_number() OVER prev_neighb = 1
-				AS not_redundant
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				label
 			FROM services
 			WINDOW
 				prev_neighb AS (
@@ -259,10 +267,13 @@ CREATE TEMPORARY VIEW
 			)) as valid_for
 		from (
 			SELECT
-				*,
+				guid,
+				valid_from,
 				anydistinct(name) OVER prev_neighb
 				OR row_number() OVER prev_neighb = 1
-				AS not_redundant
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				name
 			FROM orgs
 			WINDOW
 				prev_neighb AS (
@@ -284,10 +295,13 @@ CREATE TEMPORARY VIEW
 			)) as valid_for
 		from (
 			SELECT
-				*,
+				guid,
+				valid_from,
 				anydistinct(name) OVER prev_neighb
 				OR row_number() OVER prev_neighb = 1
-				AS not_redundant
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				name
 			FROM spaces
 			WINDOW
 				prev_neighb AS (
