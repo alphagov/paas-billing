@@ -44,20 +44,20 @@ func startCollector(app *App, cfg Config) error {
 	if err := app.Init(); err != nil {
 		return err
 	}
-	if err := app.StartAppEventCollector(); err != nil {
-		return err
-	}
-
-	if err := app.StartServiceEventCollector(); err != nil {
-		return err
-	}
+// 	if err := app.StartAppEventCollector(); err != nil {
+// 		return err
+// 	}
+// 
+// 	if err := app.StartServiceEventCollector(); err != nil {
+// 		return err
+// 	}
 
 	if err := app.StartEventProcessor(); err != nil {
 		return err
 	}
-	if err := app.StartHistoricDataCollector(); err != nil {
-		return err
-	}
+// 	if err := app.StartHistoricDataCollector(); err != nil {
+// 		return err
+// 	}
 
 	cfg.Logger.Info("started collector")
 	return app.Wait()
