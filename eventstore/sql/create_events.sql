@@ -228,8 +228,7 @@ INSERT INTO events_temp with
 				anydistinct(service_guid) OVER prev_neighb
 				OR anydistinct(name) OVER prev_neighb
 				OR anydistinct(unique_id) OVER prev_neighb
-				OR row_number() OVER full_partition = 1
-				OR row_number() OVER full_partition = count(*) OVER full_partition
+				OR row_number() OVER prev_neighb = 1
 				AS not_redundant
 			FROM service_plans
 			WINDOW
@@ -237,11 +236,6 @@ INSERT INTO events_temp with
 					PARTITION BY guid
 					ORDER BY valid_from
 					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
-				),
-				full_partition AS (
-					PARTITION BY guid
-					ORDER BY valid_from
-					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
 				)
 		) AS sq
 		where
@@ -257,8 +251,7 @@ INSERT INTO events_temp with
 			SELECT
 				*,
 				anydistinct(label) OVER prev_neighb
-				OR row_number() OVER full_partition = 1
-				OR row_number() OVER full_partition = count(*) OVER full_partition
+				OR row_number() OVER prev_neighb = 1
 				AS not_redundant
 			FROM services
 			WINDOW
@@ -266,11 +259,6 @@ INSERT INTO events_temp with
 					PARTITION BY guid
 					ORDER BY valid_from
 					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
-				),
-				full_partition AS (
-					PARTITION BY guid
-					ORDER BY valid_from
-					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
 				)
 		) AS sq
 		where
@@ -286,8 +274,7 @@ INSERT INTO events_temp with
 			SELECT
 				*,
 				anydistinct(name) OVER prev_neighb
-				OR row_number() OVER full_partition = 1
-				OR row_number() OVER full_partition = count(*) OVER full_partition
+				OR row_number() OVER prev_neighb = 1
 				AS not_redundant
 			FROM orgs
 			WINDOW
@@ -295,11 +282,6 @@ INSERT INTO events_temp with
 					PARTITION BY guid
 					ORDER BY valid_from
 					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
-				),
-				full_partition AS (
-					PARTITION BY guid
-					ORDER BY valid_from
-					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
 				)
 		) AS sq
 		where
@@ -315,8 +297,7 @@ INSERT INTO events_temp with
 			SELECT
 				*,
 				anydistinct(name) OVER prev_neighb
-				OR row_number() OVER full_partition = 1
-				OR row_number() OVER full_partition = count(*) OVER full_partition
+				OR row_number() OVER prev_neighb = 1
 				AS not_redundant
 			FROM spaces
 			WINDOW
@@ -324,11 +305,6 @@ INSERT INTO events_temp with
 					PARTITION BY guid
 					ORDER BY valid_from
 					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
-				),
-				full_partition AS (
-					PARTITION BY guid
-					ORDER BY valid_from
-					ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
 				)
 		) AS sq
 		where
