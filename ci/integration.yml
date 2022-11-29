@@ -13,4 +13,4 @@ run:
     - -e
     - -c
     - |
-      echo "skipping, the tests are running on Travis: https://travis-ci.org/alphagov/paas-billing"
+      echo "skipping, the tests are running on Github Actions: https://github.com/alphagov/paas-billing/actions/workflows/test_on_pr.yml"
