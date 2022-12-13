@@ -175,12 +175,7 @@ INSERT INTO events_temp with
 			event_type,
 			created_at,
 			resource_guid,
-			coalesce(
-				resource_name,
-				(array_remove(
-					array_agg(resource_name) over prev_events
-				, NULL))[1]
-			) as resource_name,
+			last_agg(resource_name) FILTER (WHERE resource_name IS NOT NULL) over prev_events as resource_name,
 			resource_type,
 			org_guid,
 			space_guid,
@@ -189,29 +184,17 @@ INSERT INTO events_temp with
 			service_guid,
 			service_name,
 			number_of_nodes,
-			coalesce(
-				memory_in_mb,
-				(array_remove(
-					array_agg(memory_in_mb) over prev_events
-				, NULL))[1]
-			) as memory_in_mb,
-			coalesce(
-				storage_in_mb,
-				(array_remove(
-					array_agg(storage_in_mb) over prev_events
-				, NULL))[1]
-			) as storage_in_mb,
+			last_agg(memory_in_mb) FILTER (WHERE memory_in_mb IS NOT NULL) over prev_events as memory_in_mb,
+			last_agg(storage_in_mb) FILTER (WHERE storage_in_mb IS NOT NULL) over prev_events as storage_in_mb,
 			state
 		from
 			raw_events
 		window
 			prev_events as (
 				partition by resource_guid, event_type
-				order by created_at desc, event_sequence desc
-				rows between current row and unbounded following
+				order by created_at, event_sequence
+				rows between unbounded preceding and current row
 			)
-		order by
-			created_at, event_sequence
 	),
 	event_ranges as (
 		select
@@ -237,8 +220,29 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			service_plans
+		from (
+			SELECT
+				guid,
+				valid_from,
+				anydistinct(service_guid) OVER prev_neighb
+				OR anydistinct(name) OVER prev_neighb
+				OR anydistinct(unique_id) OVER prev_neighb
+				OR row_number() OVER prev_neighb = 1
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				service_guid,
+				name,
+				unique_id
+			FROM service_plans
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				)
+		) AS sq
+		where
+			not_redundant
 	),
 	valid_services as (
 		select
@@ -246,8 +250,25 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			services
+		from (
+			SELECT
+				guid,
+				valid_from,
+				anydistinct(label) OVER prev_neighb
+				OR row_number() OVER prev_neighb = 1
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				label
+			FROM services
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				)
+		) AS sq
+		where
+			not_redundant
 	),
 	valid_orgs as (
 		select
@@ -255,8 +276,25 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			orgs
+		from (
+			SELECT
+				guid,
+				valid_from,
+				anydistinct(name) OVER prev_neighb
+				OR row_number() OVER prev_neighb = 1
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				name
+			FROM orgs
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				)
+		) AS sq
+		where
+			not_redundant
 	),
 	valid_spaces as (
 		select
@@ -264,8 +302,25 @@ INSERT INTO events_temp with
 			tstzrange(valid_from, lead(valid_from, 1, 'infinity') over (
 				partition by guid order by valid_from rows between current row and 1 following
 			)) as valid_for
-		from
-			spaces
+		from (
+			SELECT
+				guid,
+				valid_from,
+				anydistinct(name) OVER prev_neighb
+				OR row_number() OVER prev_neighb = 1
+				AS not_redundant,
+				-- only expose fields we've considered in not_redundant
+				name
+			FROM spaces
+			WINDOW
+				prev_neighb AS (
+					PARTITION BY guid
+					ORDER BY valid_from
+					ROWS BETWEEN 1 PRECEDING AND CURRENT ROW
+				)
+		) AS sq
+		where
+			not_redundant
 	)
 
 	select
@@ -306,8 +361,6 @@ INSERT INTO events_temp with
 	where
 		state = 'STARTED'
 		and not isempty(duration)
-	order by
-		event_sequence, event_guid
 ;
 
 CREATE INDEX events_org_temp_idx ON events_temp (org_guid);
@@ -324,3 +377,5 @@ ALTER INDEX events_space_temp_idx RENAME TO events_space_idx;
 ALTER INDEX events_resource_temp_idx RENAME TO events_resource_idx;
 ALTER INDEX events_duration_temp_idx RENAME TO events_duration_idx;
 ALTER INDEX events_plan_temp_idx RENAME TO events_plan_idx;
+
+ANALYZE events;
