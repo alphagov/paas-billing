@@ -138,6 +138,28 @@ var _ = Describe("runRefreshAndConsolidateLoop", func() {
 		}).Should(BeNumerically(">=", 1))
 	})
 
+	It("should call Refresh and Consolidate once initially before 'Schedule'", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+		wg := sync.WaitGroup{}
+		defer wg.Wait()
+		defer cancel()
+
+		go func() {
+			wg.Add(1)
+			runRefreshAndConsolidateLoop(ctx, logger, 5*time.Second, fakeStore)
+			wg.Done()
+		}()
+
+		Eventually(func() int {
+			return fakeStore.RefreshCallCount()
+		}).Should(Equal(1))
+
+		Eventually(func() int {
+			return fakeStore.ConsolidateAllCallCount()
+		}).Should(Equal(1))
+	})
+
 	It("should not call Consolidate if Refresh fails", func() {
 		fakeStore.RefreshReturns(fmt.Errorf("some-error"))
 

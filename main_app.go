@@ -133,23 +133,21 @@ func runRefreshAndConsolidateLoop(ctx context.Context, logger lager.Logger, sche
 	logger.Info("started")
 	defer logger.Info("stopping")
 	for {
+		logger.Info("processing")
+		if err := store.Refresh(); err != nil {
+			logger.Error("refresh-error", err)
+		} else if err := store.ConsolidateAll(); err != nil {
+			logger.Error("consolidate-error", err)
+		} else {
+			logger.Info("processed", lager.Data{
+				"next_processing_in": schedule.String(),
+			})
+		}
 		select {
 		case <-ctx.Done():
 			return
 		case <-time.After(schedule):
-			logger.Info("processing")
-			if err := store.Refresh(); err != nil {
-				logger.Error("refresh-error", err)
-				continue
-			}
-			if err := store.ConsolidateAll(); err != nil {
-				logger.Error("consolidate-error", err)
-				continue
-			}
 		}
-		logger.Info("processed", lager.Data{
-			"next_processing_in": schedule.String(),
-		})
 	}
 }
 
