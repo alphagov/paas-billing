@@ -65,6 +65,9 @@ func Open(cfg eventstore.Config) (*TempDB, error) {
 	if err := s.Init(); err != nil {
 		return nil, err
 	}
+	if err := s.Refresh(); err != nil {
+		return nil, err
+	}
 	tdb.Schema = s
 	return tdb, nil
 }
