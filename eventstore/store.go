@@ -125,9 +125,6 @@ func (s *EventStore) Init() error {
 		return err
 	}
 
-	if err := s.regenerateEvents(); err != nil {
-		return err
-	}
 	s.logger.Info("initialized")
 	return nil
 }

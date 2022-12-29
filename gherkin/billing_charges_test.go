@@ -75,6 +75,10 @@ func InitializeTestSuite(ctx *godog.TestSuiteContext) {
 			logger.Error("init-eventstore", err)
 			os.Exit(1)
 		}
+		if err := es.Refresh(); err != nil {
+			logger.Error("refresh-eventstore", err)
+			os.Exit(1)
+		}
 	})
 
 	ctx.AfterSuite(func() { fmt.Println("After running test suite") })
