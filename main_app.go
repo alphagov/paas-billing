@@ -37,9 +37,6 @@ func (app *App) Init() error {
 	if err := app.historicDataStore.Init(); err != nil {
 		return err
 	}
-	if err := app.store.ConsolidateAll(); err != nil {
-		return err
-	}
 	return nil
 }
 
