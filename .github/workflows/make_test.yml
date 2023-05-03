@@ -1,5 +1,7 @@
 on:
   - pull_request
+  - push
+  - workflow_dispatch
 
 env:
   GO_VERSION: "1.20"
