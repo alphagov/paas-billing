@@ -12,7 +12,7 @@ jobs:
     ## Setup
     services:
       postgres:
-        image: postgres:12
+        image: postgres:12.5
         env:
           POSTGRES_PASSWORD: secret
           POSTGRES_DB: test
@@ -22,14 +22,23 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+          --name test-postgres
         ports:
           - 5432:5432
     steps:
+      - name: Increase postgres max_connections
+        run: |
+          docker exec -i test-postgres bash << EOF
+            sed -i -e 's/^max_connections = .*/max_connections = 500/' /var/lib/postgresql/data/postgresql.conf
+          EOF
+          docker restart --time 0 test-postgres
+          sleep 5
+
       - name: Checkout repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: "Install Go ${{env.GO_VERSION}}"
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: "${{env.GO_VERSION}}"
 
