@@ -1,4 +1,31 @@
 #!/bin/bash
 
-GREP_COLOR='1;31' grep -E --color=always --line-buffered '^.*error.*$|^.*"log_level":2.*$|$' \
-| (GREP_COLOR='1;30' grep -E --color=always --line-buffered '^{.*$|$')
+#GREP_COLOR='1;31' grep -E --color=always --line-buffered '^.*error.*$|^.*"log_level":2.*$|$' \
+#| (GREP_COLOR='1;30' grep -E --color=always --line-buffered '^{.*$|$')
+
+function is_error_code() {
+	echo "$1" | jq -e 'select(.log_level > 1)' >/dev/null 2>&1
+}
+
+function is_error_in_data() {
+	echo "$1" | jq -e '.data | map(select(. | tostring | ascii_downcase | contains("error"))) | select(length>0' >/dev/null 2>&1
+}
+
+function colorize_json_line() {
+	local json="${1}"
+	if is_error_code "${json}"; then
+		echo "${json}" | jq '.'
+	elif is_error_in_data "${json}"; then
+		echo "${json}" | jq '.'
+	else
+		echo "${json}" | jq -c '.'
+	fi
+}
+
+while read -r line; do
+	if echo "${line}" | jq -e '.' >/dev/null 2>&1 ; then
+		colorize_json_line "${line}"
+	else
+		echo "${line}"
+	fi
+done
