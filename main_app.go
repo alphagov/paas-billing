@@ -88,13 +88,12 @@ func (app *App) StartAPIServer() error {
 		Authenticator: apiAuthenticator,
 		Logger:        logger,
 	})
-	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
 		return apiserver.ListenAndServe(
 			app.ctx,
 			logger,
 			apiServer,
-			addr,
+			app.cfg.ListenAddr,
 		)
 	})
 }
@@ -106,13 +105,12 @@ func (app *App) StartHealthServer() error {
 		Store:  app.store,
 		Logger: logger,
 	})
-	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
 		return apiserver.ListenAndServe(
 			app.ctx,
 			logger,
 			healthServer,
-			addr,
+			app.cfg.ListenAddr,
 		)
 	})
 }

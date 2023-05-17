@@ -30,6 +30,8 @@ type Config struct {
 	Collector             eventcollector.Config
 	CFFetcher             cffetcher.Config
 	ServerPort            int
+	ServerHost            string
+	ListenAddr            string
 	Processor             ProcessorConfig
 	HistoricDataCollector cfstore.Config
 }
@@ -107,7 +109,9 @@ func NewConfigFromEnv() (cfg Config, err error) {
 			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 720*time.Minute),
 		},
 		ServerPort: getEnvWithDefaultInt("PORT", 8881),
+		ServerHost: getEnvWithDefaultString("LISTEN_HOST", ""),
 	}
+	cfg.ListenAddr = fmt.Sprintf("%s:%d", cfg.ServerHost, cfg.ServerPort)
 	return cfg, nil
 }
 

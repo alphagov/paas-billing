@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -29,6 +30,7 @@ var _ = Describe("Config", func() {
 		os.Unsetenv("CF_TOKEN")
 		os.Unsetenv("CF_USER_AGENT")
 		os.Unsetenv("PROCESSOR_SCHEDULE")
+		os.Unsetenv("LISTEN_HOST")
 		os.Unsetenv("PORT")
 	})
 
@@ -47,6 +49,8 @@ var _ = Describe("Config", func() {
 		Expect(cfg.DBConnMaxIdleTime).To(Equal(10*time.Minute))
 		Expect(cfg.DBConnMaxLifetime).To(Equal(1*time.Hour))
 		Expect(cfg.DBMaxIdleConns).To(Equal(1))
+		Expect(cfg.ServerHost).To(Equal(""))
+		Expect(cfg.ListenAddr).To(Equal(fmt.Sprintf("%s:%d", cfg.ServerHost, cfg.ServerPort)))
 	})
 
 	DescribeTable("should return error when failing to parse durations",
@@ -71,6 +75,7 @@ var _ = Describe("Config", func() {
 		},
 		Entry("bad cf fetch limit", "CF_FETCH_LIMIT"),
 		Entry("bad max idle conns", "DB_MAX_IDLE_CONNS"),
+		Entry("bad ServerPort", "PORT"),
 	)
 
 	It("should set DatabaseURL from DATABASE_URL", func() {
@@ -190,6 +195,35 @@ var _ = Describe("Config", func() {
 		cfg, err := NewConfigFromEnv()
 		Expect(err).ToNot(HaveOccurred())
 		Expect(cfg.Processor.Schedule).To(Equal(12 * time.Hour))
+	})
+
+	Describe("cfg.AppRootDir should be set correctly", func() {
+		Context("if $PWD is set and is not empty", func() {
+			It("should be set to the value of $PWD", func() {
+				os.Setenv("PWD", "/tmp")
+				cfg, err := NewConfigFromEnv()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cfg.AppRootDir).To(Equal("/tmp"))
+			})
+		})
+		Context("if $PWD is set and is an empty string", func() {
+			It("should be set to the value of os.Getwd()", func() {
+				os.Setenv("PWD", "")
+				cfg, err := NewConfigFromEnv()
+				Expect(err).ToNot(HaveOccurred())
+				osWd, _ := os.Getwd()
+				Expect(cfg.AppRootDir).To(Equal(osWd))
+			})
+		})
+		Context("if $PWD is unset", func() {
+			It("should be set to the value of os.Getwd()", func() {
+				os.Unsetenv("PWD")
+				cfg, err := NewConfigFromEnv()
+				Expect(err).ToNot(HaveOccurred())
+				osWd, _ := os.Getwd()
+				Expect(cfg.AppRootDir).To(Equal(osWd))
+			})
+		})
 	})
 
 })
