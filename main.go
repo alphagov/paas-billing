@@ -25,13 +25,15 @@ func Main(ctx context.Context, logger lager.Logger) error {
 	}
 
 	if len(os.Args) < 2 {
-		return errors.New("Please provide a command to run [api | collector]")
+		return errors.New("Please provide a command to run [api | collector | proxymetrics]")
 	}
 	switch command := os.Args[1]; command {
 	case "collector":
 		return startCollector(app, cfg)
 	case "api":
 		return startAPI(app, cfg)
+	case "proxymetrics":
+		return startProxyMetrics(app, cfg)
 	default:
 		return fmt.Errorf("Subcommand %s not recognised", command)
 	}
@@ -65,6 +67,14 @@ func startCollector(app *App, cfg Config) error {
 
 func startAPI(app *App, cfg Config) error {
 	if err := app.StartAPIServer(); err != nil {
+		return err
+	}
+	cfg.Logger.Info("started API")
+	return app.Wait()
+}
+
+func startProxyMetrics(app *App, cfg Config) error {
+	if err := app.StartProxyMetricsServer(); err != nil {
 		return err
 	}
 	cfg.Logger.Info("started API")

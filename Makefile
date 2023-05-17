@@ -11,6 +11,8 @@ COLLECTOR_LISTEN_PORT ?= 8880
 COLLECTOR_LISTENER := $(LISTEN_HOST):$(COLLECTOR_LISTEN_PORT)
 API_LISTEN_PORT ?= 8881
 API_LISTENER := $(LISTEN_HOST):$(API_LISTEN_PORT)
+PROXYMETRICS_LISTEN_PORT ?= 8882
+PROXYMETRICS_LISTENER := $(LISTEN_HOST):$(PROXYMETRICS_LISTEN_PORT)
 
 
 LOG_LEVEL ?= info
@@ -44,18 +46,28 @@ dev-prerequisites: run-dev-exports config.json bin/paas-billing
 
 .PHONY: run-dev
 run-dev:
-	$(info Running collector on $(COLLECTOR_LISTENER), api on $(API_LISTENER))
-	$(MAKE) -j2 run-dev-collector run-dev-api
+	$(info Running collector on $(COLLECTOR_LISTENER), api on $(API_LISTENER), metrics proxy on $(PROXYMETRICS_LISTENER))
+	$(MAKE) -j3 run-dev-collector run-dev-api run-dev-proxy-metrics
 
 .PHONY: run-dev-collector
 run-dev-collector: dev-prerequisites
+	$(eval export VCAP_APPLICATION={"application_id":"1285957d-3111-48c4-bc08-0eb8695b8cac","application_name":"paas-billing-collector","application_version":"6f5abc5c-1e2b-4f59-b64c-9bcbfb0c401a","instance_id":"4f628ba0-f37c-44d6-8c54-9f3b013afa11","instance_index":0,"organization_id":"a0caff22-cc01-4370-bc36-592a4aba2dfd","organization_name":"admin","process_id":"16a7ea94-a296-4025-b96c-90ebd1433495","process_type":"web","space_id":"efdd5187-536e-49d8-8b8c-55436515ada6","space_name":"billing"})
 	$(eval export PORT=$(COLLECTOR_LISTEN_PORT))
 	./bin/paas-billing collector | ./scripts/colorize
 
 .PHONY: run-dev-api
 run-dev-api: dev-prerequisites
+	$(eval export VCAP_APPLICATION={"application_id":"17f5830c-01df-4201-bc66-d33f4b1b2244","application_name":"paas-billing-api","application_version":"461feda8-03ba-4ede-a5b5-04524147c621","instance_id":"0c59e331-e446-4ec2-aced-432b44397231","instance_index":0,"organization_id":"a0caff22-cc01-4370-bc36-592a4aba2dfd","organization_name":"admin","process_id":"22e75a85-cb20-4a51-806a-6e0aa5901364","process_type":"web","space_id":"efdd5187-536e-49d8-8b8c-55436515ada6","space_name":"billing"})
 	$(eval export PORT=$(API_LISTEN_PORT))
 	./bin/paas-billing api | ./scripts/colorize
+
+.PHONY: run-proxy-metrics
+run-dev-proxy-metrics: dev-prerequisites
+	$(eval export VCAP_APPLICATION=$(shell cf curl "/v3/apps/$$(cf app paas-billing-metrics-proxy --guid)/env" | jq -c '.application_env_json.VCAP_APPLICATION'))
+	$(eval export APP_NAMES=paas-billing-api,paas-billing-collector)
+	$(eval export PORT=$(PROXYMETRICS_LISTEN_PORT))
+
+	./bin/paas-billing proxymetrics | ./scripts/colorize
 
 .PHONY: run-dev-exports
 run-dev-exports: .cf-is-dev .cf-target-admin-billing

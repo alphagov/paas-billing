@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -8,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/alphagov/paas-billing/instancediscoverer"
 
 	"github.com/alphagov/paas-billing/cfstore"
 	"github.com/alphagov/paas-billing/eventcollector"
@@ -34,6 +37,22 @@ type Config struct {
 	ListenAddr            string
 	Processor             ProcessorConfig
 	HistoricDataCollector cfstore.Config
+	InstanceDiscoverer    instancediscoverer.Config
+	VCAPApplication       *VCAPApplication
+}
+
+type VCAPApplication struct {
+	ApplicationID      string `json:"application_id"`
+	ApplicationName    string `json:"application_name"`
+	ApplicationVersion string `json:"application_version"`
+	InstanceID         string `json:"instance_id"`
+	InstanceIndex      int    `json:"instance_index"`
+	OrganizationID     string `json:"organization_id"`
+	OrganizationName   string `json:"organization_name"`
+	ProcessID          string `json:"process_id"`
+	ProcessType        string `json:"process_type"`
+	SpaceID            string `json:"space_id"`
+	SpaceName          string `json:"space_name"`
 }
 
 func (cfg Config) ConfigFile() (string, error) {
@@ -46,7 +65,8 @@ func (cfg Config) ConfigFile() (string, error) {
 }
 
 type ProcessorConfig struct {
-	Schedule time.Duration
+	Schedule                time.Duration
+	PeriodicMetricsSchedule time.Duration
 }
 
 func NewConfigFromEnv() (cfg Config, err error) {
@@ -61,13 +81,17 @@ func NewConfigFromEnv() (cfg Config, err error) {
 		rootDir = getwd()
 	}
 
+	vcapApplication := VCAPApplication{}
+
+	_ = json.Unmarshal([]byte(os.Getenv("VCAP_APPLICATION")), &vcapApplication)
+
 	cfg = Config{
-		AppRootDir:  rootDir,
-		Logger:      lager.NewLogger("default"),
-		DatabaseURL: getEnvWithDefaultString("DATABASE_URL", "postgres://postgres:@localhost:5432/"),
+		AppRootDir:        rootDir,
+		Logger:            lager.NewLogger("default"),
+		DatabaseURL:       getEnvWithDefaultString("DATABASE_URL", "postgres://postgres:@localhost:5432/"),
 		DBConnMaxIdleTime: getEnvWithDefaultDuration("DB_CONN_MAX_IDLE_TIME", 10*time.Minute),
 		DBConnMaxLifetime: getEnvWithDefaultDuration("DB_CONN_MAX_LIFETIME", time.Hour),
-		DBMaxIdleConns: getEnvWithDefaultInt("DB_MAX_IDLE_CONNS", 1),
+		DBMaxIdleConns:    getEnvWithDefaultInt("DB_MAX_IDLE_CONNS", 1),
 		HistoricDataCollector: cfstore.Config{
 			ClientConfig: &cfclient.Config{
 				ApiAddress:        os.Getenv("CF_API_ADDRESS"),
@@ -106,10 +130,35 @@ func NewConfigFromEnv() (cfg Config, err error) {
 			FetchLimit:   getEnvWithDefaultInt("CF_FETCH_LIMIT", 50),
 		},
 		Processor: ProcessorConfig{
-			Schedule: getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 720*time.Minute),
+			Schedule:                getEnvWithDefaultDuration("PROCESSOR_SCHEDULE", 720*time.Minute),
+			PeriodicMetricsSchedule: getEnvWithDefaultDuration("PERIODIC_METRICS_SCHEDULE", 10*time.Second),
 		},
 		ServerPort: getEnvWithDefaultInt("PORT", 8881),
 		ServerHost: getEnvWithDefaultString("LISTEN_HOST", ""),
+		InstanceDiscoverer: instancediscoverer.Config{
+			ClientConfig: &cfclient.Config{
+				ApiAddress:        os.Getenv("CF_API_ADDRESS"),
+				Username:          os.Getenv("CF_USERNAME"),
+				Password:          os.Getenv("CF_PASSWORD"),
+				ClientID:          os.Getenv("CF_CLIENT_ID"),
+				ClientSecret:      os.Getenv("CF_CLIENT_SECRET"),
+				SkipSslValidation: os.Getenv("CF_SKIP_SSL_VALIDATION") == "true",
+				Token:             os.Getenv("CF_TOKEN"),
+				UserAgent:         os.Getenv("CF_USER_AGENT"),
+				HttpClient: &http.Client{
+					Timeout: 30 * time.Second,
+				},
+			},
+			DiscoveryScope: instancediscoverer.AppDiscoveryScope{
+				SpaceName:        vcapApplication.SpaceName,
+				SpaceID:          vcapApplication.SpaceID,
+				OrganizationName: vcapApplication.OrganizationName,
+				OrganizationID:   vcapApplication.OrganizationID,
+				AppNames:         getEnvStringList("APP_NAMES", ","),
+			},
+			ThisAppName: vcapApplication.ApplicationName,
+		},
+		VCAPApplication: &vcapApplication,
 	}
 	cfg.ListenAddr = fmt.Sprintf("%s:%d", cfg.ServerHost, cfg.ServerPort)
 	return cfg, nil
@@ -153,6 +202,14 @@ func getEnvString(k string) string {
 		panic(fmt.Sprintf("environment variable %s is required", k))
 	}
 	return v
+}
+
+func getEnvStringList(k string, sep string) []string {
+	v := getEnvWithDefaultString(k, "")
+	if v == "" {
+		return []string{}
+	}
+	return strings.Split(v, sep)
 }
 
 func getDefaultLogger() lager.Logger {

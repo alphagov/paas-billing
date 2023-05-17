@@ -474,6 +474,17 @@ curl -s -G 'http://localhost:8881/pricing_plans' \
 ]
 ```
 
+## Metrics
+
+The applications in this repo all produce metrics at `/metrics`.
+
+The metricsproxy service provides a prometheus `http_sd_config` at `/discovery/:appName`
+
+The metricsproxy service provides a proxy for the metrics at `/proxymetrics/:appName/:instanceNumber`
+
+Functionally, this provides the same set of features as [promregator/promregator](https://github.com/promregator/promregator), it just can use
+the existing cloudfoundry authentication already used by the billing collector.
+
 ## Development
 
 You will need:
