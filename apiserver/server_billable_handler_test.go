@@ -36,7 +36,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		orgGUID1          = "f5f32499-db32-4ab7-a314-20cbe3e49080"
 	)
 
-	BeforeEach(func() {
+	BeforeEach(func(specContext SpecContext) {
 		fakeStore = &eventiofakes.FakeEventStore{}
 		fakeAuthenticator = &authfakes.FakeAuthenticator{}
 		fakeAuthorizer = &authfakes.FakeAuthorizer{}
@@ -46,7 +46,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			Store:         fakeStore,
 			EnablePanic:   true,
 		}
-		ctx, cancel = context.WithCancel(context.Background())
+		ctx, cancel = context.WithCancel(specContext)
 	})
 
 	AfterEach(func() {

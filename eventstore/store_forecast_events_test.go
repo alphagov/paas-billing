@@ -11,6 +11,8 @@ import (
 var _ = Describe("ForecastBillingEvents", func() {
 
 	var (
+		db  *testenv.TempDB
+		err error
 		cfg eventstore.Config
 	)
 
@@ -34,7 +36,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("Should return one BillingEvent for each simulated app UsageEvent", func() {
+	It("Should return one BillingEvent for each simulated app UsageEvent", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -63,7 +65,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -183,7 +185,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 		}))
 	})
 
-	It("should never persist simulated events to the store", func() {
+	It("should never persist simulated events to the store", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -198,7 +200,7 @@ var _ = Describe("ForecastBillingEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema

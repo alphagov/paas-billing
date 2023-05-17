@@ -2,10 +2,13 @@ package apiserver
 
 import (
 	"context"
-	"net/http"
+	prom_client "github.com/prometheus/client_golang/prometheus"
 	"time"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-billing/instancediscoverer"
+	"github.com/alphagov/paas-billing/metricsproxy"
+	"github.com/labstack/echo-contrib/prometheus"
 
 	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
@@ -44,7 +47,10 @@ func NewBaseServer(cfg Config) *echo.Echo {
 		}))
 	}
 
-	e.GET("/", status(cfg.Store))
+	p := prometheus.NewPrometheus("echo", nil)
+	p.Use(e)
+
+	e.GET("/", EventStoreStatusHandler(cfg.Store))
 
 	return e
 }
@@ -66,21 +72,15 @@ func New(cfg Config) *echo.Echo {
 	return e
 }
 
-func status(store eventio.EventStore) echo.HandlerFunc {
-	return func(c echo.Context) error {
+func NewProxyMetrics(cfg Config, discoverer instancediscoverer.CFAppDiscoverer, proxy metricsproxy.MetricsProxy) *echo.Echo {
+	e := NewBaseServer(cfg)
 
-		success := true
-		status := http.StatusOK
+	e.GET("/discovery/:appName", MetricsDiscoveryHandler(discoverer))
+	e.GET("/proxymetrics/:appName/:appInstanceID", MetricsProxyHandler(proxy, discoverer))
 
-		if err := store.Ping(); err != nil {
-			success = false
-			status = http.StatusInternalServerError
-		}
+	e.GET("/", DiscovererStatusHandler(discoverer))
 
-		return c.JSONPretty(status, map[string]bool{
-			"ok": success,
-		}, "  ")
-	}
+	return e
 }
 
 func ListenAndServe(ctx context.Context, logger lager.Logger, e *echo.Echo, addr string) error {
@@ -89,6 +89,7 @@ func ListenAndServe(ctx context.Context, logger lager.Logger, e *echo.Echo, addr
 
 	go func() {
 		defer shutdown()
+		var _ = prom_client.DefaultRegisterer
 		logger.Info("started", lager.Data{
 			"addr": addr,
 		})

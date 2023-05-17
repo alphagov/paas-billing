@@ -16,11 +16,11 @@ var _ = Describe("Orgs", func() {
 		tempdb     *testenv.TempDB
 		fakeClient *cfstorefakes.FakeCFDataClient
 		store      *cfstore.Store
+		err        error
 	)
 
-	BeforeEach(func() {
-		var err error
-		tempdb, err = testenv.Open(testenv.BasicConfig)
+	BeforeEach(func(ctx SpecContext) {
+		tempdb, err = testenv.OpenWithContext(testenv.BasicConfig, ctx)
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeClient = &cfstorefakes.FakeCFDataClient{}

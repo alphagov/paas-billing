@@ -51,7 +51,7 @@ type V3Org struct {
 type Pagination struct {
 	TotalResults int `json:"total_results"`
 	TotalPages   int `json:"total_pages"`
-	First struct {
+	First        struct {
 		Href string `json:"href"`
 	} `json:"first"`
 	Last struct {
@@ -67,7 +67,7 @@ type Pagination struct {
 
 type V3OrgsResponse struct {
 	Pagination Pagination `json:"pagination"`
-	Resources []V3Org `json:"resources"`
+	Resources  []V3Org    `json:"resources"`
 }
 
 type Client struct {

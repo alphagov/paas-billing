@@ -4,7 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,6 +35,58 @@ const (
 	DefaultRefreshTimeout = 700 * time.Minute
 	DefaultStoreTimeout   = 45 * time.Second
 	DefaultQueryTimeout   = 45 * time.Second
+)
+
+var (
+	eventStorePerformanceGauge = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventstore",
+			Name:      "performance",
+			Help:      "Elapsed time for EventStore functions (in seconds)",
+		},
+		[]string{"function", "error"})
+)
+
+var (
+	missingPlansCounter = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventstore",
+			Name:      "dummy_plans_created",
+			Help:      "Count of missing plans (for which dummy plans have been created)",
+		}, []string{"guid", "name"})
+	inconsistentPlansCounter = promauto.NewCounter(
+		prometheus.CounterOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventstore",
+			Name:      "inconsistent_plans",
+			Help:      "Count of inconsistent plans",
+		})
+
+	currencyRatioGauge = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventstore",
+			Name:      "currency_configured_ratio",
+			Help:      "Configured ratio for GBP:$code",
+		}, []string{"code"})
+
+	vatRateGauge = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventstore",
+			Name:      "vat_configured_rate",
+			Help:      "Configured vat rate for $code",
+		}, []string{"code"})
+
+	totalCostGauge = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventstore",
+			Name:      "total_cost_gbp",
+			Help:      "Total costs",
+		}, []string{"kind", "plan", "plan_guid"})
 )
 
 var _ eventio.EventStore = &EventStore{}
@@ -84,10 +139,16 @@ func (s *EventStore) Init() error {
 	ctx, cancel := context.WithTimeout(s.ctx, DefaultInitTimeout)
 	defer cancel()
 
-	migrateDriver, err := migrate_postgres.WithInstance(
-		s.db,
-		&migrate_postgres.Config{},
-	)
+	migrateConnection, err := s.db.Conn(ctx)
+	if err != nil {
+		return err
+	}
+	defer migrateConnection.Close()
+
+	// `WithInstance` was causing issues: having a deferred `Close()` on the driver would close the underlying SQL
+	// instance, not just the connection that migrate created.
+	migrateDriver, err := migrate_postgres.WithConnection(ctx, migrateConnection, &migrate_postgres.Config{})
+
 	if err != nil {
 		return err
 	}
@@ -100,6 +161,7 @@ func (s *EventStore) Init() error {
 	if err != nil {
 		return err
 	}
+
 	m.Log = newMigrateLagerLogger(s.logger.Session("migrate", lager.Data{}))
 
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
@@ -138,6 +200,12 @@ func (s *EventStore) Ping() error {
 // billable components. Ideally you should do this once a day
 func (s *EventStore) Refresh() error {
 	return s.regenerateEvents()
+}
+
+func (s *EventStore) RecordPeriodicMetrics() error {
+	return errors.Join(
+		s.recordTotalCostMetrics(),
+	)
 }
 
 func (s *EventStore) regenerateEvents() error {
@@ -194,6 +262,7 @@ func (s *EventStore) initVATRates(tx *sql.Tx) error {
 	}
 
 	for _, vr := range s.cfg.VATRates {
+		vatRateGauge.With(prometheus.Labels{"code": vr.Code}).Set(vr.Rate)
 		s.logger.Info("configuring-vat-rate", lager.Data{
 			"code":       vr.Code,
 			"valid_from": vr.ValidFrom,
@@ -219,6 +288,7 @@ func (s *EventStore) initCurrencyRates(tx *sql.Tx) error {
 	}
 
 	for _, cr := range s.cfg.CurrencyRates {
+		currencyRatioGauge.With(prometheus.Labels{"code": cr.Code}).Set(cr.Rate)
 		s.logger.Info("configuring-currency-rate", lager.Data{
 			"code":       cr.Code,
 			"valid_from": cr.ValidFrom,
@@ -590,6 +660,7 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 		if err := rows.Scan(&planGUID, &planName); err != nil {
 			return err
 		}
+		missingPlansCounter.WithLabelValues(planGUID, planName).Inc()
 		s.logger.Info("generate-missing-plan", lager.Data{
 			"message":    "generating dummy pricing plan",
 			"hint":       "disable IgnoreMissingPlans and ensure all pricing plans are configure correctly",
@@ -619,6 +690,32 @@ func (s *EventStore) generateMissingPlans(tx *sql.Tx) error {
 		)`,
 	); err != nil {
 		return wrapPqError(err, "generate-service-plan-component")
+	}
+	return nil
+}
+
+func (s *EventStore) recordPeriodicMetrics() {
+	for {
+		select {
+		case <-s.ctx.Done():
+			return
+		case <-time.After(10 * time.Second):
+		}
+		s.recordTotalCostMetrics()
+	}
+}
+
+func (s *EventStore) recordTotalCostMetrics() error {
+	costs, err := s.GetTotalCost()
+	if err != nil {
+		return err
+	}
+	for _, c := range costs {
+		totalCostGauge.With(prometheus.Labels{
+			"plan_guid": c.PlanGUID,
+			"kind":      c.Kind,
+			"plan":      c.PlanName,
+		}).Set(float64(c.Cost))
 	}
 	return nil
 }
@@ -692,6 +789,7 @@ func checkPlanConsistency(tx *sql.Tx) error {
 	}
 	defer rows.Close()
 	if rows.Next() {
+		inconsistentPlansCounter.Inc()
 		var planGUID string
 		var planName string
 		var resourceType string
@@ -725,26 +823,35 @@ func (s *EventStore) runSQLFile(tx *sql.Tx, filename string) error {
 	sql, err := ioutil.ReadFile(sqlFilename)
 	if err != nil {
 		err = fmt.Errorf("failed to execute sql file %s: %s", sqlFilename, err)
+		elapsed := time.Since(startTime)
+		eventStorePerformanceGauge.WithLabelValues(
+			fmt.Sprintf("runSQLFile:%s", filename), err.Error()).Set(elapsed.Seconds())
 		s.logger.Error("finish-sql-file", err, lager.Data{
 			"sqlFile": filename,
-			"elapsed": int64(time.Since(startTime)),
+			"elapsed": int64(elapsed),
 		})
 		return err
 	}
 
 	_, err = tx.Exec(string(sql))
+	elapsed := time.Since(startTime)
 	if err != nil {
 		err = wrapPqError(err, sqlFilename)
+		elapsed := time.Since(startTime)
+		eventStorePerformanceGauge.WithLabelValues(
+			fmt.Sprintf("runSQLFile:%s", filename), err.Error()).Set(elapsed.Seconds())
 		s.logger.Error("finish-sql-file", err, lager.Data{
 			"sqlFile": filename,
-			"elapsed": int64(time.Since(startTime)),
+			"elapsed": int64(elapsed),
 		})
 		return err
 	}
+	eventStorePerformanceGauge.WithLabelValues(
+		fmt.Sprintf("runSQLFile:%s", filename), "").Set(elapsed.Seconds())
 
 	s.logger.Info("finish-sql-file", lager.Data{
 		"sqlFile": filename,
-		"elapsed": int64(time.Since(startTime)),
+		"elapsed": int64(elapsed),
 	})
 	return nil
 }

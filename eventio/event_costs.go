@@ -6,5 +6,7 @@ type TotalCostReader interface {
 
 type TotalCost struct {
 	PlanGUID string  `json:"plan_guid"`
+	PlanName string  `json:"-"`
+	Kind     string  `json:"-"`
 	Cost     float32 `json:"cost"`
 }

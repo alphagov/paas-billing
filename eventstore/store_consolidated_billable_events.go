@@ -16,12 +16,12 @@ const (
 	DefaultConsolidationStartDate = "2017-07-01"
 )
 
-func (e *EventStore) GetConsolidatedBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
-	tx, err := e.db.BeginTx(ctx, nil)
+func (s *EventStore) GetConsolidatedBillableEventRows(ctx context.Context, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := e.getConsolidatedBillableEventRows(tx, filter)
+	rows, err := s.getConsolidatedBillableEventRows(tx, filter)
 	if err != nil {
 		tx.Rollback()
 		return nil, err
@@ -29,7 +29,7 @@ func (e *EventStore) GetConsolidatedBillableEventRows(ctx context.Context, filte
 	return rows, nil
 }
 
-func (e *EventStore) getConsolidatedBillableEventRows(tx *sql.Tx, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
+func (s *EventStore) getConsolidatedBillableEventRows(tx *sql.Tx, filter eventio.EventFilter) (eventio.BillableEventRows, error) {
 	if err := filter.Validate(); err != nil {
 		return nil, err
 	}
@@ -85,25 +85,26 @@ func (e *EventStore) getConsolidatedBillableEventRows(tx *sql.Tx, filter eventio
 		order by event_guid
 	`, filterQuery), args...)
 	elapsed := time.Since(startTime)
+	eventStorePerformanceGauge.WithLabelValues("getConsolidatedBillableEventRows", "").Set(elapsed.Seconds())
 	if err != nil {
-		e.logger.Error("get-consolidated-billable-event-rows-query", err, lager.Data{
+		s.logger.Error("get-consolidated-billable-event-rows-query", err, lager.Data{
 			"filter":  filter,
 			"elapsed": int64(elapsed),
 		})
 		return nil, err
 	}
-	e.logger.Info("get-consolidated-billable-event-rows-query", lager.Data{
+	s.logger.Info("get-consolidated-billable-event-rows-query", lager.Data{
 		"filter":  filter,
 		"elapsed": int64(elapsed),
 	})
 	return &BillableEventRows{rows}, nil
 }
 
-func (e *EventStore) GetConsolidatedBillableEvents(filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
+func (s *EventStore) GetConsolidatedBillableEvents(filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	rows, err := e.GetConsolidatedBillableEventRows(ctx, filter)
+	rows, err := s.GetConsolidatedBillableEventRows(ctx, filter)
 	if err != nil {
 		return nil, err
 	}
@@ -123,12 +124,12 @@ func (e *EventStore) GetConsolidatedBillableEvents(filter eventio.EventFilter) (
 	return events, nil
 }
 
-func (e *EventStore) IsRangeConsolidated(filter eventio.EventFilter) (bool, error) {
-	tx, err := e.db.Begin()
+func (s *EventStore) IsRangeConsolidated(filter eventio.EventFilter) (bool, error) {
+	tx, err := s.db.Begin()
 	if err != nil {
 		return false, err
 	}
-	result, err := e.isRangeConsolidated(tx, filter)
+	result, err := s.isRangeConsolidated(tx, filter)
 	if err != nil {
 		tx.Rollback()
 		return false, err
@@ -136,7 +137,7 @@ func (e *EventStore) IsRangeConsolidated(filter eventio.EventFilter) (bool, erro
 	return result, tx.Commit()
 }
 
-func (e *EventStore) isRangeConsolidated(tx *sql.Tx, filter eventio.EventFilter) (bool, error) {
+func (s *EventStore) isRangeConsolidated(tx *sql.Tx, filter eventio.EventFilter) (bool, error) {
 	if err := filter.Validate(); err != nil {
 		return false, err
 	}
@@ -147,13 +148,15 @@ func (e *EventStore) isRangeConsolidated(tx *sql.Tx, filter eventio.EventFilter)
 	)
 	elapsed := time.Since(startTime)
 	if err != nil {
-		e.logger.Error("is-range-consolidated-query", err, lager.Data{
+		eventStorePerformanceGauge.WithLabelValues("isRangeConsolidated", err.Error()).Set(elapsed.Seconds())
+		s.logger.Error("is-range-consolidated-query", err, lager.Data{
 			"filter":  filter,
 			"elapsed": int64(elapsed),
 		})
 		return false, err
 	}
-	e.logger.Info("is-range-consolidated-query", lager.Data{
+	eventStorePerformanceGauge.WithLabelValues("isRangeConsolidated", "").Set(elapsed.Seconds())
+	s.logger.Info("is-range-consolidated-query", lager.Data{
 		"filter":  filter,
 		"elapsed": int64(elapsed),
 	})
@@ -161,12 +164,12 @@ func (e *EventStore) isRangeConsolidated(tx *sql.Tx, filter eventio.EventFilter)
 	return rows.Next(), nil
 }
 
-func (e *EventStore) ConsolidateAll() error {
-	tx, err := e.db.Begin()
+func (s *EventStore) ConsolidateAll() error {
+	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
-	err = e.consolidateAll(tx)
+	err = s.consolidateAll(tx)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -174,7 +177,7 @@ func (e *EventStore) ConsolidateAll() error {
 	return tx.Commit()
 }
 
-func (e *EventStore) consolidateAll(tx *sql.Tx) error {
+func (s *EventStore) consolidateAll(tx *sql.Tx) error {
 	startAt := os.Getenv("CONSOLIDATION_START_DATE")
 	if startAt == "" {
 		startAt = DefaultConsolidationStartDate
@@ -183,15 +186,15 @@ func (e *EventStore) consolidateAll(tx *sql.Tx) error {
 	if endAt == "" {
 		endAt = time.Now().AddDate(0, 0, -5).Format("2006-01-02")
 	}
-	return e.consolidateFullMonths(tx, startAt, endAt)
+	return s.consolidateFullMonths(tx, startAt, endAt)
 }
 
-func (e *EventStore) ConsolidateFullMonths(startAt string, endAt string) error {
-	tx, err := e.db.Begin()
+func (s *EventStore) ConsolidateFullMonths(startAt string, endAt string) error {
+	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
-	err = e.consolidateFullMonths(tx, startAt, endAt)
+	err = s.consolidateFullMonths(tx, startAt, endAt)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -199,7 +202,7 @@ func (e *EventStore) ConsolidateFullMonths(startAt string, endAt string) error {
 	return tx.Commit()
 }
 
-func (e *EventStore) consolidateFullMonths(tx *sql.Tx, startAt string, endAt string) error {
+func (s *EventStore) consolidateFullMonths(tx *sql.Tx, startAt string, endAt string) error {
 	eventFilter := eventio.EventFilter{
 		RangeStart: startAt,
 		RangeStop:  endAt,
@@ -209,7 +212,7 @@ func (e *EventStore) consolidateFullMonths(tx *sql.Tx, startAt string, endAt str
 		return err
 	}
 
-	e.logger.Info("consolidating-full-months", lager.Data{
+	s.logger.Info("consolidating-full-months", lager.Data{
 		"start": truncatedEventFilter.RangeStart,
 		"stop":  truncatedEventFilter.RangeStop,
 	})
@@ -219,23 +222,23 @@ func (e *EventStore) consolidateFullMonths(tx *sql.Tx, startAt string, endAt str
 		return err
 	}
 	for _, filter := range monthFilters {
-		isConsolidated, err := e.isRangeConsolidated(tx, filter)
+		isConsolidated, err := s.isRangeConsolidated(tx, filter)
 		if err != nil {
 			return err
 		}
 		if !isConsolidated {
-			e.logger.Info("consolidating-months", lager.Data{
+			s.logger.Info("consolidating-months", lager.Data{
 				"start": filter.RangeStart,
 				"stop":  filter.RangeStop,
 			})
-			err = e.consolidate(tx, filter)
+			err = s.consolidate(tx, filter)
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	e.logger.Info("consolidated-full-months", lager.Data{
+	s.logger.Info("consolidated-full-months", lager.Data{
 		"start": truncatedEventFilter.RangeStart,
 		"stop":  truncatedEventFilter.RangeStop,
 	})
@@ -243,12 +246,12 @@ func (e *EventStore) consolidateFullMonths(tx *sql.Tx, startAt string, endAt str
 	return nil
 }
 
-func (e *EventStore) Consolidate(filter eventio.EventFilter) error {
-	tx, err := e.db.Begin()
+func (s *EventStore) Consolidate(filter eventio.EventFilter) error {
+	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
-	err = e.consolidate(tx, filter)
+	err = s.consolidate(tx, filter)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -256,7 +259,7 @@ func (e *EventStore) Consolidate(filter eventio.EventFilter) error {
 	return tx.Commit()
 }
 
-func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
+func (s *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 	if len(filter.OrgGUIDs) != 0 {
 		return fmt.Errorf("consolidate must be called without an organisations filter (i.e. for all orgs)")
 	}
@@ -273,14 +276,15 @@ func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 		fmt.Sprintf("[%s, %s)", filter.RangeStart, filter.RangeStop),
 		time.Now())
 	elapsed := time.Since(startTime)
+	eventStorePerformanceGauge.WithLabelValues("consolidate:history", "").Set(elapsed.Seconds())
 	if err != nil {
-		e.logger.Error("consolidation-history-query", err, lager.Data{
+		s.logger.Error("consolidation-history-query", err, lager.Data{
 			"filter":  filter,
 			"elapsed": int64(elapsed),
 		})
 		return err
 	}
-	e.logger.Info("consolidation-history-query", lager.Data{
+	s.logger.Info("consolidation-history-query", lager.Data{
 		"filter":  filter,
 		"elapsed": int64(elapsed),
 	})
@@ -336,14 +340,15 @@ func (e *EventStore) consolidate(tx *sql.Tx, filter eventio.EventFilter) error {
 	startTime = time.Now()
 	_, err = tx.Exec(query, args...)
 	elapsed = time.Since(startTime)
+	eventStorePerformanceGauge.WithLabelValues("consolidate:insert", "").Set(elapsed.Seconds())
 	if err != nil {
-		e.logger.Error("consolidation-insert-query", err, lager.Data{
+		s.logger.Error("consolidation-insert-query", err, lager.Data{
 			"filter":  filter,
 			"elapsed": int64(elapsed),
 		})
 		return err
 	}
-	e.logger.Info("consolidation-insert-query", lager.Data{
+	s.logger.Info("consolidation-insert-query", lager.Data{
 		"filter":  filter,
 		"elapsed": int64(elapsed),
 	})

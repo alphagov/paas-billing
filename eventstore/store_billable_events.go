@@ -45,15 +45,17 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 	}
 
 	startTime := time.Now()
-	rows, err := queryJSON(tx, query, args...)
+	rows, queryErr := queryJSON(tx, query, args...)
 	elapsed := time.Since(startTime)
-	if err != nil {
+	if queryErr != nil {
+		eventStorePerformanceGauge.WithLabelValues("getBillableEventRows", err.Error()).Set(elapsed.Seconds())
 		s.logger.Error("get-billable-event-rows-query", err, lager.Data{
 			"filter":  filter,
 			"elapsed": int64(elapsed),
 		})
 		return nil, err
 	}
+	eventStorePerformanceGauge.WithLabelValues("getBillableEventRows", "").Set(elapsed.Seconds())
 	s.logger.Info("get-billable-event-rows-query", lager.Data{
 		"filter":  filter,
 		"elapsed": int64(elapsed),
@@ -67,7 +69,7 @@ func (s *EventStore) getBillableEventRows(tx *sql.Tx, filter eventio.EventFilter
 // you use the GetBillableEventRows version to avoid buffering everything into
 // memory
 func (s *EventStore) GetBillableEvents(filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
 	rows, err := s.GetBillableEventRows(ctx, filter)
@@ -140,8 +142,8 @@ func (ber *BillableEventRows) Event() (*eventio.BillableEvent, error) {
 // formula to the events for the given filter.
 //
 // Other included tables are:
-//  - components_with_price: Components and formulas selected for this filter
-//  - filtered range: time range of the filter
+//   - components_with_price: Components and formulas selected for this filter
+//   - filtered range: time range of the filter
 func WithBillableEvents(query string, filter eventio.EventFilter, args ...interface{}) (string, []interface{}, error) {
 	if err := filter.Validate(); err != nil {
 		return query, args, err

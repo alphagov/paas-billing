@@ -18,9 +18,9 @@ var _ = Describe("Services", func() {
 		store      *cfstore.Store
 	)
 
-	BeforeEach(func() {
+	BeforeEach(func(ctx SpecContext) {
 		var err error
-		tempdb, err = testenv.Open(testenv.BasicConfig)
+		tempdb, err = testenv.OpenWithContext(testenv.BasicConfig, ctx)
 		Expect(err).ToNot(HaveOccurred())
 
 		fakeClient = &cfstorefakes.FakeCFDataClient{}

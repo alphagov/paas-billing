@@ -153,8 +153,8 @@ func (app *App) StartEventProcessor() error {
 	name := "processor"
 	logger := app.logger.Session(name)
 	return app.start(name, logger, func() error {
+		go runPeriodicMetricsLoop(app.ctx, logger, app.cfg.Processor.PeriodicMetricsSchedule, app.store)
 		runRefreshAndConsolidateLoop(app.ctx, logger, app.cfg.Processor.Schedule, app.store)
-		runPeriodicMetricsLoop(app.ctx, logger, app.cfg.Processor.PeriodicMetricsSchedule, app.store)
 		return nil
 	})
 }

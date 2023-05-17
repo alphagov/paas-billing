@@ -15,7 +15,7 @@ var _ = Describe("GetPricingPlans", func() {
 		cfg eventstore.Config
 	)
 
-	It("should return all the configured plans", func() {
+	It("should return all the configured plans", func(ctx SpecContext) {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
@@ -70,10 +70,10 @@ var _ = Describe("GetPricingPlans", func() {
 			},
 		}
 
-		env, err := testenv.Open(cfg)
+		db, err := testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer env.Close()
-		store := env.Schema
+		defer db.Close()
+		store := db.Schema
 
 		Expect(store.Refresh()).To(Succeed())
 

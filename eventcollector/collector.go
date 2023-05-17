@@ -2,6 +2,9 @@ package eventcollector
 
 import (
 	"context"
+	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"sync"
 	"time"
 
@@ -12,6 +15,25 @@ import (
 
 const (
 	DefaultSchedule = time.Duration(15 * time.Minute)
+)
+
+var (
+	eventsCollectedCounter = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventcollector",
+			Name:      "events_collected_total",
+			Help:      "The total number of events collected",
+		},
+		[]string{"kind"})
+	eventCollectorPerformanceGauge = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "paas_billing",
+			Subsystem: "eventcollector",
+			Name:      "performance",
+			Help:      "Elapsed time for EventCollector functions (in seconds)",
+		},
+		[]string{"function", "error"})
 )
 
 type state string
@@ -62,8 +84,16 @@ func (c *EventCollector) Run(ctx context.Context) error {
 				c.logger.Error("collect-error", err)
 				continue
 			}
+			collectedEventsCount := len(collectedEvents)
 			c.eventsCollected += len(collectedEvents)
+			eventsCollectedCounter.With(
+				prometheus.Labels{"kind": c.fetcher.Kind()},
+			).Add(float64(collectedEventsCount))
+
 			elapsed := time.Since(startTime)
+			eventCollectorPerformanceGauge.WithLabelValues(
+				fmt.Sprintf("Run:%s", c.fetcher.Kind()), "").Set(elapsed.Seconds())
+
 			c.logger.Info("collected", lager.Data{
 				"count":   len(collectedEvents),
 				"kind":    c.fetcher.Kind(),
