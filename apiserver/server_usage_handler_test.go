@@ -6,8 +6,10 @@ import (
 	"net/http/httptest"
 	"net/url"
 
+	"github.com/alphagov/paas-billing/apiserver/auth/authfakes"
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
+
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/fakes"
 	"github.com/labstack/echo"
 
 	. "github.com/alphagov/paas-billing/apiserver"
@@ -21,17 +23,17 @@ var _ = Describe("UsageEventsHandler", func() {
 		ctx               context.Context
 		cancel            context.CancelFunc
 		cfg               Config
-		fakeAuthenticator *fakes.FakeAuthenticator
-		fakeAuthorizer    *fakes.FakeAuthorizer
-		fakeStore         *fakes.FakeEventStore
+		fakeAuthenticator *authfakes.FakeAuthenticator
+		fakeAuthorizer    *authfakes.FakeAuthorizer
+		fakeStore         *eventiofakes.FakeEventStore
 		token             = "ACCESS_GRANTED_TOKEN"
 		orgGUID1          = "f5f32499-db32-4ab7-a314-20cbe3e49080"
 	)
 
 	BeforeEach(func() {
-		fakeStore = &fakes.FakeEventStore{}
-		fakeAuthenticator = &fakes.FakeAuthenticator{}
-		fakeAuthorizer = &fakes.FakeAuthorizer{}
+		fakeStore = &eventiofakes.FakeEventStore{}
+		fakeAuthenticator = &authfakes.FakeAuthenticator{}
+		fakeAuthorizer = &authfakes.FakeAuthorizer{}
 		cfg = Config{
 			Authenticator: fakeAuthenticator,
 			Logger:        lager.NewLogger("test"),
@@ -125,7 +127,7 @@ var _ = Describe("UsageEventsHandler", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(true, nil)
 		fakeAuthorizer.HasBillingAccessReturns(false, nil)
-		fakeRows := &fakes.FakeUsageEventRows{}
+		fakeRows := &eventiofakes.FakeUsageEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)
@@ -174,7 +176,7 @@ var _ = Describe("UsageEventsHandler", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
 		fakeAuthorizer.HasBillingAccessReturns(true, nil)
-		fakeRows := &fakes.FakeUsageEventRows{}
+		fakeRows := &eventiofakes.FakeUsageEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)

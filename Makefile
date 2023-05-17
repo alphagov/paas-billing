@@ -27,7 +27,7 @@ run-dev-exports:
 	@true
 
 .PHONY: test
-test: fakes/fake_usage_api_client.go fakes/fake_cf_client.go fakes/fake_event_fetcher.go fakes/fake_event_store.go fakes/fake_authorizer.go fakes/fake_authenticator.go fakes/fake_billable_event_rows.go fakes/fake_usage_event_rows.go fakes/fake_cf_data_client.go
+test: fakes
 	$(eval export TEST_DATABASE_URL=${TEST_DATABASE_URL})
 	$(eval export APP_ROOT=${APP_ROOT})
 	go run github.com/onsi/ginkgo/v2/ginkgo $(ACTION) -nodes=8 -r $(PACKAGE) -skip-package=acceptance_tests
@@ -72,32 +72,10 @@ acceptance:
 	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
 	go run github.com/onsi/ginkgo/v2/ginkgo -r acceptance_tests
 
-fakes/fake_usage_api_client.go: eventfetchers/cffetcher/cf_client.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventsAPI
 
-fakes/fake_cf_client.go: eventfetchers/cffetcher/cf_client.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventsClient
-
-fakes/fake_event_fetcher.go: eventio/event_fetcher.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< EventFetcher
-
-fakes/fake_event_store.go: eventio/*.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< EventStore
-
-fakes/fake_authorizer.go: apiserver/auth/authorizer.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< Authorizer
-
-fakes/fake_authenticator.go: apiserver/auth/authenticator.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< Authenticator
-
-fakes/fake_billable_event_rows.go: eventio/event_billable.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< BillableEventRows
-
-fakes/fake_usage_event_rows.go: eventio/event_usage.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< UsageEventRows
-
-fakes/fake_cf_data_client.go: cfstore/cfstore_client.go
-	go run github.com/maxbrunsfeld/counterfeiter/v6 -o $@ $< CFDataClient
+.PHONY: fakes
+fakes:
+	go generate ./...
 
 clean:
 	rm -f bin/paas-billing

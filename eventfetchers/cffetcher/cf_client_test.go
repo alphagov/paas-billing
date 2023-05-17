@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/alphagov/paas-billing/eventfetchers/cffetcher/cffetcherfakes"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,7 +13,6 @@ import (
 
 	"code.cloudfoundry.org/lager"
 	. "github.com/alphagov/paas-billing/eventfetchers/cffetcher"
-	"github.com/alphagov/paas-billing/fakes"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -24,7 +24,7 @@ var usageEventTests = func(eventType string, clientFactory clientFactory) func()
 		var (
 			now                   time.Time
 			logger                = lager.NewLogger("test")
-			fakeUsageEventsClient *fakes.FakeUsageEventsClient
+			fakeUsageEventsClient *cffetcherfakes.FakeUsageEventsClient
 			usageEvents           UsageEventsAPI
 			emptyUsageList        string
 			usageListWithRecords  string
@@ -32,7 +32,7 @@ var usageEventTests = func(eventType string, clientFactory clientFactory) func()
 
 		BeforeEach(func() {
 			now = time.Now()
-			fakeUsageEventsClient = &fakes.FakeUsageEventsClient{}
+			fakeUsageEventsClient = &cffetcherfakes.FakeUsageEventsClient{}
 			usageEvents = clientFactory(fakeUsageEventsClient, logger)
 
 			emptyUsageList = `{

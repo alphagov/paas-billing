@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
 	"os"
 	"os/exec"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/fakes"
 	"github.com/alphagov/paas-billing/testenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -107,12 +107,12 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 
 var _ = Describe("runRefreshAndConsolidateLoop", func() {
 	var (
-		fakeStore *fakes.FakeEventStore
+		fakeStore *eventiofakes.FakeEventStore
 		logger    lager.Logger
 	)
 
 	BeforeEach(func() {
-		fakeStore = &fakes.FakeEventStore{}
+		fakeStore = &eventiofakes.FakeEventStore{}
 		logger = lager.NewLogger("test")
 	})
 

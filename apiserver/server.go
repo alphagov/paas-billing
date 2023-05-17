@@ -13,6 +13,8 @@ import (
 	"github.com/labstack/echo/middleware"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 type Config struct {
 	// Authenticator sets the auth mechanism (required)
 	Authenticator auth.Authenticator

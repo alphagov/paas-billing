@@ -9,6 +9,7 @@ import (
 	"github.com/cloudfoundry-community/go-cfclient"
 )
 
+//counterfeiter:generate . CFDataClient
 type CFDataClient interface {
 	ListServicePlans() ([]cfclient.ServicePlan, error)
 	ListServices() ([]cfclient.Service, error)

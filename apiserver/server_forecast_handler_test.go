@@ -8,9 +8,11 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
+
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-billing/apiserver/auth/authfakes"
 	"github.com/alphagov/paas-billing/eventstore"
-	"github.com/alphagov/paas-billing/fakes"
 	"github.com/labstack/echo"
 
 	. "github.com/alphagov/paas-billing/apiserver"
@@ -24,15 +26,15 @@ var _ = Describe("ForecastEventsHandler", func() {
 		ctx               context.Context
 		cancel            context.CancelFunc
 		cfg               Config
-		fakeAuthenticator *fakes.FakeAuthenticator
-		fakeAuthorizer    *fakes.FakeAuthorizer
-		fakeStore         *fakes.FakeEventStore
+		fakeAuthenticator *authfakes.FakeAuthenticator
+		fakeAuthorizer    *authfakes.FakeAuthorizer
+		fakeStore         *eventiofakes.FakeEventStore
 	)
 
 	BeforeEach(func() {
-		fakeStore = &fakes.FakeEventStore{}
-		fakeAuthenticator = &fakes.FakeAuthenticator{}
-		fakeAuthorizer = &fakes.FakeAuthorizer{}
+		fakeStore = &eventiofakes.FakeEventStore{}
+		fakeAuthenticator = &authfakes.FakeAuthenticator{}
+		fakeAuthorizer = &authfakes.FakeAuthorizer{}
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
 		cfg = Config{
@@ -94,7 +96,7 @@ var _ = Describe("ForecastEventsHandler", func() {
 			"event_guid": "raw-json-guid-2"
 		}`
 
-		fakeRows := &fakes.FakeBillableEventRows{}
+		fakeRows := &eventiofakes.FakeBillableEventRows{}
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)

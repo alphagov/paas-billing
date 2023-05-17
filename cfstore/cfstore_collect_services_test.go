@@ -2,7 +2,7 @@ package cfstore_test
 
 import (
 	"github.com/alphagov/paas-billing/cfstore"
-	"github.com/alphagov/paas-billing/fakes"
+	"github.com/alphagov/paas-billing/cfstore/cfstorefakes"
 	"github.com/alphagov/paas-billing/testenv"
 	"github.com/cloudfoundry-community/go-cfclient"
 	. "github.com/onsi/ginkgo/v2"
@@ -14,7 +14,7 @@ var _ = Describe("Services", func() {
 
 	var (
 		tempdb     *testenv.TempDB
-		fakeClient *fakes.FakeCFDataClient
+		fakeClient *cfstorefakes.FakeCFDataClient
 		store      *cfstore.Store
 	)
 
@@ -23,7 +23,7 @@ var _ = Describe("Services", func() {
 		tempdb, err = testenv.Open(testenv.BasicConfig)
 		Expect(err).ToNot(HaveOccurred())
 
-		fakeClient = &fakes.FakeCFDataClient{}
+		fakeClient = &cfstorefakes.FakeCFDataClient{}
 		fakeClient.ListServicesReturnsOnCall(0, []cfclient.Service{}, nil)
 
 		store, err = cfstore.New(cfstore.Config{

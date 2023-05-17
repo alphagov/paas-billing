@@ -20,6 +20,7 @@ type VATRateReader interface {
 	GetVATRates(filter TimeRangeFilter) ([]VATRate, error)
 }
 
+//counterfeiter:generate . EventStore
 type EventStore interface {
 	Init() error
 	Refresh() error
