@@ -5,3 +5,5 @@ paas-billing
 bin/paas-billing
 .idea
 config.json
+config.json
+*.test
