@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/alphagov/paas-billing/apiserver/auth"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 // isAdmin checks if there is a token in the request with an operator scope

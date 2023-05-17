@@ -10,7 +10,7 @@ import (
 	"github.com/alphagov/paas-billing/eventio/eventiofakes"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 
 	. "github.com/alphagov/paas-billing/apiserver"
 	. "github.com/onsi/ginkgo/v2"

@@ -11,7 +11,7 @@ import (
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	jwt "github.com/dgrijalva/jwt-go"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	"golang.org/x/oauth2"
 )
 

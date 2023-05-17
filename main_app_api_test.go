@@ -13,7 +13,7 @@ import (
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
 	"github.com/alphagov/paas-billing/testenv"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gbytes"
