@@ -93,8 +93,8 @@ test: fakes
 .PHONY: gherkin_test
 gherkin_test: gherkin_test_lon gherkin_test_ie
 
-.PHONY: gherkin_test_lon
-gherkin_test_lon:
+.PHONY: gherkin_test_ie
+gherkin_test_ie:
 	mkdir -p gherkin/features
 	cp ../paas-cf/config/billing/tests/eu-west-1_billing_rds_charges.feature gherkin/features/
 	cp ../paas-cf/config/billing/output/eu-west-1.json config.json
@@ -102,8 +102,8 @@ gherkin_test_lon:
 	rm config.json
 	rm gherkin/features/*
 
-.PHONY: gherkin_test_ie
-gherkin_test_ie:
+.PHONY: gherkin_test_lon
+gherkin_test_lon:
 	mkdir -p gherkin/features
 	cp ../paas-cf/config/billing/tests/eu-west-2_billing_rds_charges.feature gherkin/features/
 	cp ../paas-cf/config/billing/output/eu-west-2.json config.json
