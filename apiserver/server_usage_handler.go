@@ -5,7 +5,7 @@ import (
 
 	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func UsageEventsHandler(store eventio.UsageEventReader, uaa auth.Authenticator) echo.HandlerFunc {

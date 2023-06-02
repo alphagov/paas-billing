@@ -14,7 +14,7 @@ var _ = Describe("GetCurrencyRates", func() {
 		cfg eventstore.Config
 	)
 
-	It("should return all the configured currency rates", func() {
+	It("should return all the configured currency rates", func(ctx SpecContext) {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
@@ -79,10 +79,10 @@ var _ = Describe("GetCurrencyRates", func() {
 			},
 		}
 
-		env, err := testenv.Open(cfg)
+		db, err := testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer env.Close()
-		store := env.Schema
+		defer db.Close()
+		store := db.Schema
 
 		Expect(store.Refresh()).To(Succeed())
 

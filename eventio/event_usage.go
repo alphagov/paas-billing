@@ -25,6 +25,7 @@ type UsageEvent struct {
 	StorageInMB   int64  `json:"storage_in_mb"`
 }
 
+//counterfeiter:generate . UsageEventRows
 type UsageEventRows interface {
 	Next() bool
 	Close() error

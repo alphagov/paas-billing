@@ -7,6 +7,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/alphagov/paas-billing/instancediscoverer"
+	"github.com/alphagov/paas-billing/metricsproxy"
+
 	"github.com/alphagov/paas-billing/cfstore"
 
 	"code.cloudfoundry.org/lager"
@@ -88,13 +91,12 @@ func (app *App) StartAPIServer() error {
 		Authenticator: apiAuthenticator,
 		Logger:        logger,
 	})
-	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
 		return apiserver.ListenAndServe(
 			app.ctx,
 			logger,
 			apiServer,
-			addr,
+			app.cfg.ListenAddr,
 		)
 	})
 }
@@ -106,13 +108,43 @@ func (app *App) StartHealthServer() error {
 		Store:  app.store,
 		Logger: logger,
 	})
-	addr := fmt.Sprintf(":%d", app.cfg.ServerPort)
 	return app.start(name, logger, func() error {
 		return apiserver.ListenAndServe(
 			app.ctx,
 			logger,
 			healthServer,
-			addr,
+			app.cfg.ListenAddr,
+		)
+	})
+}
+
+func (app *App) StartProxyMetricsServer() error {
+	name := "proxymetrics"
+	logger := app.logger.Session(name)
+	appDiscoverer, err := instancediscoverer.New(instancediscoverer.Config{
+		ClientConfig:   app.cfg.InstanceDiscoverer.ClientConfig,
+		DiscoveryScope: app.cfg.InstanceDiscoverer.DiscoveryScope,
+		Logger:         logger,
+		ThisAppName:    app.cfg.VCAPApplication.ApplicationName,
+	})
+	if err != nil {
+		return err
+	}
+
+	metricsProxy := metricsproxy.New(metricsproxy.Config{
+		Logger: logger,
+	})
+
+	proxyMetricsServer := apiserver.NewProxyMetrics(apiserver.Config{
+		Logger: logger,
+	}, appDiscoverer, metricsProxy)
+
+	return app.start(name, logger, func() error {
+		return apiserver.ListenAndServe(
+			app.ctx,
+			logger,
+			proxyMetricsServer,
+			app.cfg.ListenAddr,
 		)
 	})
 }
@@ -121,9 +153,23 @@ func (app *App) StartEventProcessor() error {
 	name := "processor"
 	logger := app.logger.Session(name)
 	return app.start(name, logger, func() error {
+		go runPeriodicMetricsLoop(app.ctx, logger, app.cfg.Processor.PeriodicMetricsSchedule, app.store)
 		runRefreshAndConsolidateLoop(app.ctx, logger, app.cfg.Processor.Schedule, app.store)
 		return nil
 	})
+}
+
+func runPeriodicMetricsLoop(ctx context.Context, logger lager.Logger, schedule time.Duration, store eventio.EventStore) {
+	for {
+		if err := store.RecordPeriodicMetrics(); err != nil {
+			logger.Error("periodic-metrics-error", err)
+		}
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(schedule):
+		}
+	}
 }
 
 func runRefreshAndConsolidateLoop(ctx context.Context, logger lager.Logger, schedule time.Duration, store eventio.EventStore) {

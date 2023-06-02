@@ -3,6 +3,8 @@ package cffetcher
 import (
 	"context"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 	"time"
 
 	"code.cloudfoundry.org/lager"
@@ -20,6 +22,25 @@ type Kind string
 const (
 	App     Kind = "app"
 	Service Kind = "service"
+)
+
+var (
+	cfFetcherPerformanceGauge = promauto.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: "paas_billing",
+			Subsystem: "cfeventfetcher",
+			Name:      "performance",
+			Help:      "Elapsed time for CFEventFetcher functions (in seconds)",
+		},
+		[]string{"function", "error"})
+	eventsCollectedCounter = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "paas_billing",
+			Subsystem: "cfeventfetcher",
+			Name:      "events_collected_total",
+			Help:      "The total number of events collected",
+		},
+		[]string{"kind"})
 )
 
 var _ eventio.EventFetcher = &CFEventFetcher{}
@@ -78,6 +99,9 @@ func (e *CFEventFetcher) FetchEvents(ctx context.Context, lastEvent *eventio.Raw
 		}
 	}
 	elapsed := time.Since(startTime)
+	cfFetcherPerformanceGauge.WithLabelValues(
+		fmt.Sprintf("FetchEvents:%s", e.Kind()), "").Set(elapsed.Seconds())
+	eventsCollectedCounter.With(prometheus.Labels{"kind": e.Kind()}).Add(float64(len(events)))
 	e.logger.Info("fetched", lager.Data{
 		"last_guid":   guid,
 		"event_count": len(events),

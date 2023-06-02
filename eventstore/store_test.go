@@ -17,21 +17,22 @@ var _ = Describe("Store", func() {
 
 	var (
 		cfg eventstore.Config
+		db  *testenv.TempDB
+		err error
 	)
 
 	BeforeEach(func() {
 		cfg = testenv.BasicConfig
 	})
 
-	It("should be idempotent", func() {
-		db, err := testenv.Open(cfg)
+	It("should be idempotent", func(ctx SpecContext) {
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer db.Close()
 		Expect(db.Schema.Init()).To(Succeed())
 		Expect(db.Schema.Init()).To(Succeed())
 	})
 
-	It("should normalize *_usage_events tables into a consistent format with durations", func() {
+	It("should normalize *_usage_events tables into a consistent format with durations", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -80,7 +81,7 @@ var _ = Describe("Store", func() {
 			"raw_message": json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "ja-rails-postgres", "service_instance_type": "managed_service_instance"}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -160,7 +161,7 @@ var _ = Describe("Store", func() {
 		}))
 	})
 
-	It("only outputs a single resource row because the others have zero duration", func() {
+	It("only outputs a single resource row because the others have zero duration", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -175,7 +176,7 @@ var _ = Describe("Store", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -192,8 +193,8 @@ var _ = Describe("Store", func() {
 		Expect(db.Get(`SELECT COUNT(*) FROM billable_event_components`)).To(BeNumerically("==", 1))
 	})
 
-	It("should fail if there is a service_plan without pricing_plan", func() {
-		db, err := testenv.Open(cfg)
+	It("should fail if there is a service_plan without pricing_plan", func(ctx SpecContext) {
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -273,7 +274,7 @@ var _ = Describe("Store", func() {
 		Expect(err).To(MatchError(`missing 'service' pricing plan configuration for 'AWESOME_SERVICE_PLAN_NAME' (c6221308-b7bb-46d2-9d79-a357f5a3837b)`))
 	})
 
-	It("should not fail and generate a fake plan if there is a service_plan without pricing_plan but IgnoreMissingPlans=true", func() {
+	It("should not fail and generate a fake plan if there is a service_plan without pricing_plan but IgnoreMissingPlans=true", func(ctx SpecContext) {
 		cfg.IgnoreMissingPlans = true
 
 		existingPlan := eventio.PricingPlan{
@@ -291,7 +292,7 @@ var _ = Describe("Store", func() {
 		}
 		cfg.AddPlan(existingPlan)
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -451,7 +452,7 @@ var _ = Describe("Store", func() {
 		))
 	})
 
-	It("should ensure plan has unique plan_guid + valid_from", func() {
+	It("should ensure plan has unique plan_guid + valid_from", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -478,16 +479,17 @@ var _ = Describe("Store", func() {
 				},
 			},
 		})
-		db, err := testenv.Open(cfg)
-		Expect(err).To(MatchError(ContainSubstring(`violates unique constraint`)))
-		if err == nil {
-			db.Close()
-		}
+		db, err = testenv.OpenWithContext(cfg, ctx)
+		Expect(err).Should(
+			MatchError(
+				ContainSubstring(`violates unique constraint`),
+			))
+		defer db.Close()
 	})
 
 	DescribeTable("reject placing plans with valid_from that isn't the start of the month",
-		func(timestamp string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, timestamp string) {
+			cfg = eventstore.Config{
 				PricingPlans: []eventio.PricingPlan{
 					{
 						PlanGUID:  uuid.NewV4().String(),
@@ -503,11 +505,13 @@ var _ = Describe("Store", func() {
 						},
 					},
 				},
-			})
-			if err == nil {
-				db.Close()
 			}
-			Expect(err).To(MatchError(ContainSubstring(`violates check constraint "valid_from_start_of_month"`)))
+
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).Should(
+				MatchError(
+					ContainSubstring(`violates check constraint "valid_from_start_of_month"`),
+				))
 		},
 		Entry("not first day of month", "2017-04-04T00:00:00Z"),
 		Entry("not midnight (hour)", "2017-04-01T01:00:00Z"),
@@ -517,8 +521,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("reject vat_rates with valid_from that isn't the start of the month",
-		func(timestamp string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, timestamp string) {
+			cfg = eventstore.Config{
 				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: timestamp,
@@ -526,11 +530,13 @@ var _ = Describe("Store", func() {
 						Rate:      0,
 					},
 				},
-			})
-			if err == nil {
-				db.Close()
 			}
-			Expect(err).To(MatchError(ContainSubstring(`violates check constraint "valid_from_start_of_month"`)))
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).Should(
+				MatchError(
+					ContainSubstring(`violates check constraint "valid_from_start_of_month"`),
+				))
+			defer db.Close()
 		},
 		Entry("not first day of month", "2017-04-04T00:00:00Z"),
 		Entry("not midnight (hour)", "2017-04-01T01:00:00Z"),
@@ -540,8 +546,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("allow currency_rates with valid_from that isn't the first day of the month",
-		func(timestamp string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, timestamp string) {
+			cfg := eventstore.Config{
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: timestamp,
@@ -549,19 +555,18 @@ var _ = Describe("Store", func() {
 						Rate:      0.8,
 					},
 				},
-			})
-			if err == nil {
-				db.Close()
 			}
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
 		},
 		Entry("not first day of month", "2017-04-04T00:00:00Z"),
 		Entry("first day of month", "2017-05-01T00:00:00Z"),
 	)
 
 	DescribeTable("reject currency_rates with valid_from that isn't the start of a day",
-		func(timestamp string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, timestamp string) {
+			cfg := eventstore.Config{
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: timestamp,
@@ -569,11 +574,13 @@ var _ = Describe("Store", func() {
 						Rate:      0.8,
 					},
 				},
-			})
-			if err == nil {
-				db.Close()
 			}
-			Expect(err).To(MatchError(ContainSubstring(`violates check constraint "valid_from_start_of_day"`)))
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).Should(
+				MatchError(
+					ContainSubstring(`violates check constraint "valid_from_start_of_day"`),
+				))
+			defer db.Close()
 		},
 		Entry("not midnight (hour)", "2017-04-01T01:00:00Z"),
 		Entry("not midnight (minute)", "2017-04-01T00:01:00Z"),
@@ -582,8 +589,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("allow whitelisted currency codes",
-		func(code string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, code string) {
+			cfg := eventstore.Config{
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: "2001-01-01",
@@ -591,11 +598,10 @@ var _ = Describe("Store", func() {
 						Rate:      0.8,
 					},
 				},
-			})
-			Expect(err).ToNot(HaveOccurred())
-			if err == nil {
-				defer db.Close()
 			}
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).Should(Succeed())
+			defer db.Close()
 		},
 		Entry("£ UK Sterling", "GBP"),
 		Entry("$ US Dollar", "USD"),
@@ -603,8 +609,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("reject unknown currency_codes",
-		func(code string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, code string) {
+			cfg := eventstore.Config{
 				CurrencyRates: []eventio.CurrencyRate{
 					{
 						ValidFrom: "2001-01-01",
@@ -612,11 +618,13 @@ var _ = Describe("Store", func() {
 						Rate:      0.8,
 					},
 				},
-			})
-			if err == nil {
-				db.Close()
 			}
-			Expect(err).To(MatchError(ContainSubstring(`invalid currency rate: invalid input value for enum currency_code`)))
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).Should(
+				MatchError(
+					ContainSubstring(`invalid currency rate: invalid input value for enum currency_code`),
+				))
+			defer db.Close()
 		},
 		Entry("no lowercase", "usd"),
 		Entry("no symbols", "$"),
@@ -625,8 +633,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("allow whitelisted vat_rates",
-		func(code string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, code string) {
+			cfg := eventstore.Config{
 				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: "2001-01-01",
@@ -634,11 +642,10 @@ var _ = Describe("Store", func() {
 						Rate:      0.1,
 					},
 				},
-			})
-			Expect(err).ToNot(HaveOccurred())
-			if err == nil {
-				defer db.Close()
 			}
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).ToNot(HaveOccurred())
+			defer db.Close()
 		},
 		Entry("allow: Standard", "Standard"),
 		Entry("allow: Reduced", "Reduced"),
@@ -646,8 +653,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("reject unknown vat_rates",
-		func(code string) {
-			db, err := testenv.Open(eventstore.Config{
+		func(ctx SpecContext, code string) {
+			cfg := eventstore.Config{
 				VATRates: []eventio.VATRate{
 					{
 						ValidFrom: "2001-01-01",
@@ -655,11 +662,13 @@ var _ = Describe("Store", func() {
 						Rate:      0.8,
 					},
 				},
-			})
-			if err == nil {
-				db.Close()
 			}
-			Expect(err).To(MatchError(ContainSubstring(`invalid vat rate: invalid input value for enum vat_code`)))
+			db, err = testenv.OpenWithContext(cfg, ctx)
+			Expect(err).Should(
+				MatchError(
+					ContainSubstring(`invalid vat rate: invalid input value for enum vat_code`),
+				))
+			defer db.Close()
 		},
 		Entry("no lowercase", "standard"),
 		Entry("no uppercase", "ZERO"),
@@ -667,8 +676,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("should store events of difference kinds",
-		func(kind string) {
-			db, err := testenv.Open(eventstore.Config{})
+		func(ctx SpecContext, kind string) {
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
 			defer db.Close()
 			event1 := eventio.RawEvent{
@@ -720,8 +729,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("should not commit when batch contains invalid app event",
-		func(kind string, expectedErr string, badEvent eventio.RawEvent) {
-			db, err := testenv.Open(eventstore.Config{})
+		func(ctx SpecContext, kind string, expectedErr string, badEvent eventio.RawEvent) {
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
 			defer db.Close()
 			event1 := eventio.RawEvent{
@@ -795,8 +804,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("should be an error to GetEvents with invalid Kind",
-		func(kind string, expectedErr string) {
-			db, err := testenv.Open(eventstore.Config{})
+		func(ctx SpecContext, kind string, expectedErr string) {
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
 			defer db.Close()
 			storedEvents, err := db.Schema.GetEvents(eventio.RawEventFilter{
@@ -810,8 +819,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("should ignore events that already exist in the database",
-		func(kind string) {
-			db, err := testenv.Open(eventstore.Config{})
+		func(ctx SpecContext, kind string) {
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
 			defer db.Close()
 			event1 := eventio.RawEvent{
@@ -869,8 +878,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("should be able to fetch only the LAST known event",
-		func(kind string) {
-			db, err := testenv.Open(eventstore.Config{})
+		func(ctx SpecContext, kind string) {
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
 			defer db.Close()
 			event1 := eventio.RawEvent{
@@ -920,8 +929,8 @@ var _ = Describe("Store", func() {
 	)
 
 	DescribeTable("should be able to fetch only the FIRST known event",
-		func(kind string) {
-			db, err := testenv.Open(eventstore.Config{})
+		func(ctx SpecContext, kind string) {
+			db, err = testenv.OpenWithContext(cfg, ctx)
 			Expect(err).ToNot(HaveOccurred())
 			defer db.Close()
 			event1 := eventio.RawEvent{
@@ -972,19 +981,11 @@ var _ = Describe("Store", func() {
 	)
 
 	Describe("pg_size_bytes", func() {
-		var db *testenv.TempDB
-
-		BeforeEach(func() {
-			var err error
-			db, err = testenv.Open(cfg)
-			Expect(err).ToNot(HaveOccurred())
-		})
-		AfterEach(func() {
-			db.Close()
-		})
-
 		DescribeTable("valid inputs",
-			func(input string, expected int) {
+			func(ctx SpecContext, input string, expected int) {
+				db, err = testenv.OpenWithContext(cfg, ctx)
+				Expect(err).ToNot(HaveOccurred())
+				defer db.Close()
 				var output int
 				err := db.Conn.QueryRow(`select pg_size_bytes('` + input + `')`).Scan(&output)
 				Expect(err).ToNot(HaveOccurred())
@@ -1034,7 +1035,10 @@ var _ = Describe("Store", func() {
 		)
 
 		DescribeTable("invalid inputs",
-			func(input string) {
+			func(ctx SpecContext, input string) {
+				db, err = testenv.OpenWithContext(cfg, ctx)
+				Expect(err).ToNot(HaveOccurred())
+				defer db.Close()
 				_, err := db.Conn.Query(`select pg_size_bytes('` + input + `')`)
 				Expect(err).To(HaveOccurred())
 			},

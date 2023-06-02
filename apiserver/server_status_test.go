@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http/httptest"
 
-	"github.com/alphagov/paas-billing/fakes"
-
 	"code.cloudfoundry.org/lager"
 
-	"github.com/labstack/echo"
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
+
+	"github.com/labstack/echo/v4"
 
 	. "github.com/alphagov/paas-billing/apiserver"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,12 +22,12 @@ var _ = Describe("Status", func() {
 		ctx       context.Context
 		cancel    context.CancelFunc
 		cfg       Config
-		fakeStore *fakes.FakeEventStore
+		fakeStore *eventiofakes.FakeEventStore
 	)
 
 	BeforeEach(func() {
 
-		fakeStore = &fakes.FakeEventStore{}
+		fakeStore = &eventiofakes.FakeEventStore{}
 		cfg = Config{
 			Logger: lager.NewLogger("test"),
 			Store:  fakeStore,

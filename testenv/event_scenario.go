@@ -1,6 +1,7 @@
 package testenv
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -80,12 +81,12 @@ func (t *TestScenario) DeltaTimeJSON(ds string) string {
 	return t.DeltaTime(ds).Format("2006-01-02T15:04:05+00:00")
 }
 
-func (t *TestScenario) Open(cfg eventstore.Config) (*TempDB, error) {
+func (t *TestScenario) OpenWithContext(cfg eventstore.Config, ctx context.Context) (*TempDB, error) {
 	for _, p := range t.plans {
 		cfg.AddPlan(*p)
 	}
 
-	db, err := Open(cfg)
+	db, err := OpenWithContext(cfg, ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -94,6 +95,19 @@ func (t *TestScenario) Open(cfg eventstore.Config) (*TempDB, error) {
 	t.FlushEntities(db, cfg)
 
 	return db, err
+}
+
+func (t *TestScenario) Open(cfg eventstore.Config) (*TempDB, error) {
+	return t.OpenWithContext(cfg, context.Background())
+}
+
+func (t *TestScenario) OpenInto(db *TempDB, cfg eventstore.Config) error {
+	tdb, err := t.Open(cfg)
+	if err != nil {
+		return err
+	}
+	*db = *tdb
+	return nil
 }
 
 func (t *TestScenario) FlushAppEvents(db *TempDB) error {

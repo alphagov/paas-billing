@@ -28,6 +28,7 @@ type BillableEventForecaster interface {
 	ForecastBillableEvents(events []UsageEvent, filter EventFilter) ([]BillableEvent, error)
 }
 
+//counterfeiter:generate . BillableEventRows
 type BillableEventRows interface {
 	Next() bool
 	Close() error

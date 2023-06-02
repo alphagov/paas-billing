@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"time"
 
@@ -29,6 +31,8 @@ var _ = Describe("Config", func() {
 		os.Unsetenv("CF_TOKEN")
 		os.Unsetenv("CF_USER_AGENT")
 		os.Unsetenv("PROCESSOR_SCHEDULE")
+		os.Unsetenv("APP_NAMES")
+		os.Unsetenv("LISTEN_HOST")
 		os.Unsetenv("PORT")
 	})
 
@@ -43,10 +47,13 @@ var _ = Describe("Config", func() {
 		Expect(cfg.CFFetcher.RecordMinAge).To(Equal(10 * time.Minute))
 		Expect(cfg.CFFetcher.FetchLimit).To(Equal(50))
 		Expect(cfg.Processor.Schedule).To(Equal(720 * time.Minute))
+		Expect(cfg.Processor.PeriodicMetricsSchedule).To(Equal(10 * time.Second))
 		Expect(cfg.ServerPort).To(Equal(8881))
-		Expect(cfg.DBConnMaxIdleTime).To(Equal(10*time.Minute))
-		Expect(cfg.DBConnMaxLifetime).To(Equal(1*time.Hour))
+		Expect(cfg.DBConnMaxIdleTime).To(Equal(10 * time.Minute))
+		Expect(cfg.DBConnMaxLifetime).To(Equal(1 * time.Hour))
 		Expect(cfg.DBMaxIdleConns).To(Equal(1))
+		Expect(cfg.ServerHost).To(Equal(""))
+		Expect(cfg.ListenAddr).To(Equal(fmt.Sprintf("%s:%d", cfg.ServerHost, cfg.ServerPort)))
 	})
 
 	DescribeTable("should return error when failing to parse durations",
@@ -71,6 +78,7 @@ var _ = Describe("Config", func() {
 		},
 		Entry("bad cf fetch limit", "CF_FETCH_LIMIT"),
 		Entry("bad max idle conns", "DB_MAX_IDLE_CONNS"),
+		Entry("bad ServerPort", "PORT"),
 	)
 
 	It("should set DatabaseURL from DATABASE_URL", func() {
@@ -192,4 +200,83 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Processor.Schedule).To(Equal(12 * time.Hour))
 	})
 
+	It("should set Processor.PeriodicMetricsSchedule from PERIODIC_METRICS_SCHEDULE", func() {
+		os.Setenv("PERIODIC_METRICS_SCHEDULE", "1h")
+		cfg, err := NewConfigFromEnv()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.Processor.PeriodicMetricsSchedule).To(Equal(1 * time.Hour))
+	})
+
+	It("should set values from VCAP_APPLICATION", func() {
+		expectedVCAPApplication := &VCAPApplication{
+			ApplicationID:      "some-id",
+			ApplicationName:    "some-name",
+			ApplicationVersion: "some-version",
+			InstanceID:         "some-instance-id",
+			InstanceIndex:      0,
+			OrganizationID:     "some-org-id",
+			OrganizationName:   "some-org-name",
+			ProcessID:          "some-process-id",
+			ProcessType:        "web",
+			SpaceID:            "some-space-id",
+			SpaceName:          "some-space-name",
+		}
+		value, err := json.Marshal(expectedVCAPApplication)
+		Expect(err).ToNot(HaveOccurred())
+
+		os.Setenv("VCAP_APPLICATION", string(value))
+		cfg, err := NewConfigFromEnv()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg.VCAPApplication).To(Equal(expectedVCAPApplication))
+
+		Expect(cfg.InstanceDiscoverer.DiscoveryScope.OrganizationID).To(Equal(expectedVCAPApplication.OrganizationID))
+		Expect(cfg.InstanceDiscoverer.DiscoveryScope.OrganizationName).To(Equal(expectedVCAPApplication.OrganizationName))
+		Expect(cfg.InstanceDiscoverer.DiscoveryScope.SpaceID).To(Equal(expectedVCAPApplication.SpaceID))
+		Expect(cfg.InstanceDiscoverer.DiscoveryScope.SpaceName).To(Equal(expectedVCAPApplication.SpaceName))
+	})
+	Describe("cfg.AppRootDir should be set correctly", func() {
+		Context("if $PWD is set and is not empty", func() {
+			It("should be set to the value of $PWD", func() {
+				os.Setenv("PWD", "/tmp")
+				cfg, err := NewConfigFromEnv()
+				Expect(err).ToNot(HaveOccurred())
+				Expect(cfg.AppRootDir).To(Equal("/tmp"))
+			})
+		})
+		Context("if $PWD is set and is an empty string", func() {
+			It("should be set to the value of os.Getwd()", func() {
+				os.Setenv("PWD", "")
+				cfg, err := NewConfigFromEnv()
+				Expect(err).ToNot(HaveOccurred())
+				osWd, _ := os.Getwd()
+				Expect(cfg.AppRootDir).To(Equal(osWd))
+			})
+		})
+		Context("if $PWD is unset", func() {
+			It("should be set to the value of os.Getwd()", func() {
+				os.Unsetenv("PWD")
+				cfg, err := NewConfigFromEnv()
+				Expect(err).ToNot(HaveOccurred())
+				osWd, _ := os.Getwd()
+				Expect(cfg.AppRootDir).To(Equal(osWd))
+			})
+		})
+	})
+	DescribeTable("InstanceDiscoverer.DiscoveryScope",
+		func(value string, expected []string, set bool) {
+			if set {
+				err := os.Setenv("APP_NAMES", value)
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			cfg, err := NewConfigFromEnv()
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(cfg.InstanceDiscoverer.DiscoveryScope.AppNames).To(Equal(expected))
+		},
+		Entry("single app", "app-1", []string{"app-1"}, true),
+		Entry("comma-delimited list", "app-1,app-2", []string{"app-1", "app-2"}, true),
+		Entry("empty string", "", []string{}, true),
+		Entry("unset", "", []string{}, false),
+	)
 })

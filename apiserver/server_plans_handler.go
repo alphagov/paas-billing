@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func PricingPlansHandler(store eventio.PricingPlanReader) echo.HandlerFunc {

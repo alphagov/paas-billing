@@ -76,7 +76,7 @@ func (s *EventStore) forecastBillableEventRows(tx *sql.Tx, events []eventio.Usag
 }
 
 func (s *EventStore) ForecastBillableEvents(input []eventio.UsageEvent, filter eventio.EventFilter) ([]eventio.BillableEvent, error) {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(s.ctx)
 	defer cancel()
 
 	rows, err := s.ForecastBillableEventRows(ctx, input, filter)

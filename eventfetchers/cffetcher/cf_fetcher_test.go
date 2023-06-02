@@ -4,14 +4,13 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/alphagov/paas-billing/eventfetchers/cffetcher/cffetcherfakes"
 	"time"
 
 	"code.cloudfoundry.org/lager"
 
-	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/fakes"
-
 	. "github.com/alphagov/paas-billing/eventfetchers/cffetcher"
+	"github.com/alphagov/paas-billing/eventio"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -19,7 +18,7 @@ import (
 var _ = Describe("UsageEvent Fetcher", func() {
 	var (
 		ctx         = context.Background()
-		fakeClient  *fakes.FakeUsageEventsAPI
+		fakeClient  *cffetcherfakes.FakeUsageEventsAPI
 		eventKind   = "app"
 		usageEvent1 = UsageEvent{
 			MetaData:  MetaData{GUID: "2C5D3E72-2082-43C1-9262-814EAE7E65AA", CreatedAt: time.Date(2001, 1, 1, 1, 1, 1, 1, time.UTC)},
@@ -44,7 +43,7 @@ var _ = Describe("UsageEvent Fetcher", func() {
 	)
 
 	BeforeEach(func() {
-		fakeClient = &fakes.FakeUsageEventsAPI{}
+		fakeClient = &cffetcherfakes.FakeUsageEventsAPI{}
 		fakeClient.TypeReturns(eventKind)
 	})
 

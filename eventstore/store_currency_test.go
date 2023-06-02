@@ -14,6 +14,8 @@ import (
 var _ = Describe("Currency Conversion", func() {
 	var (
 		cfg            eventstore.Config
+		db             *testenv.TempDB
+		err            error
 		app1EventStart = eventio.RawEvent{
 			GUID:       "aa11a111-a111-11a1-11a1-11a1a1a11aaa",
 			Kind:       "app",
@@ -39,7 +41,7 @@ var _ = Describe("Currency Conversion", func() {
 	 .   .   [==========================GBP-CurrencyRate1============================]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should not affect price when using a GBP rate of 1", func() {
+	It("should not affect price when using a GBP rate of 1", func(ctx SpecContext) {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
@@ -71,11 +73,10 @@ var _ = Describe("Currency Conversion", func() {
 				},
 			},
 		}
-
-		env, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer env.Close()
-		store := env.Schema
+		defer db.Close()
+		store := db.Schema
 
 		Expect(store.StoreEvents([]eventio.RawEvent{
 			app1EventStart,
@@ -107,7 +108,7 @@ var _ = Describe("Currency Conversion", func() {
 	 .   .   [==========================USD-CurrencyRate1============================]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("converts USD at the defined rate", func() {
+	It("converts USD at the defined rate", func(ctx SpecContext) {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
@@ -140,10 +141,10 @@ var _ = Describe("Currency Conversion", func() {
 			},
 		}
 
-		env, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer env.Close()
-		store := env.Schema
+		defer db.Close()
+		store := db.Schema
 
 		Expect(store.StoreEvents([]eventio.RawEvent{
 			app1EventStart,
@@ -175,7 +176,7 @@ var _ = Describe("Currency Conversion", func() {
 	 .   .   [==========CurrencyRate1==========][==========CurrencyRate2=============]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return one BillableEvent with multiple pricing components when range intercepts changing currency rates", func() {
+	It("should return one BillableEvent with multiple pricing components when range intercepts changing currency rates", func(ctx SpecContext) {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
@@ -213,10 +214,10 @@ var _ = Describe("Currency Conversion", func() {
 			},
 		}
 
-		env, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer env.Close()
-		store := env.Schema
+		defer db.Close()
+		store := db.Schema
 
 		Expect(store.StoreEvents([]eventio.RawEvent{
 			app1EventStart,
@@ -254,7 +255,7 @@ var _ = Describe("Currency Conversion", func() {
 	 .   .   [==========================USD-CurrencyRate=============================]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return single BillableEvent with two pricing components with different currencies", func() {
+	It("should return single BillableEvent with two pricing components with different currencies", func(ctx SpecContext) {
 		cfg = eventstore.Config{
 			VATRates: []eventio.VATRate{
 				{
@@ -298,10 +299,10 @@ var _ = Describe("Currency Conversion", func() {
 			},
 		}
 
-		env, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer env.Close()
-		store := env.Schema
+		defer db.Close()
+		store := db.Schema
 
 		Expect(store.StoreEvents([]eventio.RawEvent{
 			app1EventStart,

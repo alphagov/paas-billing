@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
 	"os"
 	"os/exec"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"sync"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/fakes"
 	"github.com/alphagov/paas-billing/testenv"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -107,12 +107,12 @@ var _ = It("Should perform a smoke test against a real environment", func() {
 
 var _ = Describe("runRefreshAndConsolidateLoop", func() {
 	var (
-		fakeStore *fakes.FakeEventStore
+		fakeStore *eventiofakes.FakeEventStore
 		logger    lager.Logger
 	)
 
 	BeforeEach(func() {
-		fakeStore = &fakes.FakeEventStore{}
+		fakeStore = &eventiofakes.FakeEventStore{}
 		logger = lager.NewLogger("test")
 	})
 
@@ -182,5 +182,53 @@ var _ = Describe("runRefreshAndConsolidateLoop", func() {
 		Consistently(func() int {
 			return fakeStore.ConsolidateAllCallCount()
 		}).Should(BeNumerically("==", 0))
+	})
+})
+
+var _ = Describe("runPeriodicMetricsLoop", func() {
+	var (
+		fakeStore *eventiofakes.FakeEventStore
+		logger    lager.Logger
+	)
+
+	BeforeEach(func() {
+		fakeStore = &eventiofakes.FakeEventStore{}
+		logger = lager.NewLogger("test")
+	})
+
+	It("should call RecordPeriodicMetrics every 'Schedule'", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+
+		wg := sync.WaitGroup{}
+		defer wg.Wait()
+		defer cancel()
+
+		go func() {
+			wg.Add(1)
+			runPeriodicMetricsLoop(ctx, logger, 1*time.Nanosecond, fakeStore)
+			wg.Done()
+		}()
+
+		Eventually(func() int {
+			return fakeStore.RecordPeriodicMetricsCallCount()
+		}).Should(BeNumerically(">=", 5))
+	})
+
+	It("should call RecordPeriodicMetrics once initially before 'Schedule'", func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+
+		wg := sync.WaitGroup{}
+		defer wg.Wait()
+		defer cancel()
+
+		go func() {
+			wg.Add(1)
+			runPeriodicMetricsLoop(ctx, logger, 1*time.Hour, fakeStore)
+			wg.Done()
+		}()
+
+		Eventually(func() int {
+			return fakeStore.RecordPeriodicMetricsCallCount()
+		}).Should(Equal(1))
 	})
 })

@@ -12,7 +12,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
+
 // UsageEventsClient is a general Cloud Foundry API client interface
+//
+//counterfeiter:generate . UsageEventsClient
 type UsageEventsClient interface {
 	Get(path string) (*http.Response, error)
 }
@@ -53,6 +57,8 @@ const appType = "app"
 const serviceType = "service"
 
 // UsageEventsAPI is a common interface for the app and service usage event APIs
+//
+//counterfeiter:generate . UsageEventsAPI
 type UsageEventsAPI interface {
 	Get(afterGUID string, count int, minAge time.Duration) (*UsageEventList, error)
 	Type() string

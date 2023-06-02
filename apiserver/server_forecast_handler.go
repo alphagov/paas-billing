@@ -9,7 +9,7 @@ import (
 
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/alphagov/paas-billing/eventstore"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func ForecastEventsHandler(store eventio.BillableEventForecaster) echo.HandlerFunc {

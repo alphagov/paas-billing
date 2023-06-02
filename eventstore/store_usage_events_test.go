@@ -15,6 +15,8 @@ var _ = Describe("GetUsageEvents", func() {
 
 	var (
 		cfg eventstore.Config
+		db  *testenv.TempDB
+		err error
 	)
 
 	BeforeEach(func() {
@@ -34,7 +36,7 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("should return one UsageEvent for each STARTED/STOPPED pair of RawEvent", func() {
+	It("should return one UsageEvent for each STARTED/STOPPED pair of RawEvent", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -118,7 +120,7 @@ var _ = Describe("GetUsageEvents", func() {
 			RawMessage: json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "DB1", "service_instance_type": "managed_service_instance"}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -243,7 +245,7 @@ var _ = Describe("GetUsageEvents", func() {
 	   .   .   |_____________________ request range ___________________________|   .   .   .
 		 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 		*-----------------------------------------------------------------------------------*/
-	It("should ignore the staging events if there no correlating STAGING_STOPPED raw event", func() {
+	It("should ignore the staging events if there no correlating STAGING_STOPPED raw event", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -290,9 +292,8 @@ var _ = Describe("GetUsageEvents", func() {
 			RawMessage: json.RawMessage(`{"state": "STOPPED", "app_guid": "c85e98f0-6d1b-4f45-9368-ea58263165a0", "app_name": "APP1", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "276f4886-ac40-492d-a8cd-b2646637ba76", "space_name": "ORG1-SPACE1", "process_type": "web", "instance_count": 10, "previous_state": "STARTED", "memory_in_mb_per_instance": 1000}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
-		defer db.Close()
 		store := db.Schema
 
 		Expect(store.StoreEvents([]eventio.RawEvent{
@@ -342,7 +343,7 @@ var _ = Describe("GetUsageEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("Should use the memory and storage values from compose scaling events if available", func() {
+	It("Should use the memory and storage values from compose scaling events if available", func(ctx SpecContext) {
 		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Zero",
 			Rate:      0,
@@ -366,7 +367,7 @@ var _ = Describe("GetUsageEvents", func() {
 		}
 		cfg.AddPlan(plan)
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -524,7 +525,7 @@ var _ = Describe("GetUsageEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("should handle service UPDATE events that change the plan", func() {
+	It("should handle service UPDATE events that change the plan", func(ctx SpecContext) {
 		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Zero",
 			Rate:      0,
@@ -565,7 +566,7 @@ var _ = Describe("GetUsageEvents", func() {
 		cfg.AddPlan(plan1)
 		cfg.AddPlan(plan2)
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -690,7 +691,7 @@ var _ = Describe("GetUsageEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("should use the compose event as the EventStart  ", func() {
+	It("should use the compose event as the EventStart  ", func(ctx SpecContext) {
 		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Zero",
 			Rate:      0,
@@ -714,7 +715,7 @@ var _ = Describe("GetUsageEvents", func() {
 		}
 		cfg.AddPlan(plan)
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -829,7 +830,7 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("should use the historic service data (name, label, uuid, unique_id) if available", func() {
+	It("should use the historic service data (name, label, uuid, unique_id) if available", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "c6221308-b7bb-46d2-9d79-a357f5a3837b",
 			ValidFrom: "2001-01-01",
@@ -881,7 +882,7 @@ var _ = Describe("GetUsageEvents", func() {
 			}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -961,7 +962,7 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("should populate service info (name, label, uuid, unique_id) if historic data is not available", func() {
+	It("should populate service info (name, label, uuid, unique_id) if historic data is not available", func(ctx SpecContext) {
 		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Zero",
 			Rate:      0,
@@ -1019,7 +1020,7 @@ var _ = Describe("GetUsageEvents", func() {
 			}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -1070,7 +1071,7 @@ var _ = Describe("GetUsageEvents", func() {
 	 .   .   |_____________________ request range ___________________________|   .   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("should use the org name from the historic data if available", func() {
+	It("should use the org name from the historic data if available", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
@@ -1098,7 +1099,7 @@ var _ = Describe("GetUsageEvents", func() {
 			RawMessage: json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "DB1", "service_instance_type": "managed_service_instance"}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema
@@ -1178,7 +1179,7 @@ var _ = Describe("GetUsageEvents", func() {
 		}))
 	})
 
-	It("should use the org/space guid if the org/space historic name is not available", func() {
+	It("should use the org/space guid if the org/space historic name is not available", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
@@ -1206,7 +1207,7 @@ var _ = Describe("GetUsageEvents", func() {
 			RawMessage: json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "DB1", "service_instance_type": "managed_service_instance"}`),
 		}
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		store := db.Schema

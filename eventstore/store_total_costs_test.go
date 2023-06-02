@@ -17,7 +17,7 @@ var _ = Describe("TotalCostEvents", func() {
 	BeforeEach(func() {
 		cfg = testenv.BasicConfig
 	})
-	It("should return the cost for each plan_guid", func() {
+	It("should return the cost for each plan_guid", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -34,7 +34,7 @@ var _ = Describe("TotalCostEvents", func() {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			ValidFrom: "2001-01-01",
-			Name:      "DB_PLAN_1",
+			Name:      "postgres DB_PLAN_1",
 			Components: []eventio.PricingPlanComponent{
 				{
 					Name:         "compute",
@@ -64,7 +64,7 @@ var _ = Describe("TotalCostEvents", func() {
 			"created_at":  "2001-03-01T01:00Z",
 			"raw_message": json.RawMessage(`{"state": "DELETED", "org_guid": "51ba75ef-edc0-47ad-a633-a8f6e8770944", "space_guid": "bd405d91-0b7c-4b8c-96ef-8b4c1e26e75d", "space_name": "sandbox", "service_guid": "efadb775-58c4-4e17-8087-6d0f4febc489", "service_label": "postgres", "service_plan_guid": "efb5f1ce-0a8a-435d-a8b2-6b2b61c6dbe5", "service_plan_name": "Free", "service_instance_guid": "f3f98365-6a95-4bbd-ab8f-527a7957a41f", "service_instance_name": "ja-rails-postgres", "service_instance_type": "managed_service_instance"}`),
 		}
-		db, err := testenv.Open(cfg)
+		db, err := testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 		Expect(db.Insert("services",
@@ -107,10 +107,14 @@ var _ = Describe("TotalCostEvents", func() {
 		Expect(outputEvents[0]).To(Equal(eventio.TotalCost{
 			PlanGUID: "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
 			Cost:     1417,
+			PlanName: "DB_PLAN_1",
+			Kind:     "postgres",
 		}))
 		Expect(outputEvents[1]).To(Equal(eventio.TotalCost{
 			PlanGUID: "f4d4b95a-f55e-4593-8d54-3364c25798c4",
 			Cost:     7.45,
+			Kind:     "APP_PLAN_1",
+			PlanName: "",
 		}))
 	})
 })

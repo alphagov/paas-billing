@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 var FakeBearerToken = "Bearer FAKE_TOKEN"

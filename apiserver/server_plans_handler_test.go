@@ -6,10 +6,11 @@ import (
 	"net/url"
 
 	"code.cloudfoundry.org/lager"
+	"github.com/alphagov/paas-billing/apiserver/auth/authfakes"
 	"github.com/alphagov/paas-billing/eventio"
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
 	"github.com/alphagov/paas-billing/eventstore"
-	"github.com/alphagov/paas-billing/fakes"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 
 	. "github.com/alphagov/paas-billing/apiserver"
 	. "github.com/onsi/ginkgo/v2"
@@ -22,16 +23,16 @@ var _ = Describe("PricingPlansHandler", func() {
 		ctx               context.Context
 		cancel            context.CancelFunc
 		cfg               Config
-		fakeAuthenticator *fakes.FakeAuthenticator
-		fakeAuthorizer    *fakes.FakeAuthorizer
-		fakeStore         *fakes.FakeEventStore
+		fakeAuthenticator *authfakes.FakeAuthenticator
+		fakeAuthorizer    *authfakes.FakeAuthorizer
+		fakeStore         *eventiofakes.FakeEventStore
 		token             = "ACCESS_GRANTED_TOKEN"
 	)
 
 	BeforeEach(func() {
-		fakeStore = &fakes.FakeEventStore{}
-		fakeAuthenticator = &fakes.FakeAuthenticator{}
-		fakeAuthorizer = &fakes.FakeAuthorizer{}
+		fakeStore = &eventiofakes.FakeEventStore{}
+		fakeAuthenticator = &authfakes.FakeAuthenticator{}
+		fakeAuthorizer = &authfakes.FakeAuthorizer{}
 		cfg = Config{
 			Authenticator: fakeAuthenticator,
 			Logger:        lager.NewLogger("test"),

@@ -15,6 +15,8 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 	var (
 		cfg      eventstore.Config
 		scenario *testenv.TestScenario
+		db       *testenv.TempDB
+		err      error
 	)
 
 	BeforeEach(func() {
@@ -22,7 +24,7 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 		scenario = testenv.NewTestScenario("2001-01-01T00:00")
 	})
 
-	It("should match the output of GetBillableEvents for a complex scenario across multiple months", func() {
+	It("should match the output of GetBillableEvents for a complex scenario across multiple months", func(ctx SpecContext) {
 		scenario.AddComputePlan()
 
 		cfg.AddVATRate(eventio.VATRate{
@@ -53,8 +55,7 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 			testenv.EventInfo{Delta: "+24h", State: "STARTED"},
 			testenv.EventInfo{Delta: "+36h", State: "STOPPED"},
 		)
-
-		db, err := scenario.Open(cfg)
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -95,8 +96,8 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 		}
 	})
 
-	It("Should fail to GetBillableEvents if query range is not one month", func() {
-		db, err := scenario.Open(cfg)
+	It("Should fail to GetBillableEvents if query range is not one month", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -122,6 +123,8 @@ var _ = Describe("GetConsolidatedBillableEvents", func() {
 
 var _ = Describe("Consolidate", func() {
 	var (
+		db       *testenv.TempDB
+		err      error
 		cfg      eventstore.Config
 		scenario *testenv.TestScenario
 	)
@@ -131,8 +134,8 @@ var _ = Describe("Consolidate", func() {
 		scenario = testenv.NewTestScenario("2001-01-01T00:00")
 	})
 
-	It("Should fail to Consolidate if organisation filter provided", func() {
-		db, err := scenario.Open(cfg)
+	It("Should fail to Consolidate if organisation filter provided", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -146,8 +149,8 @@ var _ = Describe("Consolidate", func() {
 		))
 	})
 
-	It("Should fail to Consolidate if query range is not exactly one month", func() {
-		db, err := scenario.Open(cfg)
+	It("Should fail to Consolidate if query range is not exactly one month", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -168,8 +171,8 @@ var _ = Describe("Consolidate", func() {
 		))
 	})
 
-	It("Should fail if consolidate called twice for the same range", func() {
-		db, err := scenario.Open(cfg)
+	It("Should fail if consolidate called twice for the same range", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -188,8 +191,10 @@ var _ = Describe("Consolidate", func() {
 
 var _ = Describe("IsRangeConsolidated", func() {
 	var (
+		db       *testenv.TempDB
 		cfg      eventstore.Config
 		scenario *testenv.TestScenario
+		err      error
 	)
 
 	BeforeEach(func() {
@@ -197,8 +202,8 @@ var _ = Describe("IsRangeConsolidated", func() {
 		scenario = testenv.NewTestScenario("2001-01-01T00:00")
 	})
 
-	It("Should return false if range has not been consolidated", func() {
-		db, err := scenario.Open(cfg)
+	It("Should return false if range has not been consolidated", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -210,8 +215,8 @@ var _ = Describe("IsRangeConsolidated", func() {
 		Expect(result).To(BeFalse())
 	})
 
-	It("Should return true if range has been consolidated", func() {
-		db, err := scenario.Open(cfg)
+	It("Should return true if range has been consolidated", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -231,6 +236,8 @@ var _ = Describe("IsRangeConsolidated", func() {
 
 var _ = Describe("ConsolidateFullMonths", func() {
 	var (
+		db       *testenv.TempDB
+		err      error
 		cfg      eventstore.Config
 		scenario *testenv.TestScenario
 		now      string
@@ -242,8 +249,8 @@ var _ = Describe("ConsolidateFullMonths", func() {
 		now = time.Now().Format("2006-01-02")
 	})
 
-	It("Should not error when there are no time periods to consolidate", func() {
-		db, err := scenario.Open(cfg)
+	It("Should not error when there are no time periods to consolidate", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -251,8 +258,8 @@ var _ = Describe("ConsolidateFullMonths", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("Should consolidate events which have not been consolidated yet ", func() {
-		db, err := scenario.Open(cfg)
+	It("Should consolidate events which have not been consolidated yet ", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -277,8 +284,8 @@ var _ = Describe("ConsolidateFullMonths", func() {
 		}
 	})
 
-	It("Should consolidate only full months, including the first one", func() {
-		db, err := scenario.Open(cfg)
+	It("Should consolidate only full months, including the first one", func(ctx SpecContext) {
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -314,13 +321,13 @@ var _ = Describe("ConsolidateFullMonths", func() {
 		Expect(isConsolidated).To(BeFalse())
 	})
 
-	It("Should return events from the first consolidation if consolidate is run multiple times", func() {
+	It("Should return events from the first consolidation if consolidate is run multiple times", func(ctx SpecContext) {
 		scenario.AddComputePlan()
 		scenario.AppLifeCycle("org1", "space1", "app1",
 			testenv.EventInfo{Delta: "+0h", State: "STARTED"},
 			testenv.EventInfo{Delta: "+3600h", State: "STOPPED"},
 		)
-		db, err := scenario.Open(cfg)
+		db, err = scenario.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 

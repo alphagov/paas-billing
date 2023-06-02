@@ -11,7 +11,7 @@ import (
 
 	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
-	"github.com/labstack/echo"
+	"github.com/labstack/echo/v4"
 )
 
 func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore eventio.ConsolidatedBillableEventReader, uaa auth.Authenticator) echo.HandlerFunc {

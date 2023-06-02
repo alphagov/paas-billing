@@ -3,13 +3,12 @@ package eventcollector_test
 import (
 	"context"
 	"errors"
+	"github.com/alphagov/paas-billing/eventio/eventiofakes"
 	"time"
 
 	"code.cloudfoundry.org/lager"
-	"github.com/alphagov/paas-billing/eventio"
-	"github.com/alphagov/paas-billing/fakes"
-
 	. "github.com/alphagov/paas-billing/eventcollector"
+	"github.com/alphagov/paas-billing/eventio"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
@@ -18,16 +17,16 @@ var _ = Describe("Collector", func() {
 
 	var (
 		logger           = lager.NewLogger("test")
-		fakeEventFetcher *fakes.FakeEventFetcher
-		fakeEventStore   *fakes.FakeEventStore
+		fakeEventFetcher *eventiofakes.FakeEventFetcher
+		fakeEventStore   *eventiofakes.FakeEventStore
 		cfg              Config
 		ctx              context.Context
 		cancelFunc       context.CancelFunc
 	)
 
 	BeforeEach(func() {
-		fakeEventFetcher = &fakes.FakeEventFetcher{}
-		fakeEventStore = &fakes.FakeEventStore{}
+		fakeEventFetcher = &eventiofakes.FakeEventFetcher{}
+		fakeEventStore = &eventiofakes.FakeEventStore{}
 		cfg = Config{
 			Logger:      logger,
 			Fetcher:     fakeEventFetcher,

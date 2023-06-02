@@ -1,6 +1,7 @@
 package eventio
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 )
@@ -24,6 +25,14 @@ func (filter *EventFilter) SplitByMonth() ([]EventFilter, error) {
 	}
 
 	return filter.recursiveSplitByMonth(start, end), nil
+}
+
+func (filter *EventFilter) String() string {
+	filterBytes, err := json.Marshal(filter)
+	if err != nil {
+		filterBytes = nil
+	}
+	return string(filterBytes)
 }
 
 func (filter *EventFilter) recursiveSplitByMonth(t1, t2 time.Time) []EventFilter {

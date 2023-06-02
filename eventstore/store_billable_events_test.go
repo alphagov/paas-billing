@@ -17,6 +17,8 @@ var _ = Describe("GetBillableEvents", func() {
 
 	var (
 		cfg eventstore.Config
+		db  *testenv.TempDB
+		err error
 	)
 
 	BeforeEach(func() {
@@ -35,7 +37,7 @@ var _ = Describe("GetBillableEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("Should return one BillingEvent for an app in staging state", func() {
+	It("Should return one BillingEvent for an app in staging state", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.StagingPlanGUID,
 			ValidFrom: "2001-01-01",
@@ -50,7 +52,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -128,7 +130,7 @@ var _ = Describe("GetBillableEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("Should return one BillingEvent for an app that was running for 1hr", func() {
+	It("Should return one BillingEvent for an app that was running for 1hr", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -143,7 +145,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -221,7 +223,7 @@ var _ = Describe("GetBillableEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	*-----------------------------------------------------------------------------------*/
-	It("Should return one BillingEvent for a task that was running for 1hr", func() {
+	It("Should return one BillingEvent for a task that was running for 1hr", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.TaskPlanGUID,
 			ValidFrom: "2001-01-01",
@@ -236,7 +238,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -313,7 +315,7 @@ var _ = Describe("GetBillableEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("Should return two BillingEvent that represent a scaling", func() {
+	It("Should return two BillingEvent that represent a scaling", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -328,7 +330,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -444,7 +446,7 @@ var _ = Describe("GetBillableEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("should return a BillableEvent for an app without a stop event yet", func() {
+	It("should return a BillableEvent for an app without a stop event yet", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -459,7 +461,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -505,7 +507,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   .   .   .   .   |   .   .   .   .   .   .   .   .   |   .   .   .   .   .   .
 	 .   .   .   .   .       |__________requested range__________|   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("should return a BillableEvent with duration cropped to the requeted range", func() {
+	It("should return a BillableEvent with duration cropped to the requeted range", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2001-01-01",
@@ -520,7 +522,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -562,7 +564,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   [============PLAN1===============][================PLAN2================]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return one BillingEvent with two pricing components when intersects two plans", func() {
+	It("should return one BillingEvent with two pricing components when intersects two plans", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
@@ -590,7 +592,7 @@ var _ = Describe("GetBillableEvents", func() {
 			},
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -667,7 +669,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   [============VATRate1============][=============VATRate2================]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return a single BillingEvent with two pricing components when a single event intersects two VAT rates", func() {
+	It("should return a single BillingEvent with two pricing components when a single event intersects two VAT rates", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
@@ -687,7 +689,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "2017-02-01",
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -764,7 +766,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   [==========CurrencyRate1==========][==========CurrencyRate2=============]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return a single BillingEvent with two pricing components when the event intersects two CurrencyRates", func() {
+	It("should return a single BillingEvent with two pricing components when the event intersects two CurrencyRates", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
@@ -784,7 +786,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "2017-02-01",
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -861,7 +863,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   [==========CurrencyRate1==========][==========CurrencyRate2=============]   .   .
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return a single BillingEvent with two pricing components when the event intersects two CurrencyRates in the same month", func() {
+	It("should return a single BillingEvent with two pricing components when the event intersects two CurrencyRates in the same month", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
@@ -881,7 +883,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "2017-01-15",
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -963,7 +965,7 @@ var _ = Describe("GetBillableEvents", func() {
 	 .   .   +-----------------------------------------------------------------------    .   .
 	 .   .   |   .  component1.  . | component2 |  component3  |    component4    .  |   .   .
 	----------------------------------------------------------------------------------------*/
-	It("should return a single BillingEvent with four pricing components when the events intersects currency and VAT rate changes", func() {
+	It("should return a single BillingEvent with four pricing components when the events intersects currency and VAT rate changes", func(ctx SpecContext) {
 		cfg.AddPlan(eventio.PricingPlan{
 			PlanGUID:  eventstore.ComputePlanGUID,
 			ValidFrom: "2017-01-01",
@@ -993,7 +995,7 @@ var _ = Describe("GetBillableEvents", func() {
 			ValidFrom: "2017-04-01",
 		})
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
@@ -1092,7 +1094,7 @@ var _ = Describe("GetBillableEvents", func() {
 	<=======================================PLAN1=======================================>.
 	 .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .   .
 	-------------------------------------------------------------------------------------*/
-	It("Should include BillableEvent that represents the data from a compose scale event", func() {
+	It("Should include BillableEvent that represents the data from a compose scale event", func(ctx SpecContext) {
 		cfg.AddVATRate(eventio.VATRate{
 			Code:      "Zero",
 			Rate:      0,
@@ -1116,7 +1118,7 @@ var _ = Describe("GetBillableEvents", func() {
 		}
 		cfg.AddPlan(plan)
 
-		db, err := testenv.Open(cfg)
+		db, err = testenv.OpenWithContext(cfg, ctx)
 		Expect(err).ToNot(HaveOccurred())
 		defer db.Close()
 
