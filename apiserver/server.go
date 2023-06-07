@@ -2,8 +2,9 @@ package apiserver
 
 import (
 	"context"
-	prom_client "github.com/prometheus/client_golang/prometheus"
 	"time"
+
+	prom_client "github.com/prometheus/client_golang/prometheus"
 
 	"code.cloudfoundry.org/lager"
 	"github.com/alphagov/paas-billing/instancediscoverer"
@@ -29,10 +30,21 @@ type Config struct {
 	EnablePanic bool
 }
 
+// CacheHeaders sets the cache headers to prevent caching
+func CacheHeaders(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		c.Response().Header().Set("Cache-Control", "no-store")
+		c.Response().Header().Set("Pragma", "no-cache")
+		c.Response().Header().Set("Expires", "0")
+		return next(c)
+	}
+}
+
 // New creates a base new server. Use ListenAndServe to start accepting connections.
 // It will only serve the status page
 func NewBaseServer(cfg Config) *echo.Echo {
 	e := echo.New()
+	e.Use(CacheHeaders)
 	e.HTTPErrorHandler = errorHandler
 
 	if !cfg.EnablePanic {

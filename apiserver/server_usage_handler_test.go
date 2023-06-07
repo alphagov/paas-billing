@@ -170,6 +170,10 @@ var _ = Describe("UsageEventsHandler", func() {
 		Expect(res.Body).To(MatchJSON("[" + event1JSON + "," + event2JSON + "]"))
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
+
+		Expect(res.Header().Get("Cache-Control")).To(Equal("no-store"))
+		Expect(res.Header().Get("Pragma")).To(Equal("no-cache"))
+		Expect(res.Header().Get("Expires")).To(Equal("0"))
 	})
 
 	It("should fetch UsageEvents from the store when manager", func() {
@@ -219,6 +223,10 @@ var _ = Describe("UsageEventsHandler", func() {
 		Expect(res.Body).To(MatchJSON("[" + event1JSON + "," + event2JSON + "]"))
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
+
+		Expect(res.Header().Get("Cache-Control")).To(Equal("no-store"))
+		Expect(res.Header().Get("Pragma")).To(Equal("no-cache"))
+		Expect(res.Header().Get("Expires")).To(Equal("0"))
 	})
 
 	It("should return error if GetUsageEventRows returns error", func() {
