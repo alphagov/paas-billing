@@ -118,14 +118,14 @@ integration:
 .PHONY: smoke
 smoke:
 	## Runs the api acceptance tests against a dev environment as a smoke test to check
-	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
+	$(eval export CF_ADMIN_BEARER_TOKEN ?= $(shell cf oauth-token | cut -d' ' -f2))
 	$(eval export BILLING_API_URL ?= http://$(API_LISTENER))
 	echo "smoke test enabled against ${BILLING_API_URL}"
 	go run github.com/onsi/ginkgo/v2/ginkgo --label-filter="smoke" -r acceptance_tests
 
 .PHONY: acceptance
 acceptance:
-	$(eval export CF_BEARER_TOKEN=$(shell cf oauth-token | cut -d' ' -f2))
+	$(eval export CF_ADMIN_BEARER_TOKEN ?= $(shell cf oauth-token | cut -d' ' -f2))
 	$(eval export BILLING_API_URL ?= http://$(API_LISTENER))
 	$(eval export METRICSPROXY_API_URL ?= http://$(PROXYMETRICS_LISTENER))
 	go run github.com/onsi/ginkgo/v2/ginkgo -r acceptance_tests
