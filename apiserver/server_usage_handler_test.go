@@ -49,7 +49,7 @@ var _ = Describe("UsageEventsHandler", func() {
 
 	It("should return error if no token in request", func() {
 		fakeAuthenticator.NewAuthorizerReturns(nil, nil)
-		req := httptest.NewRequest(echo.GET, "/usage_events?orgGUID="+orgGUID1, nil)
+		req := httptest.NewRequest(echo.GET, "/usage_events?org_guid="+orgGUID1, nil)
 		res := httptest.NewRecorder()
 
 		e := New(cfg)
@@ -66,7 +66,7 @@ var _ = Describe("UsageEventsHandler", func() {
 	It("should return error on authentication error", func() {
 		authErr := errors.New("auth-error")
 		fakeAuthenticator.NewAuthorizerReturns(nil, authErr)
-		req := httptest.NewRequest(echo.GET, "/usage_events?orgGUID="+orgGUID1, nil)
+		req := httptest.NewRequest(echo.GET, "/usage_events?org_guid="+orgGUID1, nil)
 		req.Header.Set("Authorization", "bearer "+token)
 		res := httptest.NewRecorder()
 
@@ -83,7 +83,7 @@ var _ = Describe("UsageEventsHandler", func() {
 
 	It("should return error on malformed Authorization header", func() {
 		fakeAuthenticator.NewAuthorizerReturns(nil, nil)
-		req := httptest.NewRequest(echo.GET, "/usage_events?orgGUID="+orgGUID1, nil)
+		req := httptest.NewRequest(echo.GET, "/usage_events?org_guid="+orgGUID1, nil)
 		req.Header.Set("Authorization", token)
 		res := httptest.NewRecorder()
 
