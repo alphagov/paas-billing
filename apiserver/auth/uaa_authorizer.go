@@ -79,6 +79,18 @@ func (a *ClientAuthorizer) HasBillingAccess(requestedOrgs []string) (bool, error
 	if err != nil {
 		return false, err
 	}
+	if len(requestedOrgs) == 0 {
+		isAdmin, err := a.Admin()
+		if err != nil {
+			return false, err
+		}
+
+		if !isAdmin {
+			return false, errors.New("only admins are allowed to access billing for all organisations")
+		}
+
+		return true, nil
+	}
 	billingManagerOrganisations, err := cf.ListUserBillingManagedOrgs(a.claims.UserID)
 	if err != nil {
 		return false, err

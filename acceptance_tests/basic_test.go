@@ -19,14 +19,14 @@ var (
 	metricsProxyURL *url.URL
 )
 
-var _ = Describe("Acceptance", func() {
+var _ = Describe("Basic acceptance tests", func() {
 	Context("Billing API", Label("smoke"), func() {
 		BeforeEach(func() {
-			Expect(BillingAPIURLFromEnv).ToNot(BeEmpty(), "Billing API was empty")
+			Expect(BillingAPIURLFromEnv).ToNot(BeEmpty(), "Billing API URL was empty")
 			billingAPIURL, err = url.Parse(BillingAPIURLFromEnv)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(CFBearerTokenFromEnv).ToNot(BeEmpty(), "Bearer token was empty")
+			Expect(CFAdminBearerTokenFromEnv).ToNot(BeEmpty(), "Bearer token was empty")
 		})
 
 		It("can get pricing plans from api", func() {
@@ -57,7 +57,7 @@ var _ = Describe("Acceptance", func() {
 			req, err := http.NewRequest("GET", billingAPIURL.String(), nil)
 			Expect(err).ToNot(HaveOccurred())
 			headers := req.Header
-			headers.Set("Authorization", fmt.Sprintf("Bearer %s", CFBearerTokenFromEnv))
+			headers.Set("Authorization", fmt.Sprintf("Bearer %s", CFAdminBearerTokenFromEnv))
 			req.Header = headers
 
 			client := &http.Client{}
