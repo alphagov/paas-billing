@@ -3,6 +3,8 @@ package apiserver
 import (
 	"context"
 	"time"
+        "errors"
+	"fmt"
 
 	prom_client "github.com/prometheus/client_golang/prometheus"
 
@@ -15,6 +17,9 @@ import (
 	"github.com/alphagov/paas-billing/eventio"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+        "github.com/labstack/echo-jwt/v4"
+        "github.com/lestrrat-go/jwx/jwk"
+        "github.com/golang-jwt/jwt/v5"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -77,11 +82,51 @@ func New(cfg Config) *echo.Echo {
 	e.GET("/currency_rates", CurrencyRatesHandler(cfg.Store))
 	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
 	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
-	e.GET("/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator))
-	e.GET("/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
+        r := e.Group("/usage_events")
+	{
+		config := echojwt.Config{
+			KeyFunc: getKey,
+		}
+		r.Use(echojwt.WithConfig(config))
+		r.GET("", UsageEventsHandler(cfg.Store, cfg.Authenticator))
+	}
+        r = e.Group("/billable_events")
+        {
+                config := echojwt.Config{
+                       KeyFunc: getKey,
+                }
+                r.Use(echojwt.WithConfig(config))
+                r.GET("", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
+        }
 	e.GET("/totals", TotalCostHandler(cfg.Store))
 
 	return e
+}
+
+func getKey(token *jwt.Token) (interface{}, error) {
+
+	keySet, err := jwk.Fetch(context.Background(), "https://uaa.dev05.dev.cloudpipeline.digital/token_keys")
+	if err != nil {
+		return nil, err
+	}
+
+	keyID, ok := token.Header["kid"].(string)
+	if !ok {
+		return nil, errors.New("expecting JWT header to have a key ID in the kid field")
+	}
+
+	key, found := keySet.LookupKeyID(keyID)
+
+	if !found {
+		return nil, fmt.Errorf("unable to find key %q", keyID)
+	}
+
+	var pubkey interface{}
+	if err := key.Raw(&pubkey); err != nil {
+		return nil, fmt.Errorf("Unable to get the public key. Error: %s", err.Error())
+	}
+
+	return pubkey, nil
 }
 
 func NewProxyMetrics(cfg Config, discoverer instancediscoverer.CFAppDiscoverer, proxy metricsproxy.MetricsProxy) *echo.Echo {

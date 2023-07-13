@@ -128,7 +128,7 @@ acceptance:
 	$(eval export CF_ADMIN_BEARER_TOKEN ?= $(shell cf oauth-token | cut -d' ' -f2))
 	$(eval export BILLING_API_URL ?= http://$(API_LISTENER))
 	$(eval export METRICSPROXY_API_URL ?= http://$(PROXYMETRICS_LISTENER))
-	go run github.com/onsi/ginkgo/v2/ginkgo -r acceptance_tests
+	go run github.com/onsi/ginkgo/v2/ginkgo --focus "Returns events for multi-org requests" -v -r acceptance_tests
 
 
 .PHONY: fakes
