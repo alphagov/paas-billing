@@ -2,9 +2,9 @@ package apiserver
 
 import (
 	"context"
-	"time"
-        "errors"
+	"errors"
 	"fmt"
+	"time"
 
 	prom_client "github.com/prometheus/client_golang/prometheus"
 
@@ -15,11 +15,11 @@ import (
 
 	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
+	"github.com/golang-jwt/jwt/v5"
+	echojwt "github.com/labstack/echo-jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-        "github.com/labstack/echo-jwt/v4"
-        "github.com/lestrrat-go/jwx/jwk"
-        "github.com/golang-jwt/jwt/v5"
+	"github.com/lestrrat-go/jwx/jwk"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -generate
@@ -33,6 +33,8 @@ type Config struct {
 	Logger lager.Logger
 	// EnablePanic will cause the server to crash on panic if set to true
 	EnablePanic bool
+
+	UAATokenKeysUrl string
 }
 
 // CacheHeaders sets the cache headers to prevent caching
@@ -72,6 +74,17 @@ func NewBaseServer(cfg Config) *echo.Echo {
 	return e
 }
 
+func addGroup(e *echo.Echo, groupName string, handlerFunc echo.HandlerFunc, cfg Config) {
+	r := e.Group(groupName)
+	config := echojwt.Config{
+		KeyFunc: func(token *jwt.Token) (interface{}, error) {
+			return getKey(cfg.UAATokenKeysUrl, token)
+		},
+	}
+	r.Use(echojwt.WithConfig(config))
+	r.GET("", handlerFunc)
+}
+
 // New creates a new server. Use ListenAndServe to start accepting connections.
 // Serves api functions
 func New(cfg Config) *echo.Echo {
@@ -82,30 +95,16 @@ func New(cfg Config) *echo.Echo {
 	e.GET("/currency_rates", CurrencyRatesHandler(cfg.Store))
 	e.GET("/pricing_plans", PricingPlansHandler(cfg.Store))
 	e.GET("/forecast_events", ForecastEventsHandler(cfg.Store))
-        r := e.Group("/usage_events")
-	{
-		config := echojwt.Config{
-			KeyFunc: getKey,
-		}
-		r.Use(echojwt.WithConfig(config))
-		r.GET("", UsageEventsHandler(cfg.Store, cfg.Authenticator))
-	}
-        r = e.Group("/billable_events")
-        {
-                config := echojwt.Config{
-                       KeyFunc: getKey,
-                }
-                r.Use(echojwt.WithConfig(config))
-                r.GET("", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator))
-        }
+	addGroup(e, "/usage_events", UsageEventsHandler(cfg.Store, cfg.Authenticator), cfg)
+	addGroup(e, "/billable_events", BillableEventsHandler(cfg.Store, cfg.Store, cfg.Authenticator), cfg)
 	e.GET("/totals", TotalCostHandler(cfg.Store))
 
 	return e
 }
 
-func getKey(token *jwt.Token) (interface{}, error) {
+func getKey(uaaUrl string, token *jwt.Token) (interface{}, error) {
 
-	keySet, err := jwk.Fetch(context.Background(), "https://uaa.dev05.dev.cloudpipeline.digital/token_keys")
+	keySet, err := jwk.Fetch(context.Background(), uaaUrl)
 	if err != nil {
 		return nil, err
 	}

@@ -39,7 +39,7 @@ type Config struct {
 	HistoricDataCollector cfstore.Config
 	InstanceDiscoverer    instancediscoverer.Config
 	VCAPApplication       *VCAPApplication
-        UAATokenKeysURL       string
+	UAATokenKeysUrl       string
 }
 
 type VCAPApplication struct {
@@ -159,7 +159,7 @@ func NewConfigFromEnv() (cfg Config, err error) {
 			},
 			ThisAppName: vcapApplication.ApplicationName,
 		},
-                UAATokenKeysURL: getEnvWithDefaultString("UAA_TOKEN_KEYS_URL", ""),
+		UAATokenKeysUrl: getEnvWithDefaultString("UAA_TOKEN_KEYS_URL", ""),
 		VCAPApplication: &vcapApplication,
 	}
 	cfg.ListenAddr = fmt.Sprintf("%s:%d", cfg.ServerHost, cfg.ServerPort)

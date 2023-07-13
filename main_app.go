@@ -87,9 +87,10 @@ func (app *App) StartAPIServer() error {
 		Config: uaaConfig,
 	}
 	apiServer := apiserver.New(apiserver.Config{
-		Store:         app.store,
-		Authenticator: apiAuthenticator,
-		Logger:        logger,
+		Store:           app.store,
+		Authenticator:   apiAuthenticator,
+		Logger:          logger,
+		UAATokenKeysUrl: app.cfg.UAATokenKeysUrl,
 	})
 	return app.start(name, logger, func() error {
 		return apiserver.ListenAndServe(
