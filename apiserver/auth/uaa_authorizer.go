@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
 	cfclient "github.com/cloudfoundry-community/go-cfclient"
 	jwt "github.com/dgrijalva/jwt-go"
@@ -201,6 +202,7 @@ func (a *ClientAuthorizer) composeClaims() error {
 	if err != nil {
 		return err
 	}
+
 	if !token.Valid {
 		return fmt.Errorf("token invalid")
 	}
@@ -210,6 +212,11 @@ func (a *ClientAuthorizer) composeClaims() error {
 	}
 
 	a.claims = claims
+
+	//check that the token has not expired
+	if a.claims.ExpiresAt < time.Now().Unix() {
+		return errors.New("token expired")
+	}
 
 	return nil
 }
