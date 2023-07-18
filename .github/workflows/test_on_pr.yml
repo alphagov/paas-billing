@@ -35,7 +35,7 @@ jobs:
           sleep 5
 
       - name: Checkout repo
-        uses: actions/checkout@8e5e7e5ab8b370d6c329ec480221332ada57f0ab
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9
 
       - name: "Install Go ${{env.GO_VERSION}}"
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
