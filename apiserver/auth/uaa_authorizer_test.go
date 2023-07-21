@@ -10,6 +10,7 @@ import (
 	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
+	"time"
 
 	"golang.org/x/oauth2"
 
@@ -108,7 +109,24 @@ var _ = Describe("UAA", func() {
 		Describe("composeClaims()", func() {
 			token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 				"foo": "bar",
+				"exp": time.Now().Add(1 * time.Hour).Unix(),
 			})
+
+			It("should fail if the token has expired", func() {
+				token.Claims.(jwt.MapClaims)["exp"] = time.Now().Add(-1 * time.Hour).Unix()
+				token.Header["kid"] = fixtureRSAKey1["kid"]
+				tokenString, err := token.SignedString(fixturePrivateRSAKey1)
+				Expect(err).ToNot(HaveOccurred())
+
+				authorizer, err := uaa.NewAuthorizer(tokenString)
+				Expect(err).ToNot(HaveOccurred())
+				clientAuthorizer := authorizer.(*ClientAuthorizer)
+
+				err = clientAuthorizer.composeClaims()
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(ContainSubstring("token expired"))
+			})
+
 			It("should not fail if the token is valid for the first key", func() {
 				token.Header["kid"] = fixtureRSAKey1["kid"]
 				tokenString, err := token.SignedString(fixturePrivateRSAKey1)
