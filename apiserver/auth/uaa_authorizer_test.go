@@ -107,9 +107,15 @@ var _ = Describe("UAA", func() {
 
 	Describe("ClientAuthorizer", func() {
 		Describe("composeClaims()", func() {
-			token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-				"foo": "bar",
-				"exp": time.Now().Add(1 * time.Hour).Unix(),
+			var (
+				token *jwt.Token
+			)
+
+			BeforeEach(func() {
+				token = jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+					"foo": "bar",
+					"exp": time.Now().Add(1 * time.Hour).Unix(),
+				})
 			})
 
 			It("should fail if the token has expired", func() {
