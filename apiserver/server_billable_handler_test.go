@@ -2,6 +2,7 @@ package apiserver_test
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http/httptest"
 	"net/url"
@@ -135,12 +136,25 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
-		event1JSON := `{
-			"event_guid": "raw-json-guid-1"
-		}`
-		event2JSON := `{
-			"event_guid": "raw-json-guid-2"
-		}`
+		fakePrice := eventio.Price{
+			IncVAT:  "10.00",
+			ExVAT:   "8.33",
+			Details: []eventio.PriceComponent{},
+		}
+		fakeEvent1 := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceType: "app",
+			Price:        fakePrice,
+		}
+		fakeEvent2 := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceType: "app",
+			Price:        fakePrice,
+		}
+		fakeRows.EventReturnsOnCall(0, fakeEvent1, nil)
+		fakeRows.EventReturnsOnCall(1, fakeEvent2, nil)
+		event1JSON, _ := json.MarshalIndent(fakeEvent1, "", "  ")
+		event2JSON, _ := json.MarshalIndent(fakeEvent2, "", "  ")
 		fakeRows.EventJSONReturnsOnCall(0, []byte(event1JSON), nil)
 		fakeRows.EventJSONReturnsOnCall(1, []byte(event2JSON), nil)
 		fakeStore.GetBillableEventRowsReturns(fakeRows, nil)
@@ -170,7 +184,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(fakeRows.EventJSONCallCount()).To(Equal(2))
 		Expect(fakeRows.CloseCallCount()).To(Equal(1))
 
-		Expect(res.Body).To(MatchJSON("[" + event1JSON + "," + event2JSON + "]"))
+		Expect(res.Body).To(MatchJSON("[" + string(event1JSON) + "," + string(event2JSON) + "]"))
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
@@ -184,12 +198,25 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
-		event1JSON := `{
-			"event_guid": "raw-json-guid-1"
-		}`
-		event2JSON := `{
-			"event_guid": "raw-json-guid-2"
-		}`
+		fakePrice := eventio.Price{
+			IncVAT:  "10.00",
+			ExVAT:   "8.33",
+			Details: []eventio.PriceComponent{},
+		}
+		fakeEvent1 := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceType: "app",
+			Price:        fakePrice,
+		}
+		fakeEvent2 := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceType: "app",
+			Price:        fakePrice,
+		}
+		fakeRows.EventReturnsOnCall(0, fakeEvent1, nil)
+		fakeRows.EventReturnsOnCall(1, fakeEvent2, nil)
+		event1JSON, _ := json.MarshalIndent(fakeEvent1, "", "  ")
+		event2JSON, _ := json.MarshalIndent(fakeEvent2, "", "  ")
 		fakeRows.EventJSONReturnsOnCall(0, []byte(event1JSON), nil)
 		fakeRows.EventJSONReturnsOnCall(1, []byte(event2JSON), nil)
 		fakeStore.GetBillableEventRowsReturns(fakeRows, nil)
@@ -220,7 +247,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(fakeRows.EventJSONCallCount()).To(Equal(2))
 		Expect(fakeRows.CloseCallCount()).To(Equal(1))
 
-		Expect(res.Body).To(MatchJSON("[" + event1JSON + "," + event2JSON + "]"))
+		Expect(res.Body).To(MatchJSON("[" + string(event1JSON) + "," + string(event2JSON) + "]"))
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
@@ -276,6 +303,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
+
 	It("should fetch ConsolidatedBillableEvents when the filter range has been consolidated", func() {
 		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
 		fakeAuthorizer.AdminReturns(false, nil)
@@ -285,11 +313,27 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
+		fakePrice := eventio.Price{
+			IncVAT:  "10.00",
+			ExVAT:   "8.33",
+			Details: []eventio.PriceComponent{
+				// Populate with your actual components
+			},
+		}
+		fakeEvent := &eventio.BillableEvent{
+			EventGUID:    "some-guid",
+			Price:        fakePrice,
+			ResourceType: "app",
+		}
+		fakeRows.EventReturnsOnCall(0, fakeEvent, nil)
 		event1JSON := `{
-			"event_guid": "raw-json-guid-1"
+			"event_guid": "raw-json-guid-1",
+			"resource_type": "app",
+			"details": { "fake-details": "fake-details" }
 		}`
 		event2JSON := `{
-			"event_guid": "raw-json-guid-2"
+			"event_guid": "raw-json-guid-2",
+			"resource_type": "app"
 		}`
 		fakeRows.EventJSONReturnsOnCall(0, []byte(event1JSON), nil)
 		fakeRows.EventJSONReturnsOnCall(1, []byte(event2JSON), nil)
@@ -322,7 +366,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(fakeRows.EventJSONCallCount()).To(Equal(2))
 		Expect(fakeRows.CloseCallCount()).To(Equal(1))
 
-		Expect(res.Body).To(MatchJSON("[" + event1JSON + "," + event2JSON + "]"))
+		Expect(res.Body).To(MatchJSON("[" + string(event1JSON) + "," + string(event2JSON) + "]"))
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
@@ -357,4 +401,86 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
 
+	It("should aggregate task events if there are any", func() {
+		fakeAuthenticator.NewAuthorizerReturns(fakeAuthorizer, nil)
+		fakeAuthorizer.AdminReturns(true, nil)
+		fakeAuthorizer.HasBillingAccessReturns(false, nil)
+		fakeRows := &eventiofakes.FakeBillableEventRows{}
+		fakeRows.CloseReturns(nil)
+		fakeRows.NextReturnsOnCall(0, true)
+		fakeRows.NextReturnsOnCall(1, true)
+		fakeRows.NextReturnsOnCall(2, true)
+		fakeRows.NextReturnsOnCall(3, false)
+		fakePrice := eventio.Price{
+			IncVAT:  "10.00",
+			ExVAT:   "8.33",
+			Details: []eventio.PriceComponent{},
+		}
+		fakeAppEvent := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceType: "app",
+			Price:        fakePrice,
+		}
+		fakeTaskEvent := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceType: "task",
+			Price:        fakePrice,
+		}
+		fakeRows.EventReturnsOnCall(0, fakeAppEvent, nil)
+		fakeRows.EventReturnsOnCall(1, fakeTaskEvent, nil)
+		fakeRows.EventReturnsOnCall(2, fakeTaskEvent, nil)
+		eventAppJSON, _ := json.MarshalIndent(fakeAppEvent, "", "  ")
+		eventTaskJSON, _ := json.MarshalIndent(fakeTaskEvent, "", "  ")
+		fakeRows.EventJSONReturnsOnCall(0, []byte(eventAppJSON), nil)
+		fakeRows.EventJSONReturnsOnCall(1, []byte(eventTaskJSON), nil)
+		fakeRows.EventJSONReturnsOnCall(2, []byte(eventTaskJSON), nil)
+		fakeStore.GetBillableEventRowsReturns(fakeRows, nil)
+
+		u := url.URL{}
+		u.Path = "/billable_events"
+		q := u.Query()
+		q.Set("org_guid", orgGUID1)
+		q.Set("range_start", "2001-01-01")
+		q.Set("range_stop", "2001-01-02")
+		u.RawQuery = q.Encode()
+		req := httptest.NewRequest(echo.GET, u.String(), nil)
+		req.Header.Set("Authorization", "bearer "+token)
+		res := httptest.NewRecorder()
+
+		e := New(cfg)
+		e.ServeHTTP(res, req)
+		defer e.Shutdown(ctx)
+
+		Expect(fakeStore.GetBillableEventRowsCallCount()).To(Equal(1))
+		_, filter := fakeStore.GetBillableEventRowsArgsForCall(0)
+		Expect(filter.RangeStart).To(Equal("2001-01-01"))
+		Expect(filter.RangeStop).To(Equal("2001-01-02"))
+		Expect(filter.OrgGUIDs).To(Equal([]string{orgGUID1}))
+
+		Expect(fakeRows.NextCallCount()).To(Equal(4))
+		Expect(fakeRows.EventJSONCallCount()).To(Equal(3))
+		Expect(fakeRows.CloseCallCount()).To(Equal(1))
+
+		aggregateTaskEvent := &eventio.BillableEvent{
+			EventGUID:    orgGUID1,
+			ResourceName: "Total Task Events",
+			ResourceType: "task",
+			SpaceName:    "All Spaces",
+			Price: eventio.Price{
+				IncVAT:  "20.00",
+				ExVAT:   "16.66",
+				Details: []eventio.PriceComponent{},
+			},
+		}
+		events := []*eventio.BillableEvent{
+			fakeAppEvent,
+			aggregateTaskEvent,
+		}
+
+		aggregateJSON, _ := json.MarshalIndent(events, "", "  ")
+
+		Expect(res.Body).To(MatchJSON(string(aggregateJSON)))
+		Expect(res.Code).To(Equal(200))
+		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
+	})
 })
