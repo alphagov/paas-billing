@@ -89,7 +89,7 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 						// Increase the count of total task events
 						totalTaskEvents++
 
-						// Convert the price values to float and add them to the total sum
+						// Convert the price values to float
 						priceInc, _ := strconv.ParseFloat(row.Price.IncVAT, 64)
 						priceEx, _ := strconv.ParseFloat(row.Price.ExVAT, 64)
 
@@ -117,9 +117,11 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 							}
 							taskEvents[key] = event
 						} else {
-							// Add this price to the sum for this org and space
-							event.Price.IncVAT += fmt.Sprintf("%.2f", priceInc)
-							event.Price.ExVAT += fmt.Sprintf("%.2f", priceEx)
+							// Add this priceInc to event.Price.IncVAT
+							currentPriceInc, _ := strconv.ParseFloat(event.Price.IncVAT, 64)
+							currentPriceEx, _ := strconv.ParseFloat(event.Price.ExVAT, 64)
+							event.Price.IncVAT = fmt.Sprintf("%.2f", currentPriceInc+priceInc)
+							event.Price.ExVAT = fmt.Sprintf("%.2f", currentPriceEx+priceInc)
 						}
 						totalNonTaskEvents++
 
@@ -150,17 +152,14 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 				}
 				// Now we need to send all the task events
 				if totalTaskEvents != 0 {
-					// send a delimiter if we've sent any events already
-					if totalNonTaskEvents != 0 {
-						if _, err := c.Response().Write([]byte(",\n")); err != nil {
-							return err
-						}
-					}
-
 					// loop over each task event and send it
 					for _, event := range taskEvents {
 						b, err := json.Marshal(event)
 						if err != nil {
+							return err
+						}
+						// send the delimiter
+						if _, err := c.Response().Write([]byte(",\n")); err != nil {
 							return err
 						}
 						if _, err := c.Response().Write(b); err != nil {
