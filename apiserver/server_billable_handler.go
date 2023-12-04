@@ -70,20 +70,22 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 				defer rows.Close()
 
 				// Assume rows is a slice of event data
+				taskEvents := make(map[string]*eventio.BillableEvent)
 				var totalTaskEvents int
 				var totalNonTaskEvents int
-				var priceIncVatSum float64
-				var priceExVatSum float64
-				var taskEvent eventio.BillableEvent
 
 				next := rows.Next()
 				for next {
 					b, err := rows.EventJSON()
+					fmt.Printf("Event: %s\n", b)
 
 					// Check if the resource type is "task"
 					row, err := rows.Event()
 
 					if row != nil && row.ResourceType != "" && row.ResourceType == "task" {
+						// Set the key as a combination of Org GUID and Space GUID
+						key := fmt.Sprintf("%s-%s", row.OrgGUID, row.SpaceGUID)
+
 						// Increase the count of total task events
 						totalTaskEvents++
 
@@ -91,28 +93,33 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 						priceInc, _ := strconv.ParseFloat(row.Price.IncVAT, 64)
 						priceEx, _ := strconv.ParseFloat(row.Price.ExVAT, 64)
 
-						priceIncVatSum += priceInc
-						priceExVatSum += priceEx
-
-						if totalTaskEvents == 1 {
-							taskEvent = eventio.BillableEvent{
+						event, exists := taskEvents[key]
+						if !exists {
+							event = &eventio.BillableEvent{
 								EventGUID:           row.EventGUID,
-								EventStart:          row.EventStart,
-								EventStop:           row.EventStop,
+								EventStart:          c.QueryParam("range_start"),
+								EventStop:           c.QueryParam("range_stop"),
 								ResourceGUID:        row.ResourceGUID,
 								ResourceName:        "Total Task Events",
 								ResourceType:        "task",
 								OrgGUID:             row.OrgGUID,
 								OrgName:             row.OrgName,
 								SpaceGUID:           row.SpaceGUID,
-								SpaceName:           "All Spaces",
+								SpaceName:           row.SpaceName,
 								PlanGUID:            row.PlanGUID,
 								PlanName:            row.PlanName,
 								QuotaDefinitionGUID: row.QuotaDefinitionGUID,
 								Price: eventio.Price{
 									Details: row.Price.Details,
+									IncVAT:  fmt.Sprintf("%.2f", priceInc),
+									ExVAT:   fmt.Sprintf("%.2f", priceEx),
 								},
 							}
+							taskEvents[key] = event
+						} else {
+							// Add this price to the sum for this org and space
+							event.Price.IncVAT += fmt.Sprintf("%.2f", priceInc)
+							event.Price.ExVAT += fmt.Sprintf("%.2f", priceEx)
 						}
 						totalNonTaskEvents++
 
@@ -141,26 +148,25 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 					next = rows.Next()
 					c.Response().Flush()
 				}
+				// Now we need to send all the task events
 				if totalTaskEvents != 0 {
-					// send a delimiter if we've sent any events
+					// send a delimiter if we've sent any events already
 					if totalNonTaskEvents != 0 {
 						if _, err := c.Response().Write([]byte(",\n")); err != nil {
 							return err
 						}
 					}
 
-					// Now create an aggregate event with the total task events and price sum
-					taskEvent.Price.IncVAT = fmt.Sprintf("%.2f", priceIncVatSum)
-					taskEvent.Price.ExVAT = fmt.Sprintf("%.2f", priceExVatSum)
-
-					// Marshal it into json
-					taskEventJSON, err := json.Marshal(taskEvent)
-					if err != nil {
-						return err
-					}
-					// Send it if there are any task events
-					if _, err := c.Response().Write(taskEventJSON); err != nil {
-						return err
+					// loop over each task event and send it
+					for _, event := range taskEvents {
+						b, err := json.Marshal(event)
+						if err != nil {
+							return err
+						}
+						if _, err := c.Response().Write(b); err != nil {
+							return err
+						}
+						c.Response().Flush()
 					}
 				}
 
