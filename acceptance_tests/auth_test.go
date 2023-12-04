@@ -12,29 +12,29 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("Auth-related acceptance tests", func() {
+var _ = Describe("Auth-related acceptance tests", Ordered, func() {
 	type eventCommon struct {
-		OrgGUID string `json:"org_guid"`
+		OrgGUID   string `json:"org_guid"`
 		EventGUID string `json:"event_guid"`
 	}
 
 	eventCommonTests := func(endpointPath string) {
 		var (
 			orgGUIDWithEvents string
-			httpClient = &http.Client{}
-			lastMonth = time.Now().AddDate(0, -1, 0).Format("2006-01-02")
-			nextMonth = time.Now().AddDate(0, 1, 0).Format("2006-01-02")
+			httpClient        = &http.Client{}
+			rangeStart        = time.Now().AddDate(0, 0, -2).Format("2006-01-02")
+			rangeStop         = time.Now().AddDate(0, 0, 1).Format("2006-01-02")
 		)
 
-		BeforeEach(func() {
+		BeforeAll(func() {
 			By("Selecting an arbitrary org id with events", func() {
 				Eventually(func() bool {
 					u, err := url.Parse(BillingAPIURLFromEnv)
 					Expect(err).ToNot(HaveOccurred())
 					u = u.JoinPath(endpointPath)
 					q := u.Query()
-					q.Set("range_start", lastMonth)
-					q.Set("range_stop", nextMonth)
+					q.Set("range_start", rangeStart)
+					q.Set("range_stop", rangeStop)
 					u.RawQuery = q.Encode()
 
 					req, err := http.NewRequest("GET", u.String(), nil)
@@ -71,7 +71,7 @@ var _ = Describe("Auth-related acceptance tests", func() {
 			})
 		})
 
-		Context("Without an auth token", func () {
+		Context("Without an auth token", func() {
 			It("Returns 401 for single-org requests", func() {
 				u, err := url.Parse(BillingAPIURLFromEnv)
 				Expect(err).ToNot(HaveOccurred())
@@ -118,15 +118,15 @@ var _ = Describe("Auth-related acceptance tests", func() {
 			})
 		})
 
-		Context("With an admin auth token", func () {
+		Context("With an admin auth token", func() {
 			It("Returns events for single-org requests", func() {
 				u, err := url.Parse(BillingAPIURLFromEnv)
 				Expect(err).ToNot(HaveOccurred())
 				u = u.JoinPath(endpointPath)
 				q := u.Query()
 				q.Set("org_guid", orgGUIDWithEvents)
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -156,8 +156,8 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				q := u.Query()
 				q.Set("org_guid", orgGUIDWithEvents)
 				q.Add("org_guid", CFNonAdminBillingManagerOrgGUID)
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -179,12 +179,12 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				for _, ev := range events {
 					Expect(ev.EventGUID).ToNot(BeEmpty())
 					switch ev.OrgGUID {
-						case orgGUIDWithEvents:
-							foundOrgGUIDWithEvents = true
-						case CFNonAdminBillingManagerOrgGUID:
-							foundCFNonAdminBillingManagerOrgGUID = true
-						default:
-							Expect(false).To(BeTrue())
+					case orgGUIDWithEvents:
+						foundOrgGUIDWithEvents = true
+					case CFNonAdminBillingManagerOrgGUID:
+						foundCFNonAdminBillingManagerOrgGUID = true
+					default:
+						Expect(false).To(BeTrue())
 					}
 				}
 				Expect(foundOrgGUIDWithEvents).To(BeTrue())
@@ -196,8 +196,8 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 				u = u.JoinPath(endpointPath)
 				q := u.Query()
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -217,15 +217,15 @@ var _ = Describe("Auth-related acceptance tests", func() {
 			})
 		})
 
-		Context("With a non-admin auth token", func () {
+		Context("With a non-admin auth token", func() {
 			It("Returns events for single-org requests", func() {
 				u, err := url.Parse(BillingAPIURLFromEnv)
 				Expect(err).ToNot(HaveOccurred())
 				u = u.JoinPath(endpointPath)
 				q := u.Query()
 				q.Set("org_guid", CFNonAdminBillingManagerOrgGUID)
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -254,8 +254,8 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				u = u.JoinPath(endpointPath)
 				q := u.Query()
 				q.Set("org_guid", orgGUIDWithEvents)
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -278,8 +278,8 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				q := u.Query()
 				q.Set("org_guid", orgGUIDWithEvents)
 				q.Add("org_guid", CFNonAdminBillingManagerOrgGUID)
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -300,8 +300,8 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				Expect(err).ToNot(HaveOccurred())
 				u = u.JoinPath(endpointPath)
 				q := u.Query()
-				q.Set("range_start", lastMonth)
-				q.Set("range_stop", nextMonth)
+				q.Set("range_start", rangeStart)
+				q.Set("range_stop", rangeStop)
 				u.RawQuery = q.Encode()
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -323,8 +323,8 @@ var _ = Describe("Auth-related acceptance tests", func() {
 				u = u.JoinPath(endpointPath)
 				u.RawQuery = fmt.Sprintf(
 					"range_start=%s&range_stop=%s&org_guid=%%",
-					lastMonth,
-					nextMonth,
+					rangeStart,
+					rangeStop,
 				)
 
 				req, err := http.NewRequest("GET", u.String(), nil)
@@ -343,10 +343,10 @@ var _ = Describe("Auth-related acceptance tests", func() {
 	}
 
 	Context("/usage_events", func() {
-		eventCommonTests("usage_events");
+		eventCommonTests("usage_events")
 	})
 
 	Context("/billable_events", func() {
-		eventCommonTests("billable_events");
+		eventCommonTests("billable_events")
 	})
 })

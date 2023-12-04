@@ -107,11 +107,18 @@ var _ = Describe("UAA", func() {
 
 	Describe("ClientAuthorizer", func() {
 		Describe("composeClaims()", func() {
-			It("should fail if the token has expired", func() {
-				token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
+			var (
+				token *jwt.Token
+			)
+
+			BeforeEach(func() {
+				token = jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
 					"foo": "bar",
 					"exp": time.Now().Add(1 * time.Hour).Unix(),
 				})
+			})
+
+			It("should fail if the token has expired", func() {
 				token.Claims.(jwt.MapClaims)["exp"] = time.Now().Add(-1 * time.Hour).Unix()
 				token.Header["kid"] = fixtureRSAKey1["kid"]
 				tokenString, err := token.SignedString(fixturePrivateRSAKey1)
@@ -127,10 +134,6 @@ var _ = Describe("UAA", func() {
 			})
 
 			It("should not fail if the token is valid for the first key", func() {
-				token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-					"foo": "bar",
-					"exp": time.Now().Add(1 * time.Hour).Unix(),
-				})
 				token.Header["kid"] = fixtureRSAKey1["kid"]
 				tokenString, err := token.SignedString(fixturePrivateRSAKey1)
 				Expect(err).ToNot(HaveOccurred())
@@ -144,10 +147,6 @@ var _ = Describe("UAA", func() {
 			})
 
 			It("should not fail if the token is for the second key", func() {
-				token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-					"foo": "bar",
-					"exp": time.Now().Add(1 * time.Hour).Unix(),
-				})
 				token.Header["kid"] = fixtureRSAKey2["kid"]
 				tokenString, err := token.SignedString(fixturePrivateRSAKey2)
 				Expect(err).ToNot(HaveOccurred())
@@ -161,10 +160,6 @@ var _ = Describe("UAA", func() {
 			})
 
 			It("should fail if the token is not valid for any of the valid keys", func() {
-				token := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{
-					"foo": "bar",
-					"exp": time.Now().Add(1 * time.Hour).Unix(),
-				})
 				token.Header["kid"] = fixtureRSAKey3["kid"]
 				tokenString, err := token.SignedString(fixturePrivateRSAKey3)
 				Expect(err).ToNot(HaveOccurred())
