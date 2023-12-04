@@ -71,8 +71,6 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 
 				// Assume rows is a slice of event data
 				taskEvents := make(map[string]*eventio.BillableEvent)
-				var totalTaskEvents int
-				var totalNonTaskEvents int
 
 				next := rows.Next()
 				for next {
@@ -84,9 +82,6 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 					if row != nil && row.ResourceType != "" && row.ResourceType == "task" {
 						// Set the key as a combination of Org GUID and Space GUID
 						key := fmt.Sprintf("%s-%s", row.OrgGUID, row.SpaceGUID)
-
-						// Increase the count of total task events
-						totalTaskEvents++
 
 						// Convert the price values to float
 						priceInc, _ := strconv.ParseFloat(row.Price.IncVAT, 64)
@@ -104,25 +99,22 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 								OrgGUID:             row.OrgGUID,
 								OrgName:             row.OrgName,
 								SpaceGUID:           row.SpaceGUID,
-								SpaceName:           row.SpaceName,
+								SpaceName:           "all",
 								PlanGUID:            row.PlanGUID,
 								PlanName:            row.PlanName,
 								QuotaDefinitionGUID: row.QuotaDefinitionGUID,
 								Price: eventio.Price{
-									Details: row.Price.Details,
-									IncVAT:  fmt.Sprintf("%.2f", priceInc),
-									ExVAT:   fmt.Sprintf("%.2f", priceEx),
+									Details:     row.Price.Details,
+									FloatIncVAT: priceInc,
+									FloatExVAT:  priceEx,
 								},
 							}
 							taskEvents[key] = event
 						} else {
 							// Add this priceInc to event.Price.IncVAT
-							currentPriceInc, _ := strconv.ParseFloat(event.Price.IncVAT, 64)
-							currentPriceEx, _ := strconv.ParseFloat(event.Price.ExVAT, 64)
-							event.Price.IncVAT = fmt.Sprintf("%.2f", currentPriceInc+priceInc)
-							event.Price.ExVAT = fmt.Sprintf("%.2f", currentPriceEx+priceEx)
+							event.Price.FloatIncVAT = event.Price.FloatIncVAT + priceInc
+							event.Price.FloatExVAT = event.Price.FloatExVAT + priceEx
 						}
-						totalNonTaskEvents++
 
 						// Skip the event as we will group them all into one event at the end
 						next = rows.Next()
@@ -149,23 +141,22 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 					next = rows.Next()
 					c.Response().Flush()
 				}
-				// Now we need to send all the task events
-				if totalTaskEvents != 0 {
-					// loop over each task event and send it
-					for _, event := range taskEvents {
-						b, err := json.Marshal(event)
-						if err != nil {
-							return err
-						}
-						// send the delimiter
-						if _, err := c.Response().Write([]byte(",\n")); err != nil {
-							return err
-						}
-						if _, err := c.Response().Write(b); err != nil {
-							return err
-						}
-						c.Response().Flush()
+				// loop over each task event and send it
+				for _, event := range taskEvents {
+					event.Price.IncVAT = fmt.Sprintf("%.2f", event.Price.FloatIncVAT)
+					event.Price.ExVAT = fmt.Sprintf("%.2f", event.Price.FloatExVAT)
+					b, err := json.Marshal(event)
+					if err != nil {
+						return err
 					}
+					// send the delimiter
+					if _, err := c.Response().Write([]byte(",\n")); err != nil {
+						return err
+					}
+					if _, err := c.Response().Write(b); err != nil {
+						return err
+					}
+					c.Response().Flush()
 				}
 
 				return nil

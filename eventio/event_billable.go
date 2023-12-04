@@ -50,9 +50,11 @@ type PriceComponent struct {
 }
 
 type Price struct {
-	IncVAT  string           `json:"inc_vat"`
-	ExVAT   string           `json:"ex_vat"`
-	Details []PriceComponent `json:"details"`
+	IncVAT      string           `json:"inc_vat"`
+	ExVAT       string           `json:"ex_vat"`
+	FloatIncVAT float64          `json:"-"`
+	FloatExVAT  float64          `json:"-"`
+	Details     []PriceComponent `json:"details"`
 }
 
 type BillableEvent struct {

@@ -422,7 +422,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "app",
 			ResourceName: "app-1",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePrice,
 		}
 		fakeTaskEvent := &eventio.BillableEvent{
@@ -431,7 +431,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "task",
 			ResourceName: "task-1",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePrice,
 		}
 		fakeRows.EventReturnsOnCall(0, fakeAppEvent, nil)
@@ -477,7 +477,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price: eventio.Price{
 				IncVAT:  "10.00",
 				ExVAT:   "8.00",
@@ -526,7 +526,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "app",
 			ResourceName: "app-1",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePriceOrg1,
 		}
 		fakeTaskEvent1Org1 := &eventio.BillableEvent{
@@ -535,7 +535,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "task",
 			ResourceName: "task-1",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePriceOrg1,
 		}
 		fakeAppEventOrg2 := &eventio.BillableEvent{
@@ -544,7 +544,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "app",
 			ResourceName: "app-1",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePriceOrg2,
 		}
 		fakeTaskEvent1Org2 := &eventio.BillableEvent{
@@ -553,7 +553,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "task",
 			ResourceName: "task-1",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePriceOrg2,
 		}
 		fakeTaskEvent2Org2 := &eventio.BillableEvent{
@@ -562,7 +562,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceType: "task",
 			ResourceName: "task-2",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price:        fakePriceOrg2,
 		}
 		fakeRows.EventReturnsOnCall(0, fakeAppEventOrg1, nil)
@@ -617,7 +617,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price: eventio.Price{
 				IncVAT:  "10.00",
 				ExVAT:   "8.00",
@@ -632,7 +632,7 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "space-name",
+			SpaceName:    "all",
 			Price: eventio.Price{
 				IncVAT:  "10.00",
 				ExVAT:   "8.00",
@@ -646,9 +646,10 @@ var _ = Describe("BillableEventsHandler", func() {
 			taskEventsOrg2,
 		}
 
-		eventsJSON, _ := json.MarshalIndent(events, "", "  ")
+		var actualEvents []*eventio.BillableEvent
+		json.Unmarshal(res.Body.Bytes(), &actualEvents)
 
-		Expect(res.Body).To(MatchJSON(string(eventsJSON)))
+		Expect(actualEvents).To(ConsistOf(events))
 		Expect(res.Code).To(Equal(200))
 		Expect(res.Header().Get("Content-Type")).To(Equal("application/json; charset=UTF-8"))
 	})
