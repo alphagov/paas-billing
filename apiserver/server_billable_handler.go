@@ -77,7 +77,6 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 				next := rows.Next()
 				for next {
 					b, err := rows.EventJSON()
-					fmt.Printf("Event: %s\n", b)
 
 					// Check if the resource type is "task"
 					row, err := rows.Event()
@@ -121,7 +120,7 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 							currentPriceInc, _ := strconv.ParseFloat(event.Price.IncVAT, 64)
 							currentPriceEx, _ := strconv.ParseFloat(event.Price.ExVAT, 64)
 							event.Price.IncVAT = fmt.Sprintf("%.2f", currentPriceInc+priceInc)
-							event.Price.ExVAT = fmt.Sprintf("%.2f", currentPriceEx+priceInc)
+							event.Price.ExVAT = fmt.Sprintf("%.2f", currentPriceEx+priceEx)
 						}
 						totalNonTaskEvents++
 

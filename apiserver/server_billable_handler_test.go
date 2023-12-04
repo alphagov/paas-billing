@@ -410,21 +410,28 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.CloseReturns(nil)
 		fakeRows.NextReturnsOnCall(0, true)
 		fakeRows.NextReturnsOnCall(1, true)
-		fakeRows.NextReturnsOnCall(2, true)
-		fakeRows.NextReturnsOnCall(3, false)
+		fakeRows.NextReturnsOnCall(2, false)
 		fakePrice := eventio.Price{
 			IncVAT:  "10.00",
-			ExVAT:   "8.33",
+			ExVAT:   "8.00",
 			Details: []eventio.PriceComponent{},
 		}
 		fakeAppEvent := &eventio.BillableEvent{
-			EventGUID:    orgGUID1,
+			OrgGUID:      orgGUID1,
+			OrgName:      "org-1",
 			ResourceType: "app",
+			ResourceName: "app-1",
+			SpaceGUID:    "space-guid",
+			SpaceName:    "space-name",
 			Price:        fakePrice,
 		}
 		fakeTaskEvent := &eventio.BillableEvent{
-			EventGUID:    orgGUID1,
+			OrgGUID:      orgGUID1,
+			OrgName:      "org-1",
 			ResourceType: "task",
+			ResourceName: "task-1",
+			SpaceGUID:    "space-guid",
+			SpaceName:    "space-name",
 			Price:        fakePrice,
 		}
 		fakeRows.EventReturnsOnCall(0, fakeAppEvent, nil)
@@ -458,19 +465,22 @@ var _ = Describe("BillableEventsHandler", func() {
 		Expect(filter.RangeStop).To(Equal("2001-01-02"))
 		Expect(filter.OrgGUIDs).To(Equal([]string{orgGUID1}))
 
-		Expect(fakeRows.NextCallCount()).To(Equal(4))
-		Expect(fakeRows.EventJSONCallCount()).To(Equal(3))
+		Expect(fakeRows.NextCallCount()).To(Equal(3))
+		Expect(fakeRows.EventJSONCallCount()).To(Equal(2))
 		Expect(fakeRows.CloseCallCount()).To(Equal(1))
 
 		aggregateTaskEvent := &eventio.BillableEvent{
-			EventGUID:    orgGUID1,
+			OrgGUID:      orgGUID1,
+			OrgName:      "org-1",
+			EventStart:   "2001-01-01",
+			EventStop:    "2001-01-02",
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "All",
+			SpaceName:    "space-name",
 			Price: eventio.Price{
-				IncVAT:  "20.00",
-				ExVAT:   "16.66",
+				IncVAT:  "10.00",
+				ExVAT:   "8.00",
 				Details: []eventio.PriceComponent{},
 			},
 		}
@@ -607,10 +617,10 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "All",
+			SpaceName:    "space-name",
 			Price: eventio.Price{
-				IncVAT:  "20.00",
-				ExVAT:   "16.00",
+				IncVAT:  "10.00",
+				ExVAT:   "8.00",
 				Details: []eventio.PriceComponent{},
 			},
 		}
@@ -622,10 +632,10 @@ var _ = Describe("BillableEventsHandler", func() {
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
-			SpaceName:    "All",
+			SpaceName:    "space-name",
 			Price: eventio.Price{
-				IncVAT:  "20.00",
-				ExVAT:   "16.00",
+				IncVAT:  "10.00",
+				ExVAT:   "8.00",
 				Details: []eventio.PriceComponent{},
 			},
 		}
