@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/alphagov/paas-billing/apiserver/auth"
 	"github.com/alphagov/paas-billing/eventio"
@@ -79,7 +80,7 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 					// Check if the resource type is "task"
 					row, err := rows.Event()
 
-					if row != nil && row.ResourceType != "" && row.ResourceType == "task" {
+					if row != nil && row.ResourceType == "task" {
 						// Set the key as a combination of Org GUID and Space GUID
 						key := fmt.Sprintf("%s-%s", row.OrgGUID, row.SpaceGUID)
 
@@ -89,22 +90,34 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 
 						event, exists := taskEvents[key]
 						if !exists {
+							const layout = "2006-01-02"
+
+							rangeStart, _ := time.Parse(layout, c.QueryParam("range_start"))
+							rangeStop, _ := time.Parse(layout, c.QueryParam("range_stop"))
+
 							event = &eventio.BillableEvent{
 								EventGUID:           row.EventGUID,
-								EventStart:          c.QueryParam("range_start"),
-								EventStop:           c.QueryParam("range_stop"),
+								EventStart:          rangeStart.Format("2006-01-02T00:00:00+00:00"),
+								EventStop:           rangeStop.Format("2006-01-02T00:00:00+00:00"),
 								ResourceGUID:        row.ResourceGUID,
 								ResourceName:        "Total Task Events",
 								ResourceType:        "task",
 								OrgGUID:             row.OrgGUID,
 								OrgName:             row.OrgName,
 								SpaceGUID:           row.SpaceGUID,
-								SpaceName:           "all",
+								SpaceName:           row.SpaceName,
 								PlanGUID:            row.PlanGUID,
 								PlanName:            row.PlanName,
 								QuotaDefinitionGUID: row.QuotaDefinitionGUID,
 								Price: eventio.Price{
-									Details:     row.Price.Details,
+									Details: []eventio.PriceComponent{{
+										Name:         "All tasks aggregated",
+										PlanName:     "tasks",
+										Start:        rangeStart.Format("2006-01-02T00:00:00+00:00"),
+										Stop:         rangeStop.Format("2006-01-02T00:00:00+00:00"),
+										CurrencyCode: "USD",
+										VatRate:      "0.2",
+									}},
 									FloatIncVAT: priceInc,
 									FloatExVAT:  priceEx,
 								},
@@ -143,8 +156,10 @@ func BillableEventsHandler(store eventio.BillableEventReader, consolidatedStore 
 				}
 				// loop over each task event and send it
 				for _, event := range taskEvents {
-					event.Price.IncVAT = fmt.Sprintf("%.2f", event.Price.FloatIncVAT)
-					event.Price.ExVAT = fmt.Sprintf("%.2f", event.Price.FloatExVAT)
+					event.Price.IncVAT = fmt.Sprintf("%.16f", event.Price.FloatIncVAT)
+					event.Price.ExVAT = fmt.Sprintf("%.16f", event.Price.FloatExVAT)
+					event.Price.Details[0].IncVAT = fmt.Sprintf("%.16f", event.Price.FloatIncVAT)
+					event.Price.Details[0].ExVAT = fmt.Sprintf("%.16f", event.Price.FloatExVAT)
 					b, err := json.Marshal(event)
 					if err != nil {
 						return err

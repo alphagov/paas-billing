@@ -138,7 +138,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
 		fakePrice := eventio.Price{
-			IncVAT:  "10.00",
+			IncVAT:  "10.0000000000000000",
 			ExVAT:   "8.33",
 			Details: []eventio.PriceComponent{},
 		}
@@ -200,7 +200,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
 		fakePrice := eventio.Price{
-			IncVAT:  "10.00",
+			IncVAT:  "10.0000000000000000",
 			ExVAT:   "8.33",
 			Details: []eventio.PriceComponent{},
 		}
@@ -315,7 +315,7 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
 		fakePrice := eventio.Price{
-			IncVAT:  "10.00",
+			IncVAT:  "10.0000000000000000",
 			ExVAT:   "8.33",
 			Details: []eventio.PriceComponent{
 				// Populate with your actual components
@@ -412,8 +412,8 @@ var _ = Describe("BillableEventsHandler", func() {
 		fakeRows.NextReturnsOnCall(1, true)
 		fakeRows.NextReturnsOnCall(2, false)
 		fakePrice := eventio.Price{
-			IncVAT:  "10.00",
-			ExVAT:   "8.00",
+			IncVAT:  "10.0000000000000000",
+			ExVAT:   "8.0000000000000000",
 			Details: []eventio.PriceComponent{},
 		}
 		fakeAppEvent := &eventio.BillableEvent{
@@ -472,16 +472,27 @@ var _ = Describe("BillableEventsHandler", func() {
 		aggregateTaskEvent := &eventio.BillableEvent{
 			OrgGUID:      orgGUID1,
 			OrgName:      "org-1",
-			EventStart:   "2001-01-01",
-			EventStop:    "2001-01-02",
+			EventStart:   "2001-01-01T00:00:00+00:00",
+			EventStop:    "2001-01-02T00:00:00+00:00",
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
 			SpaceName:    "all",
 			Price: eventio.Price{
-				IncVAT:  "10.00",
-				ExVAT:   "8.00",
-				Details: []eventio.PriceComponent{},
+				IncVAT: "10.0000000000000000",
+				ExVAT:  "8.0000000000000000",
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "All tasks aggregated",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-02T00:00:00+00:00",
+						IncVAT:       "10.0000000000000000",
+						ExVAT:        "8.0000000000000000",
+						CurrencyCode: "USD",
+						VatRate:      "0.2",
+						PlanName:     "tasks",
+					},
+				},
 			},
 		}
 		events := []*eventio.BillableEvent{
@@ -511,8 +522,8 @@ var _ = Describe("BillableEventsHandler", func() {
 		// org1: 1 app, 1 task
 		// org2: 1 app, 2 tasks
 		fakePriceOrg1 := eventio.Price{
-			IncVAT:  "10.00",
-			ExVAT:   "8.00",
+			IncVAT:  "10.0000000000000000",
+			ExVAT:   "8.0000000000000000",
 			Details: []eventio.PriceComponent{},
 		}
 		fakePriceOrg2 := eventio.Price{
@@ -612,31 +623,53 @@ var _ = Describe("BillableEventsHandler", func() {
 		taskEventsOrg1 := &eventio.BillableEvent{
 			OrgGUID:      orgGUID1,
 			OrgName:      "org-1",
-			EventStart:   "2001-01-01",
-			EventStop:    "2001-01-02",
+			EventStart:   "2001-01-01T00:00:00+00:00",
+			EventStop:    "2001-01-02T00:00:00+00:00",
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
 			SpaceName:    "all",
 			Price: eventio.Price{
-				IncVAT:  "10.00",
-				ExVAT:   "8.00",
-				Details: []eventio.PriceComponent{},
+				IncVAT: "10.0000000000000000",
+				ExVAT:  "8.0000000000000000",
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "All tasks aggregated",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-02T00:00:00+00:00",
+						IncVAT:       "10.0000000000000000",
+						ExVAT:        "8.0000000000000000",
+						CurrencyCode: "USD",
+						VatRate:      "0.2",
+						PlanName:     "tasks",
+					},
+				},
 			},
 		}
 		taskEventsOrg2 := &eventio.BillableEvent{
 			OrgGUID:      orgGUID2,
 			OrgName:      "org-2",
-			EventStart:   "2001-01-01",
-			EventStop:    "2001-01-02",
+			EventStart:   "2001-01-01T00:00:00+00:00",
+			EventStop:    "2001-01-02T00:00:00+00:00",
 			ResourceName: "Total Task Events",
 			ResourceType: "task",
 			SpaceGUID:    "space-guid",
 			SpaceName:    "all",
 			Price: eventio.Price{
-				IncVAT:  "10.00",
-				ExVAT:   "8.00",
-				Details: []eventio.PriceComponent{},
+				IncVAT: "10.0000000000000000",
+				ExVAT:  "8.0000000000000000",
+				Details: []eventio.PriceComponent{
+					{
+						Name:         "All tasks aggregated",
+						Start:        "2001-01-01T00:00:00+00:00",
+						Stop:         "2001-01-02T00:00:00+00:00",
+						IncVAT:       "10.0000000000000000",
+						ExVAT:        "8.0000000000000000",
+						CurrencyCode: "USD",
+						VatRate:      "0.2",
+						PlanName:     "tasks",
+					},
+				},
 			},
 		}
 		events := []*eventio.BillableEvent{
