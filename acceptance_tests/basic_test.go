@@ -3,24 +3,24 @@ package acceptance_tests_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/alphagov/paas-billing/apiserver"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
 	"io"
 	"net/http"
 	"net/url"
 	"time"
-)
 
-var (
-	err error
-
-	billingAPIURL   *url.URL
-	metricsProxyURL *url.URL
+	"github.com/alphagov/paas-billing/apiserver"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Basic acceptance tests", func() {
 	Context("Billing API", Label("smoke"), func() {
+
+		var (
+			err           error
+			billingAPIURL *url.URL
+		)
+
 		BeforeEach(func() {
 			Expect(BillingAPIURLFromEnv).ToNot(BeEmpty(), "Billing API URL was empty")
 			billingAPIURL, err = url.Parse(BillingAPIURLFromEnv)
@@ -69,6 +69,12 @@ var _ = Describe("Basic acceptance tests", func() {
 	})
 
 	Context("Metrics Proxy", func() {
+
+		var (
+			err             error
+			metricsProxyURL *url.URL
+		)
+
 		BeforeEach(func() {
 			Expect(MetricsProxyURLFromEnv).ToNot(BeEmpty(), "Metrics proxy URL was empty")
 			metricsProxyURL, err = url.Parse(MetricsProxyURLFromEnv)

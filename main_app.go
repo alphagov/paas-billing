@@ -31,6 +31,7 @@ type App struct {
 	logger            lager.Logger
 	cfg               Config
 	Shutdown          context.CancelFunc
+	db                *sql.DB
 }
 
 func (app *App) Init() error {
@@ -225,6 +226,7 @@ func (app *App) start(name string, logger lager.Logger, fn func() error) error {
 		defer logger.Info("stopped")
 		defer app.wg.Done()
 		defer app.Shutdown()
+		defer app.db.Close()
 		if err := fn(); err != nil {
 			logger.Error("stop-with-error", err)
 		}
@@ -292,6 +294,7 @@ func New(ctx context.Context, cfg Config) (*App, error) {
 		store:             cfg.Store,
 		historicDataStore: historicDataStore,
 		logger:            cfg.Logger,
+		db:                db,
 	}
 
 	return app, nil
