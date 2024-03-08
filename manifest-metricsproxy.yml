@@ -8,7 +8,7 @@ applications:
     buildpack: go_buildpack
     health-check-type: http
     env:
-      GOVERSION: go1.20
+      GOVERSION: go1.21
       GOPACKAGENAME: github.com/alphagov/paas-billing
       APP_NAMES:
     command: ./bin/paas-billing proxymetrics
